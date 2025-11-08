@@ -11,6 +11,7 @@ class EquipmentHistory extends Model
 
     protected $fillable = [
         'equipment_id',
+        'date',
         'jo_number',
         'action_taken',
         'remarks',

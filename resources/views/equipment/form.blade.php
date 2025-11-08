@@ -179,7 +179,7 @@
                 <p class="text-muted">Fill in the details below to {{ $equipment->exists ? 'update' : 'create' }} equipment for your office</p>
             </div>
 
-            <form action="{{ $equipment->exists ? route('admin.equipment.update', $equipment) : route('admin.equipment.store') }}" method="POST" class="needs-validation" novalidate>
+            <form action="{{ $equipment->exists ? route((auth()->guard('technician')->check() ? 'technician.' : 'admin.') . 'equipment.update', $equipment) : route((auth()->guard('technician')->check() ? 'technician.' : 'admin.') . 'equipment.store') }}" method="POST" class="needs-validation" novalidate>
                 @csrf
                 @if($equipment->exists)
                     @method('PUT')
@@ -358,6 +358,8 @@
                     </h5>
 
                     <div class="row g-3">
+                        @if($equipment->exists)
+                        <!-- Show status and condition fields only when editing existing equipment -->
                         <div class="col-md-6">
                             <div class="field-container">
                                 <label for="status" class="form-label required">Status</label>
@@ -376,24 +378,31 @@
 
                         <div class="col-md-6">
                             <div class="field-container">
-                                <label for="condition" class="form-label required">Condition</label>
-                                <select class="form-select @error('condition') is-invalid @enderror"
-                                        id="condition" name="condition" required>
-                                    <option value="" disabled {{ !old('condition', $equipment->condition ?? '') ? 'selected' : '' }}>Select Condition</option>
-                                    <option value="good" {{ old('condition', $equipment->condition ?? '') == 'good' ? 'selected' : '' }}>Good</option>
-                                    <option value="not_working" {{ old('condition', $equipment->condition ?? '') == 'not_working' ? 'selected' : '' }}>Not Working</option>
-                                </select>
-                                @error('condition')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
+                                <label for="condition_display" class="form-label">Condition</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class='bx bx-shield-check'></i></span>
+                                    <input type="text" class="form-control" id="condition_display"
+                                           value="Select a status first" readonly>
+                                    <input type="hidden" id="condition" name="condition" value="">
+                                </div>
+                                <div class="form-text">Condition is automatically set based on equipment status</div>
                             </div>
                         </div>
+                        @else
+                        <!-- For new equipment, show informational message -->
+                        <div class="col-12">
+                            <div class="alert alert-info border-0 mb-0">
+                                <i class='bx bx-info-circle me-2'></i>
+                                <strong>New Equipment:</strong> Status will be set to <strong>"Serviceable"</strong> and Condition to <strong>"Good"</strong> automatically.
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
                     <div>
-                        <a href="{{ route('admin.equipment.index') }}" class="btn btn-outline-secondary me-2">
+                        <a href="{{ route((auth()->guard('technician')->check() ? 'technician.' : 'admin.') . 'equipment.index') }}" class="btn btn-outline-secondary me-2">
                             <i class='bx bx-x me-1'></i> Cancel
                         </a>
                         <button type="submit" class="btn btn-primary">
@@ -405,4 +414,54 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Only run this script when editing existing equipment (status field is visible)
+    @if($equipment->exists)
+    const statusSelect = document.getElementById('status');
+    const conditionDisplay = document.getElementById('condition_display');
+    const conditionHidden = document.getElementById('condition');
+
+    // Function to update condition based on status
+    function updateCondition() {
+        const selectedStatus = statusSelect.value;
+
+        if (!selectedStatus) {
+            conditionDisplay.value = 'Select a status first';
+            conditionHidden.value = '';
+            return;
+        }
+
+        // Set condition based on status
+        let conditionValue = '';
+        let conditionText = '';
+
+        switch(selectedStatus) {
+            case 'serviceable':
+                conditionValue = 'good';
+                conditionText = 'Good';
+                break;
+            case 'for_repair':
+            case 'defective':
+                conditionValue = 'not_working';
+                conditionText = 'Not Working';
+                break;
+            default:
+                conditionValue = '';
+                conditionText = 'Unknown';
+        }
+
+        conditionDisplay.value = conditionText;
+        conditionHidden.value = conditionValue;
+    }
+
+    // Update condition when status changes
+    statusSelect.addEventListener('change', updateCondition);
+
+    // Set initial condition for existing equipment or old input
+    updateCondition();
+    @endif
+});
+</script>
 @endsection

@@ -17,6 +17,13 @@
         text-align: center;
     }   
 
+    .qr-actions {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 10px;
+    }
+
     .qr-container {
         display: flex;
         justify-content: center; /* Align to the right */
@@ -81,10 +88,46 @@
         color: #1d9bf0;
     }
 
-    video {
-        width: 100% !important;
-        border: 1px solid #b2b2b2 !important;
-        border-radius: 0.25em;
+    #my-qr-reader .alert-success .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    #my-qr-reader .alert-success .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    #my-qr-reader .alert-success .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    #my-qr-reader .alert-success .btn-success:hover {
+        background-color: #0f5132;
+    }
+
+    #my-qr-reader .alert-success .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+
+    #my-qr-reader .alert-success .d-flex {
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 576px) {
+        #my-qr-reader .alert-success .d-flex {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        #my-qr-reader .alert-success .btn {
+            margin-bottom: 0.5rem;
+        }
     }
 </style>
 @endpush
@@ -156,10 +199,19 @@
                             <p class="mb-2"><strong>Model:</strong> ${data.equipment.model_number || 'N/A'}</p>
                             <p class="mb-2"><strong>Serial:</strong> ${data.equipment.serial_number || 'N/A'}</p>
                             <p class="mb-2"><strong>Status:</strong> <span class="badge bg-${getStatusColor(data.equipment.status)}">${data.equipment.status || 'Unknown'}</span></p>
-                            <p class="mb-0"><strong>Office:</strong> ${data.equipment.office ? data.equipment.office.name : 'N/A'}</p>
+                            <p class="mb-0"><strong>Office:</strong> ${data.equipment.office || 'N/A'}</p>
                             <hr>
-                            <a href="{{ url('technician/equipment') }}/${data.equipment.id}" class="btn btn-primary btn-sm">View Full Details</a>
-                            <button onclick="resetScanner()" class="btn btn-secondary btn-sm ms-2">Scan Another</button>
+                            <div class="qr-actions">
+                            <button class="btn btn-outline-secondary btn-sm"><a href="{{ url('technician/equipment') }}/${data.equipment.id}">
+                                    <i class="bx bx-show me-1"></i>View Details
+                                </a></button>
+                                <button class="btn btn-outline-secondary btn-sm"><a href="{{ url('technician/equipment') }}/${data.equipment.id}/history/create">
+                                    <i class="bx bx-plus me-1"></i>Add History Sheet
+                                </a></button>
+                                <button onclick="resetScanner()" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bx bx-qr-scan me-1"></i>Scan Another
+                                </button>
+                            </div>
                         </div>
                     `;
                 } else {

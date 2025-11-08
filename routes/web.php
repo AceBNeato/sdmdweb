@@ -192,6 +192,15 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
                 Route::post('/history', [\App\Http\Controllers\Technician\EquipmentController::class, 'storeHistory'])
                     ->name('equipment.history.store');
                     
+                Route::post('/generate-jo', [\App\Http\Controllers\Technician\EquipmentController::class, 'generateJONumber'])
+                    ->name('equipment.generate-jo');
+                    
+                Route::post('/check-latest-repair', [\App\Http\Controllers\Technician\EquipmentController::class, 'checkLatestRepair'])
+                    ->name('equipment.check-latest-repair');
+                    
+                Route::post('/check-sequences', [\App\Http\Controllers\Technician\EquipmentController::class, 'checkSequences'])
+                    ->name('equipment.check-sequences');
+                    
                 Route::post('/clear-history-prompt', [\App\Http\Controllers\Technician\EquipmentController::class, 'clearHistoryPrompt'])
                     ->name('equipment.clear-history-prompt');
             });

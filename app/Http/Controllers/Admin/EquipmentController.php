@@ -110,10 +110,21 @@ class EquipmentController extends Controller
             'cost_of_purchase' => 'nullable|numeric|min:0',
             'office_id' => 'required|exists:offices,id',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required|in:serviceable,for_repair,defective',
-            'condition' => 'required|in:good,not_working',
+            'status' => 'nullable|in:serviceable,for_repair,defective', // Optional for new equipment
+            'condition' => 'nullable|in:good,not_working', // Optional for new equipment
             'notes' => 'nullable|string',
         ]);
+
+        // Auto-set condition based on status if not provided
+        if (empty($validated['condition']) && isset($validated['status'])) {
+            $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
+        }
+
+        // For new equipment (when status/condition fields are hidden), set default values
+        if (!array_key_exists('status', $validated) || empty($validated['status'])) {
+            $validated['status'] = 'serviceable';
+            $validated['condition'] = 'good';   
+        }
 
         $equipment = Equipment::create($validated);
 
@@ -220,9 +231,14 @@ class EquipmentController extends Controller
             'office_id' => 'required|exists:offices,id',
             'category_id' => 'nullable|exists:categories,id',
             'status' => 'required|in:serviceable,for_repair,defective',
-            'condition' => 'required|in:good,not_working',
+            'condition' => 'nullable|in:good,not_working', // Now optional - auto-set based on status
             'notes' => 'nullable|string',
         ]);
+
+        // Auto-set condition based on status if not provided
+        if (empty($validated['condition'])) {
+            $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
+        }
 
         $equipment->update($validated);
 

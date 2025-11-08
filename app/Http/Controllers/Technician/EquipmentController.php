@@ -170,7 +170,7 @@ class EquipmentController extends BaseController
         
         $equipment = new Equipment();
         $categories = Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
-        $equipmentTypes = $this->getEquipmentTypes();
+        $equipmentTypes = EquipmentType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name', 'id');
 
         // Technicians can now create equipment for any office
         $campuses = \App\Models\Campus::with(['offices' => function($query) {
@@ -204,10 +204,21 @@ class EquipmentController extends BaseController
             'purchase_date' => 'nullable|date',
             'cost_of_purchase' => 'nullable|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required|in:serviceable,for_repair,defective',
-            'condition' => 'required|in:good,not_working',
+            'status' => 'nullable|in:serviceable,for_repair,defective', // Optional for new equipment
+            'condition' => 'nullable|in:good,not_working', // Optional for new equipment
             'office_id' => 'required|exists:offices,id',
         ]);
+
+        // Auto-set condition based on status if not provided
+        if (empty($validated['condition']) && isset($validated['status'])) {
+            $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
+        }
+
+        // For new equipment (when status/condition fields are hidden), set default values
+        if (!array_key_exists('status', $validated) || empty($validated['status'])) {
+            $validated['status'] = 'serviceable';
+            $validated['condition'] = 'good';
+        }
 
         // Technicians can now create equipment for any office
         // if ($validated['office_id'] != $user->office_id) {
@@ -309,9 +320,14 @@ class EquipmentController extends BaseController
             'cost_of_purchase' => 'nullable|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'status' => 'required|in:serviceable,for_repair,defective',
-            'condition' => 'required|in:good,not_working',
+            'condition' => 'nullable|in:good,not_working', // Now optional - auto-set based on status
             'office_id' => 'required|exists:offices,id',
         ]);
+
+        // Auto-set condition based on status if not provided
+        if (empty($validated['condition']) && isset($validated['status'])) {
+            $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
+        }
 
         // Add the user who is updating the equipment
         $validated['assigned_by_id'] = $user->user_id;
@@ -825,12 +841,49 @@ class EquipmentController extends BaseController
         // }
 
         $validated = $request->validate([
-            'date' => 'required|date',
-            'jo_number' => 'nullable|string|max:50',
+            'date' => 'required|date|before_or_equal:now',
+            'jo_sequence' => 'required|string|max:2|regex:/^[0-9]{1,2}$/',
             'action_taken' => 'required|string|max:1000',
             'remarks' => 'nullable|string|max:1000',
-            'responsible_person' => 'required|string|max:255',
+            'equipment_status' => 'required|in:serviceable,for_repair,defective',
         ]);
+
+        // Debug: Log all incoming data
+        \Log::info('History form submission', [
+            'all_request_data' => $request->all(),
+            'validated_data' => $validated,
+            'equipment_status_raw' => $request->input('equipment_status'),
+            'equipment_status_validated' => $validated['equipment_status'] ?? 'NOT_SET',
+            'equipment_status_empty_check' => empty($validated['equipment_status']),
+            'equipment_status_is_null' => is_null($validated['equipment_status']),
+            'equipment_status_type' => gettype($validated['equipment_status'])
+        ]);
+
+        // Build the full JO number from date and sequence
+        $date = \Carbon\Carbon::parse($validated['date']);
+        $joNumber = 'JO-' . $date->format('Y-m-d') . '-' . str_pad($validated['jo_sequence'], 2, '0', STR_PAD_LEFT);
+
+        // Check if JO number already exists
+        if (EquipmentHistory::where('jo_number', $joNumber)->exists()) {
+            return back()->withErrors(['jo_sequence' => 'This Job Order number already exists. Please choose a different sequence.'])
+                         ->withInput();
+        }
+
+        // Additional validation: prevent backdating beyond latest repair
+        $selectedDateTime = new \DateTime($validated['date']);
+        $latestRepair = EquipmentHistory::where('equipment_id', $equipment->id)
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($latestRepair) {
+            $latestDateTime = new \DateTime($latestRepair->date);
+            if ($selectedDateTime < $latestDateTime) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Cannot backdate beyond the latest repair record for this equipment.');
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -839,27 +892,296 @@ class EquipmentController extends BaseController
                 'equipment_id' => $equipment->id,
                 'user_id' => $user->user_id,
                 'date' => $validated['date'],
-                'jo_number' => $validated['jo_number'],
+                'jo_number' => $joNumber,
                 'action_taken' => $validated['action_taken'],
                 'remarks' => $validated['remarks'],
-                'responsible_person' => $validated['responsible_person'],
+                'responsible_person' => $user->name, // Auto-fill with technician's name
             ]);
 
             $history->save();
 
+            \Log::info('History saved, equipment status update will proceed', [
+                'history_saved' => true,
+                'equipment_status' => $validated['equipment_status'],
+                'will_set_condition_to_good' => $validated['equipment_status'] === 'serviceable'
+            ]);
+
+            // Update equipment status (now always required)
+            \Log::info('Equipment status update triggered', [
+                'equipment_id' => $equipment->id,
+                'equipment_status' => $validated['equipment_status'],
+                'current_status' => $equipment->status,
+                'current_condition' => $equipment->condition
+            ]);
+
+            $updateData = [
+                'status' => $validated['equipment_status'],
+                'assigned_by_id' => $user->user_id,
+            ];
+
+            // If setting status to serviceable, also set condition to good
+            if ($validated['equipment_status'] === 'serviceable') {
+                $updateData['condition'] = 'good';
+                \Log::info('Setting condition to good for serviceable status');
+            }
+
+            $result = $equipment->update($updateData);
+            \Log::info('Equipment update result', [
+                'update_result' => $result,
+                'updated_data' => $updateData,
+                'equipment_after_update' => [
+                    'status' => $equipment->fresh()->status,
+                    'condition' => $equipment->fresh()->condition
+                ]
+            ]);
+
+            \Log::info('About to commit transaction', [
+                'equipment_id' => $equipment->id,
+                'history_created' => true,
+                'equipment_status_updated' => $validated['equipment_status'],
+                'equipment_condition_updated' => $validated['equipment_status'] === 'serviceable' ? 'good' : 'unchanged'
+            ]);
+
             DB::commit();
+
+            \Log::info('Transaction committed successfully', [
+                'equipment_id' => $equipment->id,
+                'final_equipment_status' => $equipment->fresh()->status,
+                'final_equipment_condition' => $equipment->fresh()->condition
+            ]);
+
+            $successMessage = 'History sheet saved!';
+            $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
+            $successMessage .= ' Equipment status updated to ' . $statusText . '.';
+
+            // Add condition update message if status was set to serviceable
+            if ($validated['equipment_status'] === 'serviceable') {
+                $successMessage .= ' Equipment condition set to Good.';
+            }
 
             return redirect()
                 ->route('technician.equipment.index')
-                ->with('success', 'History sheet saved!');
+                ->with('success', $successMessage);
 
         } catch (\Exception $e) {
+            \Log::error('Transaction rolled back due to error', [
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'equipment_id' => $equipment->id,
+                'validated_data' => $validated ?? 'not set'
+            ]);
+            
             DB::rollBack();
-            \Log::error('Error creating equipment history: ' . $e->getMessage());
             
             return back()
                 ->withInput()
                 ->with('error', 'Failed to add history entry. Please try again.');
+        }
+    }
+
+    /**
+     * Generate unique Job Order number for the given date.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Equipment  $equipment
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generateJONumber(Request $request, Equipment $equipment)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+            $date = $request->date;
+
+            // Find the next sequence number for this date
+            $latestJO = EquipmentHistory::where('jo_number', 'like', 'JO-' . $date . '-%')
+                ->orderBy('jo_number', 'desc')
+                ->first();
+
+            $sequence = 1;
+            if ($latestJO) {
+                // Extract sequence from latest JO number (format: JO-YYYY-MM-DD-XX)
+                $parts = explode('-', $latestJO->jo_number);
+                if (count($parts) >= 4) {
+                    $sequence = (int) end($parts) + 1;
+                }
+            }
+
+            // Format sequence with leading zero if needed
+            $sequenceFormatted = str_pad($sequence, 2, '0', STR_PAD_LEFT);
+
+            $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
+
+            // Double-check uniqueness (in case of concurrent requests)
+            $exists = EquipmentHistory::where('jo_number', $joNumber)->exists();
+            if ($exists) {
+                // Find next available sequence
+                for ($i = $sequence + 1; $i <= 99; $i++) {
+                    $sequenceFormatted = str_pad($i, 2, '0', STR_PAD_LEFT);
+                    $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
+                    if (!EquipmentHistory::where('jo_number', $joNumber)->exists()) {
+                        break;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'jo_number' => $joNumber
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating JO number: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if the selected date can be used (prevent backdating beyond latest repair).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Equipment  $equipment
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkLatestRepair(Request $request, Equipment $equipment)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+            $selectedDateTime = new \DateTime($request->date);
+
+            // Find the latest repair record for this equipment
+            $latestRepair = EquipmentHistory::where('equipment_id', $equipment->id)
+                ->orderBy('date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($latestRepair) {
+                $latestDateTime = new \DateTime($latestRepair->date);
+
+                // If trying to set a date earlier than the latest repair, prevent it
+                if ($selectedDateTime < $latestDateTime) {
+                    return response()->json([
+                        'can_backdate' => false,
+                        'latest_date' => $latestDateTime->format('Y-m-d\TH:i'),
+                        'message' => 'Cannot backdate beyond the latest repair record.'
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'can_backdate' => true
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking latest repair: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check existing sequences for a date to validate consecutive numbering.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Equipment  $equipment
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkSequences(Request $request, Equipment $equipment)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+            $date = $request->date;
+
+            \Log::info('=== checkSequences START ===', [
+                'equipment_id' => $equipment->id,
+                'date_requested' => $date,
+                'request_all' => $request->all()
+            ]);
+
+            // Find all JO numbers for this equipment on this date
+            $joQuery = 'JO-' . $date . '-%';
+            \Log::info('JO query pattern:', ['pattern' => $joQuery]);
+
+            $existingJO = EquipmentHistory::where('equipment_id', $equipment->id)
+                ->where('jo_number', 'like', $joQuery)
+                ->orderBy('jo_number')
+                ->pluck('jo_number')
+                ->toArray();
+
+            \Log::info('Database results:', [
+                'query_executed' => "WHERE equipment_id = {$equipment->id} AND jo_number LIKE '{$joQuery}'",
+                'count_found' => count($existingJO),
+                'jo_numbers_found' => $existingJO
+            ]);
+
+            // Extract sequences from JO numbers
+            $existingSequences = [];
+            foreach ($existingJO as $joNumber) {
+                \Log::info('Processing JO number:', ['jo_number' => $joNumber]);
+                $parts = explode('-', $joNumber);
+                \Log::info('JO parts:', ['parts' => $parts, 'count' => count($parts)]);
+
+                if (count($parts) >= 4) {
+                    $sequence = (int) $parts[3]; // JO-YYYY-MM-DD-XX -> XX
+                    $existingSequences[] = $sequence;
+                    \Log::info('Extracted sequence:', ['sequence' => $sequence]);
+                } else {
+                    \Log::info('Invalid JO format, skipping:', ['jo_number' => $joNumber]);
+                }
+            }
+
+            \Log::info('All extracted sequences:', ['sequences' => $existingSequences]);
+
+            // Sort sequences
+            sort($existingSequences);
+
+            // For strict consecutive numbering, find the next required sequence
+            $nextSequence = 1;
+            foreach ($existingSequences as $seq) {
+                if ($seq === $nextSequence) {
+                    $nextSequence++;
+                } else {
+                    // Gap found - this shouldn't happen with strict validation
+                    // But if it does, nextSequence remains at the gap position
+                    break;
+                }
+            }
+
+            \Log::info('Strict consecutive validation', [
+                'existing_sequences_sorted' => $existingSequences,
+                'next_required_sequence' => $nextSequence,
+                'total_entries' => count($existingSequences)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'existing_sequences' => $existingSequences,
+                'next_sequence' => $nextSequence
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in checkSequences', [
+                'error' => $e->getMessage(),
+                'equipment_id' => $equipment->id,
+                'date' => $request->date ?? 'null'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking sequences: ' . $e->getMessage()
+            ], 500);
         }
     }
 
