@@ -1,0 +1,424 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\Permission;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
+
+class UserController extends Controller
+{
+    public function __construct()
+    {
+        // Middleware is now applied in routes/web.php
+    }
+
+    /**
+     * Display a listing of users with their roles.
+     */
+    public function index(Request $request)
+    {
+        // Get search and filter parameters
+        $search = $request->get('search');
+        $campusFilter = $request->get('campus_id');
+        $officeFilter = $request->get('office_id');
+        $roleFilter = $request->get('role_id');
+        $statusFilter = $request->get('status');
+
+        $usersQuery = User::with(['roles', 'campus', 'office'])
+            ->when(!auth()->user()->is_admin, function($query) {
+                // Non-admin users can only see non-admin users
+                return $query->whereDoesntHave('roles', function($q) {
+                    $q->where('name', 'admin');
+                });
+            })
+            ->whereDoesntHave('roles', function($q) {
+                $q->where('name', 'super-admin');
+            });
+
+        // Apply search filter
+        if ($search) {
+            $usersQuery->where(function($query) use ($search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('email', 'like', '%' . $search . '%')
+                      ->orWhere('position', 'like', '%' . $search . '%')
+                      ->orWhere('phone', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Apply campus filter
+        if ($campusFilter) {
+            $usersQuery->where('campus_id', $campusFilter);
+        }
+
+        // Apply office filter
+        if ($officeFilter) {
+            $usersQuery->where('office_id', $officeFilter);
+        }
+
+        // Apply role filter
+        if ($roleFilter) {
+            $usersQuery->whereHas('roles', function($query) use ($roleFilter) {
+                $query->where('roles.id', $roleFilter);
+            });
+        }
+
+        // Apply status filter
+        if ($statusFilter !== null) {
+            if ($statusFilter === 'active') {
+                $usersQuery->where('is_active', true);
+            } elseif ($statusFilter === 'inactive') {
+                $usersQuery->where('is_active', false);
+            }
+        }
+
+        $users = $usersQuery->orderBy('name')->paginate(10);
+
+        // Get filter options
+        $campuses = \App\Models\Campus::where('is_active', true)->orderBy('name')->get();
+        $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
+        $roles = Role::when(!auth()->user()->is_admin, function($query) {
+                // Non-admin users can only filter by non-admin roles
+                return $query->where('name', '!=', 'admin');
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('accounts.index', compact('users', 'campuses', 'offices', 'roles', 'search', 'campusFilter', 'officeFilter', 'roleFilter', 'statusFilter'));
+    }
+
+    /**
+     * Show the form for creating a new user.
+     */
+    public function create()
+    {
+        $roles = Role::when(!auth()->user()->is_admin, function($query) {
+            // Non-admin users can only assign non-admin roles
+            return $query->where('name', '!=', 'admin');
+        })
+        ->where('name', '!=', 'super-admin')
+        ->orderBy('name')->get();
+
+        $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
+        $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
+
+        return view('accounts.form', compact('roles', 'offices', 'campuses'));
+    }
+
+    /**
+     * Store a newly created user in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'position' => 'required|string|max:255',
+            'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
+            'office_id' => 'required|exists:offices,id',
+            'roles' => 'required|exists:roles,id',
+        ]);
+
+        // Prevent non-admins from assigning admin role
+        if (!auth()->user()->is_admin) {
+            $adminRole = Role::where('name', 'admin')->first();
+            if ($adminRole && $validated['roles'] == $adminRole->id) {
+                return redirect()->back()
+                    ->with('error', 'You do not have permission to assign the admin role.')
+                    ->withInput();
+            }
+        }
+
+        // Get the office and derive campus_id
+        $office = \App\Models\Office::find($validated['office_id']);
+        $campus_id = $office ? $office->campus_id : null;
+
+        // Create the user with all information
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'phone' => $request->phone ?? null,
+            'position' => $validated['position'],
+            'office_id' => $validated['office_id'],
+            'campus_id' => $campus_id,
+            'is_active' => true,
+            'is_admin' => false,
+        ]);
+
+        // Assign roles
+        $user->roles()->sync([$validated['roles']]);
+
+        // Sync role permissions to permission_user table
+        $role = Role::find($validated['roles']);
+        if ($role) {
+            $rolePermissions = $role->permissions;
+            foreach ($rolePermissions as $permission) {
+                $user->permissions()->syncWithoutDetaching([$permission->id => ['is_active' => true]]);
+            }
+        }
+
+        return redirect()->route('accounts.index')
+            ->with('success', 'User created successfully.');
+    }
+
+
+    /**
+     * Update the user's roles.
+     */
+    public function updateRoles(Request $request, User $user)
+    {
+        // Prevent non-admins from editing admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to edit admin users.');
+        }
+
+        $validated = $request->validate([
+            'roles' => 'required|exists:roles,id',
+            'direct_permissions' => 'nullable|array',
+            'direct_permissions.*' => 'exists:permissions,id',
+        ]);
+
+        // Prevent non-admins from assigning admin role
+        if (!auth()->user()->is_admin) {
+            $adminRole = Role::where('name', 'admin')->first();
+            if ($adminRole && $validated['roles'] == $adminRole->id) {
+                return redirect()->back()
+                    ->with('error', 'You do not have permission to assign the admin role.');
+            }
+        }
+
+        // Update user roles
+        $user->roles()->sync([$validated['roles']]);
+
+        // Update direct permissions if provided
+        if (isset($validated['direct_permissions'])) {
+            $checkedPermissionIds = $validated['direct_permissions'];
+            $allPermissionIds = Permission::pluck('id')->toArray();
+            $uncheckedPermissionIds = array_diff($allPermissionIds, $checkedPermissionIds);
+
+            // Handle checked permissions
+            foreach ($checkedPermissionIds as $permissionId) {
+                if ($user->permissions->contains($permissionId)) {
+                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => true]);
+                } else {
+                    $user->permissions()->attach($permissionId, ['is_active' => true]);
+                }
+            }
+
+            // Handle unchecked permissions
+            foreach ($uncheckedPermissionIds as $permissionId) {
+                if ($user->permissions->contains($permissionId)) {
+                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => false]);
+                } else {
+                    $user->permissions()->attach($permissionId, ['is_active' => false]);
+                }
+            }
+        } else {
+            // Disable all direct permissions if none selected
+            DB::table('permission_user')->where('user_id', $user->id)->update(['is_active' => false]);
+        }
+
+        // Clear any cached permissions
+        if (method_exists($user, 'forgetCachedPermissions')) {
+            $user->forgetCachedPermissions();
+        }
+
+        return redirect()->route('accounts.index')
+            ->with('success', 'User roles and permissions updated successfully.');
+    }
+
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy(User $user)
+    {
+        // Prevent non-admins from deleting admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to delete admin users.');
+        }
+
+        // Prevent users from deleting themselves
+        if ($user->id === auth()->user()->id) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You cannot delete your own account.');
+        }
+
+        try {
+            // Delete the user
+            $user->delete();
+
+            return redirect()->route('accounts.index')
+                ->with('success', 'User deleted successfully.');
+
+        } catch (\Exception $e) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'An error occurred while deleting the user.');
+        }
+    }
+
+    /**
+     * Display the specified user information.
+     */
+    public function show(User $user)
+    {
+        // Check if user can view this user's information
+        if (!auth()->user()->is_admin && $user->is_admin) {
+            abort(403, 'You do not have permission to view this user.');
+        }
+
+        // Load user relationships
+        $user->load(['campus', 'office']);
+
+        return view('accounts.show', compact('user'));
+    }
+
+    /**
+     * Show the form for editing the specified user.
+     */
+    public function edit(User $user)
+    {
+        // Prevent non-admins from editing admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to edit admin users.');
+        }
+
+        // Load relationships
+        $user->load(['campus', 'office']);
+
+        $roles = Role::when(!auth()->user()->is_admin, function($query) {
+                // Non-admin users can only assign non-admin roles
+                return $query->where('name', '!=', 'admin');
+            })
+            ->where('name', '!=', 'super-admin')
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
+
+        $allPermissions = Permission::orderBy('group')
+            ->orderBy('name')
+            ->get();
+            
+        $userPermissions = $user->permissions()
+            ->wherePivot('is_active', true)
+            ->pluck('permissions.id')
+            ->toArray();
+
+        $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
+        $userRoles = $user->roles->pluck('id')->toArray();
+        $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
+
+        return view('accounts.edit', compact('user', 'roles', 'allPermissions', 'userPermissions', 'offices', 'userRoles', 'campuses'));
+    }
+
+    /**
+     * Update the specified user in storage.
+     */
+    public function update(Request $request, User $user)
+    {
+        // Prevent non-admins from editing admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to edit admin users.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8|confirmed',
+            'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
+            'position' => 'required|string|max:255',
+            'office_id' => 'required|exists:offices,id',
+            'roles' => auth()->user()->is_super_admin ? 'nullable|exists:roles,id' : '',
+            'direct_permissions' => 'nullable|array',
+            'direct_permissions.*' => 'exists:permissions,id',
+        ]);
+
+        // Get the office and derive campus_id
+        $office = \App\Models\Office::find($validated['office_id']);
+        $campus_id = $office ? $office->campus_id : null;
+
+        // Update user with all information
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'position' => $validated['position'],
+            'office_id' => $validated['office_id'],
+            'campus_id' => $campus_id,
+        ]);
+
+        // Update password if provided
+        if (!empty($validated['password'])) {
+            $user->update(['password' => Hash::make($validated['password'])]);
+        }
+
+        // Update roles if provided and user is superadmin
+        if (isset($validated['roles']) && auth()->user()->is_super_admin) {
+            // Prevent non-admins from assigning admin role
+            if (!auth()->user()->is_super_admin) {
+                $adminRole = Role::where('name', 'admin')->first();
+                if ($adminRole && $validated['roles'] == $adminRole->id) {
+                    return redirect()->back()
+                        ->with('error', 'You do not have permission to assign the admin role.')
+                        ->withInput();
+                }
+            }
+
+            // Check if user is being assigned/removed from staff role
+            $staffRole = Role::where('name', 'staff')->first();
+            $technicianRole = Role::where('name', 'technician')->first();
+            $isBeingAssignedStaff = $staffRole && $validated['roles'] == $staffRole->id;
+            $currentlyHasStaffRole = $user->hasRole('staff');
+            $isBeingAssignedTechnician = $technicianRole && $validated['roles'] == $technicianRole->id;
+            $currentlyHasTechnicianRole = $user->hasRole('technician');
+
+            $user->roles()->sync([$validated['roles']]);
+        }
+
+        // Handle direct permissions if provided
+        if (isset($validated['direct_permissions'])) {
+            $checkedPermissionIds = $validated['direct_permissions'];
+            $allPermissionIds = Permission::pluck('id')->toArray();
+            $uncheckedPermissionIds = array_diff($allPermissionIds, $checkedPermissionIds);
+
+            // Handle checked permissions
+            foreach ($checkedPermissionIds as $permissionId) {
+                if ($user->permissions->contains($permissionId)) {
+                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => true]);
+                } else {
+                    $user->permissions()->attach($permissionId, ['is_active' => true]);
+                }
+            }
+
+            // Handle unchecked permissions
+            foreach ($uncheckedPermissionIds as $permissionId) {
+                if ($user->permissions->contains($permissionId)) {
+                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => false]);
+                } else {
+                    $user->permissions()->attach($permissionId, ['is_active' => false]);
+                }
+            }
+        } else {
+            // Disable all direct permissions if none selected
+            DB::table('permission_user')->where('user_id', $user->id)->update(['is_active' => false]);
+        }
+
+        // Clear any cached permissions
+        if (method_exists($user, 'forgetCachedPermissions')) {
+            $user->forgetCachedPermissions();
+        }
+
+        return redirect()->route('accounts.index')
+            ->with('success', 'User updated successfully.');
+    }
+}

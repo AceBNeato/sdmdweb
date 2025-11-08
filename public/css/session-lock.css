@@ -1,0 +1,164 @@
+.session-lock-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(30, 30, 60, 0.9)) !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999 !important;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Force overlay to work on ALL pages */
+body #session-lock-modal.session-lock-overlay {
+    position: fixed !important;
+    z-index: 999999 !important;
+    display: flex !important;
+}
+
+body #session-lock-modal.session-lock-overlay[style*="display: none"] {
+    display: none !important;
+}
+
+.session-lock-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    max-width: 440px;
+    width: 90%;
+    z-index: 1000000 !important;
+    position: relative;
+    animation: slideUp 0.4s ease-out;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.session-lock-modal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 24px 28px;
+    border-bottom: none;
+    position: relative;
+}
+
+.session-lock-modal .modal-header::before {
+    content: '🔒';
+    position: absolute;
+    top: -20px;
+    right: 20px;
+    font-size: 80px;
+    opacity: 0.15;
+}
+
+.session-lock-modal .modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.session-lock-modal .modal-body {
+    padding: 32px 28px;
+    background: #ffffff;
+}
+
+.session-lock-modal .modal-body p {
+    color: #4a5568;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.session-lock-modal .form-label {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.session-lock-modal .form-control {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.session-lock-modal .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+.session-lock-modal .alert-danger {
+    background-color: #fff5f5;
+    border: 1px solid #fc8181;
+    color: #c53030;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-top: 16px;
+}
+
+.session-lock-modal .modal-footer {
+    padding: 20px 28px 28px;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.session-lock-modal .btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.session-lock-modal .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.session-lock-modal .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.session-lock-modal .btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.session-lock-modal .btn-secondary:hover {
+    background: #cbd5e0;
+    transform: translateY(-2px);
+}
