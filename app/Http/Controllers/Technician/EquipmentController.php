@@ -310,6 +310,8 @@ class EquipmentController extends BaseController
     public function update(Request $request, Equipment $equipment)
     {
         $user = Auth::guard('technician')->user();
+        // Resolve the underlying users.id regardless of guard model shape
+        $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
 
         // Permission check - technicians have access based on authentication
         // if ($user->user && !$user->user->can('equipment.edit')) {
@@ -341,7 +343,7 @@ class EquipmentController extends BaseController
         }
 
         // Add the user who is updating the equipment
-        $validated['assigned_by_id'] = $user->user_id;
+        $validated['assigned_by_id'] = $userId;
 
         // Ensure technician can only update equipment for their office
         // if ($validated['office_id'] != $user->office_id) {
@@ -842,6 +844,9 @@ class EquipmentController extends BaseController
     public function storeHistory(Request $request, Equipment $equipment)
     {
         $user = Auth::guard('technician')->user();
+        // Resolve the underlying users.id and responsible name
+        $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
+        $responsibleName = $user->name ?? optional($user->user)->name;
 
         // Check if technician has permission to view equipment (required for history access)
         // if ($user->user && !$user->user->can('equipment.view')) {
@@ -906,12 +911,12 @@ class EquipmentController extends BaseController
 
             $history = new EquipmentHistory([
                 'equipment_id' => $equipment->id,
-                'user_id' => $user->user_id,
+                'user_id' => $userId,
                 'date' => $validated['date'],
                 'jo_number' => $joNumber,
                 'action_taken' => $validated['action_taken'],
                 'remarks' => $validated['remarks'],
-                'responsible_person' => $user->name, // Auto-fill with technician's name
+                'responsible_person' => $responsibleName, // Auto-fill with technician's name
             ]);
 
             $history->save();
@@ -932,7 +937,7 @@ class EquipmentController extends BaseController
 
             $updateData = [
                 'status' => $validated['equipment_status'],
-                'assigned_by_id' => $user->user_id,
+                'assigned_by_id' => $userId,
             ];
 
             // If setting status to serviceable, also set condition to good
