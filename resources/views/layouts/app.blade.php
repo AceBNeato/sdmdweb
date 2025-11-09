@@ -227,17 +227,41 @@
 <body>
     <div class="app" id="appRoot">
         @php
-            // Determine the correct prefix based on user authentication guard
-            $prefix = '';
-            if (auth('technician')->check()) {
+            // Determine the correct prefix primarily from the current route or path to avoid cross-guard collisions
+            $routeName = \Illuminate\Support\Facades\Route::currentRouteName();
+            $path = request()->path();
+
+            $prefix = 'admin';
+            $currentUser = auth()->user();
+
+            if (($routeName && str_starts_with($routeName, 'admin.')) || str_starts_with($path, 'admin')) {
+                $prefix = 'admin';
+                $currentUser = auth()->user();
+            } elseif (($routeName && str_starts_with($routeName, 'technician.')) || str_starts_with($path, 'technician')) {
                 $prefix = 'technician';
+                $currentUser = auth('technician')->user();
+            } elseif (($routeName && str_starts_with($routeName, 'staff.')) || str_starts_with($path, 'staff')) {
+                $prefix = 'staff';
+                $currentUser = auth('staff')->user();
+            } elseif (auth('technician')->check()) {
+                $prefix = 'technician';
+                $currentUser = auth('technician')->user();
             } elseif (auth('staff')->check()) {
                 $prefix = 'staff';
-            } elseif (auth()->check()) {
+                $currentUser = auth('staff')->user();
+            } else {
                 $prefix = 'admin';
+                $currentUser = auth()->user();
             }
-            // Resolve the currently authenticated user across guards
-            $currentUser = auth('technician')->user() ?? auth('staff')->user() ?? auth()->user();
+
+            // Guard-aware profile URL
+            $profileUrl = $prefix === 'admin'
+                ? (isset($currentUser) ? route('admin.accounts.show', $currentUser->id) : route('admin.accounts.index'))
+                : ($prefix === 'technician' ? route('technician.profile') : route('staff.profile'));
+            // Modal endpoint for profile (staff/technician only)
+            $profileModalUrl = $prefix === 'technician'
+                ? url('/technician?modal=1')
+                : ($prefix === 'staff' ? url('/staff/profile?modal=1') : $profileUrl);
         @endphp
         <aside class="sidebar">
             <a class="brand" href="javascript:window.location.reload();">
@@ -283,7 +307,7 @@
                 @endif
 
                 <!-- Reports - available to all user types -->
-                @if($currentUser && $currentUser->hasPermissionTo('reports.view'))
+                @if($currentUser && $currentUser->hasPermissionTo('reports.view') && Route::has($prefix . '.reports.index'))
                 <a href="{{ route($prefix . '.reports.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.reports') || request()->routeIs('technician.reports.*') || request()->routeIs('staff.reports.*') ? 'active' : '' }}">
                     <i class='bx bx-bar-chart-alt-2'></i>Reports
                 </a>
@@ -316,9 +340,15 @@
                     <i class='bx bx-chevron-up dropdown-arrow'></i>
                 </button>
                 <div class="profile-menu" id="profileDropdownMenu">
-                    <a href="{{ $prefix === 'admin' ? url('/admin/accounts') : ($prefix === 'technician' ? url('/technician') : url('/staff')) }}" class="profile-menu-item">
+                    @if($prefix === 'admin')
+                    <a href="{{ $profileUrl }}" class="profile-menu-item">
                         <i class='bx bx-user'></i> My Profile
                     </a>
+                    @else
+                    <a href="#" class="profile-menu-item open-profile-modal" data-url="{{ $profileModalUrl }}">
+                        <i class='bx bx-user'></i> My Profile
+                    </a>
+                    @endif
                     <div class="profile-menu-divider"></div>
                     <a href="#" onclick="event.preventDefault(); if(!this.hasAttribute('disabled')){ this.setAttribute('disabled','disabled'); this.style.pointerEvents='none'; document.getElementById('logout-form').submit(); }" class="profile-menu-item logout-item">
                         <i class='bx bx-log-out'></i> Logout
@@ -358,10 +388,43 @@
                 </div>
             </div>
             <footer class="footer">
-                Copyright © 2025. All Rights Reserved.
+                Copyright 2025. All Rights Reserved.
             </footer>
         </div>
         <div class="backdrop" id="backdrop"></div>
+    </div>
+
+    <!-- Global Profile Modals -->
+    <div class="modal fade" id="viewProfileModal" tabindex="-1" aria-labelledby="viewProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewProfileModalLabel">My Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="viewProfileContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="editProfileContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notifications Container -->
@@ -587,5 +650,97 @@
         };
     </script>
     @endif
+
+    <script>
+        // Profile modals: open and submit via AJAX
+        (function($){
+            $(document).on('click', '.open-profile-modal', function(e){
+                e.preventDefault();
+                var url = $(this).data('url');
+                if (!url) return;
+                $('#viewProfileContent').html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(html){
+                        $('#viewProfileContent').html(html);
+                        var modal = new bootstrap.Modal(document.getElementById('viewProfileModal'));
+                        modal.show();
+                    },
+                    error: function(xhr){
+                        $('#viewProfileContent').html('<div class="alert alert-danger">Failed to load profile. Error: '+xhr.status+'</div>');
+                        var modal = new bootstrap.Modal(document.getElementById('viewProfileModal'));
+                        modal.show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.open-edit-profile-modal', function(e){
+                e.preventDefault();
+                var url = $(this).data('url');
+                if (!url) return;
+                $('#editProfileContent').html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                // Hide view modal if open
+                var viewEl = document.getElementById('viewProfileModal');
+                if (viewEl) {
+                    var viewInstance = bootstrap.Modal.getInstance(viewEl);
+                    if (viewInstance) viewInstance.hide();
+                }
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(html){
+                        $('#editProfileContent').html(html);
+                        var modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+                        modal.show();
+                    },
+                    error: function(xhr){
+                        $('#editProfileContent').html('<div class="alert alert-danger">Failed to load edit form. Error: '+xhr.status+'</div>');
+                        var modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+                        modal.show();
+                    }
+                });
+            });
+
+            $(document).on('submit', '#editProfileModal form', function(e){
+                e.preventDefault();
+                var form = this;
+                var formData = new FormData(form);
+                var method = $(form).attr('method') || 'POST';
+                var action = form.action;
+                $.ajax({
+                    url: action,
+                    type: method,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(resp){
+                        var editEl = document.getElementById('editProfileModal');
+                        var editInstance = bootstrap.Modal.getInstance(editEl);
+                        if (editInstance) editInstance.hide();
+                        if (resp && resp.redirect) {
+                            window.location.href = resp.redirect;
+                        } else {
+                            window.location.reload();
+                        }
+                    },
+                    error: function(xhr){
+                        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                            var errors = xhr.responseJSON.errors;
+                            var html = '<div class="alert alert-danger"><ul class="mb-0">';
+                            for (var k in errors) { html += '<li>' + errors[k][0] + '</li>'; }
+                            html += '</ul></div>';
+                            $('#editProfileContent').prepend(html);
+                        } else {
+                            $('#editProfileContent').prepend('<div class="alert alert-danger">Failed to save profile. Please try again.</div>');
+                        }
+                    }
+                });
+            });
+        })(jQuery);
+    </script>
 </body>
 </html>

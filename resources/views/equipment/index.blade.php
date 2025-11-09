@@ -214,17 +214,30 @@
 <div class="content">
 
 @php
-$prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+    // Determine the current user and prefix based on which guard is actually authenticated
+    $currentUser = null;
+    $prefix = 'admin'; // default
+    
+    if (auth('staff')->check()) {
+        $currentUser = auth('staff')->user();
+        $prefix = 'staff';
+    } elseif (auth('technician')->check()) {
+        $currentUser = auth('technician')->user();
+        $prefix = 'technician';
+    } elseif (auth()->check()) {
+        $currentUser = auth()->user();
+        $prefix = 'admin';
+    }
 @endphp
 
-@if(!auth()->user()->hasPermissionTo('equipment.view'))
+@if(!$currentUser || !$currentUser->hasPermissionTo('equipment.view'))
     @php abort(403) @endphp
 @else
 
 
     <div class="card mb-4">
         <div class="action-buttons">
-            @if(auth()->user()->hasPermissionTo('equipment.create'))
+            @if($currentUser && $currentUser->hasPermissionTo('equipment.create') && Route::has($prefix . '.equipment.create'))
             <a href="{{ route($prefix . '.equipment.create') }}" class="btn btn-primary">
                 <i class='bx bx-plus me-1'></i> Add New Equipment
             </a>
@@ -347,7 +360,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technic
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                @if(auth()->user()->hasPermissionTo('equipment.view'))
+                                @if($currentUser && $currentUser->hasPermissionTo('equipment.view'))
                                 <button type="button" class="btn btn-sm btn-primary view-equipment-btn" 
                                         data-equipment-id="{{ $item->id }}" 
                                         data-url="{{ route($prefix . '.equipment.show', $item) }}"
@@ -355,7 +368,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technic
                                     <i class='bx bx-show-alt'></i>
                                 </button>
                                 @endif
-                                @if(auth()->user()->hasPermissionTo('equipment.edit'))
+                                @if($currentUser && $currentUser->hasPermissionTo('equipment.edit') && Route::has($prefix . '.equipment.edit'))
                                 <button type="button" class="btn btn-sm btn-primary edit-equipment-btn" 
                                         data-equipment-id="{{ $item->id }}" 
                                         data-url="{{ route($prefix . '.equipment.edit', $item) }}"
@@ -363,7 +376,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technic
                                     <i class='bx bx-edit'></i>
                                 </button>
                                 @endif
-                                @if(auth()->user()->hasPermissionTo('history.create'))
+                                @if($currentUser && $currentUser->hasPermissionTo('history.create') && Route::has($prefix . '.equipment.history.create'))
                                 <button type="button" class="btn btn-sm btn-primary history-equipment-btn" 
                                         data-equipment-id="{{ $item->id }}" 
                                         data-url="{{ route($prefix . '.equipment.history.create', $item) }}"

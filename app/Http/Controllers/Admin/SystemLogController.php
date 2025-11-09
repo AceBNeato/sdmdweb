@@ -329,7 +329,7 @@ class SystemLogController extends BaseController
                     $activity->user->email ?? 'N/A',
                     $activity->action,
                     $activity->description ?? '',
-                    $activity->created_at->format('Y-m-d H:i:s')
+                    $activity->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s')
                 ]);
             }
 

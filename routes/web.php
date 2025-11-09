@@ -280,99 +280,29 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])->prefix('admin
         // Equipment Management
         Route::prefix('equipment')
             ->name('equipment.')
-            ->middleware('permission:equipment.view')
             ->group(function () {
-                Route::get('/', [\App\Http\Controllers\Staff\EquipmentController::class, 'index'])
+                Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'equipment'])
                     ->name('index');
-                    
-                Route::middleware('permission:equipment.create')->group(function () {
-                    Route::get('/create', [\App\Http\Controllers\Staff\EquipmentController::class, 'create'])
-                        ->name('create');
-                    Route::post('/', [\App\Http\Controllers\Staff\EquipmentController::class, 'store'])
-                        ->name('store');
-                });
-                
-                Route::get('/{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'show'])
+                Route::get('/{equipment}', [\App\Http\Controllers\Staff\StaffController::class, 'showEquipment'])
                     ->name('show');
-                    
-                Route::middleware('permission:equipment.edit')->group(function () {
-                    Route::get('/{equipment}/edit', [\App\Http\Controllers\Staff\EquipmentController::class, 'edit'])
-                        ->name('edit');
-                    Route::put('/{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'update'])
-                        ->name('update');
-                });
-                
-                Route::delete('/{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'destroy'])
-                    ->name('destroy')
-                    ->middleware('permission:equipment.delete');
-                
-                // QR Code routes
-                Route::get('/{equipment}/qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'qrCode'])
-                    ->name('qrcode');
-                Route::get('/{equipment}/download-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'downloadQrCode'])
-                    ->name('download-qrcode');
-                Route::get('/{equipment}/print-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQrCode'])
-                    ->name('print-qrcode');
             });
 
-        // Logout
-        Route::post('/logout', [\App\Http\Controllers\Auth\StaffLoginController::class, 'logout'])
-            ->name('logout');
-
-        // Equipment
-        Route::prefix('equipment')->middleware('permission:equipment.view')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Staff\EquipmentController::class, 'index'])
-                ->name('equipment.index');
-
-            Route::get('/{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'show'])
-                ->name('equipment.show');
-
-            // Equipment request
-            Route::post('/request', [\App\Http\Controllers\Staff\EquipmentController::class, 'requestEquipment'])
-                ->name('equipment.request');
-
-            // Equipment status update (if needed)
-            Route::put('/{equipment}/status', [\App\Http\Controllers\Staff\EquipmentController::class, 'updateStatus'])
-                ->name('equipment.status.update')
-                ->middleware('permission:equipment.edit');
-
-            // QR Code routes for Staff
-            Route::get('/{equipment}/qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'qrCode'])
-                ->name('equipment.qrcode');
-            Route::get('/{equipment}/download-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'downloadQrCode'])
-                ->name('equipment.download-qrcode');
-            Route::get('/{equipment}/print-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'qrCode'])
-                ->name('equipment.print-qrcode');
-
-            // QR Scanner routes for Staff
-            Route::post('/scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanQrCode'])
-                ->name('equipment.scan');
-            Route::get('/scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanView'])
-                ->name('equipment.scan.view');
-        });
-
-        // Staff Equipment Creation (separate from view permission)
-        Route::get('/equipment/create', [\App\Http\Controllers\Staff\EquipmentController::class, 'create'])
-            ->name('equipment.create')
-            ->middleware('permission:equipment.create');
-        Route::post('/equipment/store', [\App\Http\Controllers\Staff\EquipmentController::class, 'store'])
-            ->name('equipment.store')
-            ->middleware('permission:equipment.create');
-            
         // Reports
         Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
             Route::get('/', [\App\Http\Controllers\Staff\ReportController::class, 'index'])->name('index');
             Route::get('/equipment-history', [\App\Http\Controllers\Staff\ReportController::class, 'equipmentHistory'])->name('equipment-history');
             Route::get('/history/{equipment}', [\App\Http\Controllers\Staff\ReportController::class, 'history'])->name('history');
-            
-            // Equipment History Export Route
+
+            // Equipment History Export
             Route::prefix('equipment/{equipment}')->middleware('permission:reports.generate')->group(function () {
                 Route::get('/export', [\App\Http\Controllers\Staff\ReportController::class, 'exportEquipmentHistory'])->name('equipment.history.export');
                 Route::get('/export-pdf', [\App\Http\Controllers\Staff\ReportController::class, 'exportEquipmentHistoryPdf'])->name('equipment.history.export.pdf');
             });
         });
-            
-        // Staff Accounts - REMOVED as requested
+
+        // Logout
+        Route::post('/logout', [\App\Http\Controllers\Auth\StaffLoginController::class, 'logout'])
+            ->name('logout');
     });
 
 /*
@@ -620,38 +550,4 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
     // STAFF ROUTES
     // ============================================================================
 
-    Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
-        ->prefix('staff')
-        ->name('staff.')
-        ->group(function () {
-
-        // Authentication Routes for Staff
-        Route::get('logout', function() { return redirect('/'); });
-        Route::post('logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])
-            ->name('logout');
-        Route::post('unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSession'])
-            ->name('unlock.session');
-
-        // Staff Dashboard
-        Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'dashboard'])->name('dashboard');
-
-        // Equipment Management (View Only)
-        Route::prefix('equipment')->name('equipment.')->middleware('permission:equipment.view')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'equipment'])->name('index');
-            Route::get('{equipment}', [\App\Http\Controllers\Staff\StaffController::class, 'showEquipment'])->name('show');
-        });
-
-        // Reports (Limited Access)
-        Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'reports'])->name('index');
-            Route::get('{id}/history', [\App\Http\Controllers\Staff\StaffController::class, 'reportHistory'])->name('history')->middleware('permission:reports.generate');
-            Route::get('export', [\App\Http\Controllers\Staff\StaffController::class, 'exportReports'])->name('export');
-
-            // Equipment History Reports
-            Route::prefix('equipment/{equipment}')->middleware('permission:reports.generate')->group(function () {
-                Route::get('history', [\App\Http\Controllers\Staff\StaffController::class, 'equipmentHistory'])->name('equipment.history.view');
-                Route::get('export', [\App\Http\Controllers\Staff\StaffController::class, 'exportEquipmentHistory'])->name('equipment.history.export');
-            });
-        });
-
-    });
+    // Duplicate staff routes removed - see consolidated routes above

@@ -26,7 +26,11 @@ class RedirectIfAuthenticated
                 // Only redirect authenticated web users away from login/home
                 if ($request->routeIs('login') || $request->routeIs('home')) {
                     if ($user->is_admin || $user->is_super_admin) {
-                        return redirect()->route('admin.accounts');
+                        return redirect()->route('admin.qr-scanner');
+                    } elseif ($user->is_technician) {
+                        return redirect()->route('technician.qr-scanner');
+                    } elseif ($user->is_staff) {
+                        return redirect()->route('staff.equipment.index');
                     }
                 }
                 

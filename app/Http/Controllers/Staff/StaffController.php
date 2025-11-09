@@ -8,6 +8,9 @@ use App\Models\Equipment;
 use App\Models\Staff;
 use App\Models\Office;
 use App\Models\User;
+use App\Models\EquipmentType;
+use App\Models\Category;
+use App\Models\Campus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -60,7 +63,13 @@ class StaffController extends Controller
                 ->get();
         }
         
-        return view('staff.profile.index', compact('user', 'recentActivities'));
+        // If requested via AJAX or modal query, return the modal partial
+        if (request()->ajax() || request()->boolean('modal')) {
+            return view('profile.show_modal', compact('user', 'recentActivities'));
+        }
+
+        // Redirect to equipment page since staff doesn't have a profile page
+        return redirect()->route('staff.equipment.index');
     }
 
     /**
@@ -87,7 +96,12 @@ class StaffController extends Controller
             }])
             ->paginate(10);
 
-        return view('staff.equipment.index', compact('equipment', 'user'));
+        // Data needed by shared equipment.index view
+        $equipmentTypes = EquipmentType::pluck('name', 'id');
+        $categories = Category::pluck('name', 'id');
+        $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
+
+        return view('equipment.index', compact('equipment', 'equipmentTypes', 'categories', 'campuses'));
     }
 
     /**
@@ -124,7 +138,13 @@ class StaffController extends Controller
             $query->latest();
         }]);
 
-        return view('staff.equipment.show', compact('equipment', 'user'));
+        // For modal/AJAX requests, return the modal partial and pass guard prefix
+        $prefix = 'staff';
+        if (request()->ajax() || request()->boolean('modal')) {
+            return view('equipment.show_modal', compact('equipment', 'user', 'prefix'));
+        }
+
+        return view('equipment.show', compact('equipment', 'user'));
     }
 
     public function updateProfile(Request $request)
@@ -292,6 +312,10 @@ class StaffController extends Controller
     public function editProfile()
     {
         $user = Auth::guard('staff')->user();
+        // If requested via AJAX or modal query, return the modal partial
+        if (request()->ajax() || request()->boolean('modal')) {
+            return view('profile.edit_modal', compact('user'));
+        }
         return view('staff.profile.edit', compact('user'));
     }
 }

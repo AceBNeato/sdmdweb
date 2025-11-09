@@ -89,9 +89,9 @@
                 <div class="logs-metric-card">
                     <div class="metric-label">Latest Entry</div>
                     <div class="metric-value">
-                        {{ $latestActivity ? $latestActivity->created_at->format('M d') : '—' }}
+                        {{ $latestActivity ? $latestActivity->created_at->timezone(config('app.timezone'))->format('M d') : '—' }}
                     </div>
-                    <small class="text-muted">{{ $latestActivity ? $latestActivity->created_at->format('h:i A') : 'No records yet' }}</small>
+                    <small class="text-muted">{{ $latestActivity ? $latestActivity->created_at->timezone(config('app.timezone'))->format('h:i A') : 'No records yet' }}</small>
                 </div>
             </div>
 
@@ -197,8 +197,8 @@
                                     <div class="text-body">{{ $activity->description ?? 'No description available' }}</div>
                                 </td>
                                 <td class="text-end">
-                                    <div class="timestamp">{{ $activity->created_at->format('M d, Y') }}</div>
-                                    <small>{{ $activity->created_at->format('h:i A') }}</small>
+                                    <div class="timestamp">{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y') }}</div>
+                                    <small>{{ $activity->created_at->timezone(config('app.timezone'))->format('h:i A') }}</small>
                                 </td>
                             </tr>
                         @endforeach

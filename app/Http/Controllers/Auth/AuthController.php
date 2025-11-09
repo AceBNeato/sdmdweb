@@ -192,11 +192,7 @@ class AuthController extends Controller
                 } elseif ($user->is_technician) {
                     return redirect()->intended(route('technician.qr-scanner'));
                 } elseif ($user->is_staff) {
-                    if ($user->hasPermissionTo('equipment.view')) {
-                        return redirect()->intended(route('staff.equipment.index'));
-                    } else {
-                        abort(403, 'You do not have permission to access equipment.');
-                    }
+                    return redirect()->intended(route('staff.equipment.index'));
                 } else {
                     return redirect()->intended(route('welcome'));
                 }
