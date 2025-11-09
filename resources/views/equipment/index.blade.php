@@ -10,6 +10,41 @@
 
     <script>
     $(document).ready(function() {
+
+        // Handle EDIT button clicks (both in table and in modal)
+        $('.add-equipment-btn').on('click', function() {
+            var equipmentId = $(this).data('equipment-id');
+            var url = $(this).data('url');
+            var modal = $('#addEquipmentModal');
+            var content = $('#addEquipmentContent');
+
+            // Close the view modal if it's open
+            $('#addEquipmentModal').modal('hide');
+
+            // Show loading spinner
+            content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+
+            // Load content via AJAX
+            $.ajax({
+                url: url,
+                type: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    content.html(response);
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                    content.html('<div class="alert alert-danger">Failed to load equipment form. Error: ' + xhr.status + ' - ' + error + '</div>');
+                }
+            });
+
+            // Show modal
+            modal.modal('show');
+        });
+
+    
         // Handle VIEW button clicks
         $('.view-equipment-btn').on('click', function() {
             var equipmentId = $(this).data('equipment-id');
@@ -199,6 +234,7 @@
                 }
             }
         });
+        
     });
     </script>
 @endpush
@@ -238,9 +274,13 @@
     <div class="card mb-4">
         <div class="action-buttons">
             @if($currentUser && $currentUser->hasPermissionTo('equipment.create') && Route::has($prefix . '.equipment.create'))
-            <a href="{{ route($prefix . '.equipment.create') }}" class="btn btn-primary">
-                <i class='bx bx-plus me-1'></i> Add New Equipment
-            </a>
+            <button type="button"
+                    class="btn btn-primary add-equipment-btn"
+                    data-url="{{ route($prefix . '.equipment.create') }}"
+                    title="Add equipment">
+                <i class='bx bx-plus me-1'></i>
+                <span>Add Equipment</span>
+            </button>
             @endif
             </div>
         <div class="card-body">
@@ -416,6 +456,29 @@
 @endsection
 
 @push('modals')
+
+
+<!-- Equipment Add Modal -->
+<div class="modal fade" id="addEquipmentModal" tabindex="-1" aria-labelledby="addEquipmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEquipmentModalLabel">Equipment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="addEquipmentContent">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- Equipment View Modal -->
 <div class="modal fade" id="viewEquipmentModal" tabindex="-1" aria-labelledby="viewEquipmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">

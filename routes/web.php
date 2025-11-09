@@ -281,10 +281,42 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])->prefix('admin
         Route::prefix('equipment')
             ->name('equipment.')
             ->group(function () {
-                Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'equipment'])
+                Route::get('/', [\App\Http\Controllers\Staff\EquipmentController::class, 'index'])
                     ->name('index');
-                Route::get('/{equipment}', [\App\Http\Controllers\Staff\StaffController::class, 'showEquipment'])
+                Route::get('create', [\App\Http\Controllers\Staff\EquipmentController::class, 'create'])
+                    ->name('create');
+                Route::post('/', [\App\Http\Controllers\Staff\EquipmentController::class, 'store'])
+                    ->name('store');
+                Route::get('{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'show'])
                     ->name('show');
+                Route::get('{equipment}/edit', [\App\Http\Controllers\Staff\EquipmentController::class, 'edit'])
+                    ->name('edit');
+                Route::put('{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'update'])
+                    ->name('update');
+                Route::delete('{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'destroy'])
+                    ->name('destroy');
+                    
+                // QR Code routes
+                Route::get('{equipment}/qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'qrCode'])
+                    ->name('qrcode');
+                Route::get('{equipment}/download-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'downloadQrCode'])
+                    ->name('download-qrcode');
+                Route::get('{equipment}/print-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQRCode'])
+                    ->name('print-qrcode');
+                    
+                // QR Scanner
+                Route::get('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanView'])
+                    ->name('scan');
+                Route::post('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanQrCode'])
+                    ->name('scan');
+                    
+                // History routes
+                Route::prefix('{equipment}')->group(function () {
+                    Route::get('history/create', [\App\Http\Controllers\Staff\EquipmentController::class, 'createHistory'])
+                        ->name('history.create');
+                    Route::post('history', [\App\Http\Controllers\Staff\EquipmentController::class, 'storeHistory'])
+                        ->name('history.store');
+                });
             });
 
         // Reports

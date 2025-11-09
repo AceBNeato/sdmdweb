@@ -78,24 +78,44 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Check if the user has the given permission.
+     * Check if the user has the given permission (direct or through roles).
      */
     public function hasPermissionTo($permission): bool
     {
+        // First check direct permissions
         if (is_string($permission)) {
-            // Check if user has active direct permission
-            return $this->permissions()
+            $directPermission = $this->permissions()
                 ->where('name', $permission)
                 ->wherePivot('is_active', true)
                 ->exists();
+
+            if ($directPermission) {
+                return true;
+            }
         }
 
         if ($permission instanceof Permission) {
-            // Check if user has active direct permission
-            return $this->permissions()
+            $directPermission = $this->permissions()
                 ->where('id', $permission->id)
                 ->wherePivot('is_active', true)
                 ->exists();
+
+            if ($directPermission) {
+                return true;
+            }
+        }
+
+        // Check permissions through roles
+        if (is_string($permission)) {
+            return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+                $query->where('name', $permission);
+            })->exists();
+        }
+
+        if ($permission instanceof Permission) {
+            return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+                $query->where('id', $permission->id);
+            })->exists();
         }
 
         return false;

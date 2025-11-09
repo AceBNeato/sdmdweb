@@ -6,7 +6,7 @@
 @section('page_description', 'Manage all office locations and contact information')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/equipment.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/reports.css') }}">
 @endpush
 
 @section('content')
@@ -65,15 +65,6 @@
                 </div>
 
                 <div class="filter-group">
-                    <label for="status">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">All Status</option>
-                        <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
                     <div class="btn-group">
                         <button type="submit" class="btn btn-primary">
                             <i class='bx bx-filter-alt me-1'></i> Apply Filters
@@ -88,7 +79,7 @@
     </div>
 
     <!-- Results Summary -->
-    @if(request()->hasAny(['search', 'campus_id', 'status']))
+    @if(request()->hasAny(['search', 'campus_id']))
         <div class="results-summary">
             <div class="alert alert-info">
                 <i class='bx bx-info-circle me-2'></i>
@@ -98,9 +89,6 @@
                 @endif
                 @if(request()->has('campus_id') && request('campus_id') !== '')
                     <div class="filter-info"><strong>Campus:</strong> {{ $campuses->firstWhere('id', request('campus_id'))?->name ?? 'Unknown Campus' }} ({{ $campuses->firstWhere('id', request('campus_id'))?->code ?? '' }})</div>
-                @endif
-                @if(request()->has('status') && request('status') !== '')
-                    <div class="filter-info"><strong>Status:</strong> {{ ucfirst(request('status')) }}</div>
                 @endif
             </div>
         </div>
@@ -116,7 +104,6 @@
                     <th scope="col">Contact</th>
                     <th scope="col" class="d-none d-md-table-cell">Email</th>
                     <th scope="col" class="d-none d-xl-table-cell">Address</th>
-                    <th scope="col">Status</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
@@ -148,11 +135,6 @@
                             <div class="text-truncate" style="max-width: 150px;" title="{{ $office->address ?? 'N/A' }}">
                                 {{ $office->address ?? 'N/A' }}
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge {{ $office->is_active ? 'bg-success' : 'bg-secondary' }} fs-6 px-2 py-1">
-                                {{ $office->is_active ? 'Active' : 'Inactive' }}
-                            </span>
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">

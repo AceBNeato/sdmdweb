@@ -55,10 +55,10 @@ body {
 }
 
 .table tbody td {
-    padding: 1rem 0.75rem;
-    vertical-align: middle;
-    text-align: center;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 1rem 0.75rem !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    border-bottom: 1px solid #f1f5f9 !important;
 }
 
 .table-hover tbody tr:hover {
@@ -67,8 +67,8 @@ body {
 
 /* Status Badge Colors */
 .status-serviceable {
-    color: #059669;
-    background-color: #d1fae5;
+    color: #059669 !important;
+    background-color: #d1fae5 !important;
 }
 
 

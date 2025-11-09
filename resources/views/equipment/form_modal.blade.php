@@ -1,102 +1,7 @@
+
 @php
     $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 @endphp
-
-@push('styles')
-    <style>
-        /* Form styling */
-        .form-label {
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-control, .form-select {
-            border-radius: 0.375rem;
-            border: 1px solid #ced4da;
-            transition: all 0.2s ease;
-        }
-
-        /* Focus state - Blue highlight */
-        .form-control:focus, .form-select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
-            background-color: #f8f9ff;
-        }
-
-        /* Success state - Green highlight */
-        .form-control.is-valid, .form-select.is-valid {
-            border-color: #28a745;
-            background-color: #f8fff9;
-        }
-
-        .form-control.is-valid:focus, .form-select.is-valid:focus {
-            border-color: #28a745;
-            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
-        }
-
-        /* Error state - Red highlight */
-        .form-control.is-invalid, .form-select.is-invalid {
-            border-color: #dc3545;
-            background-color: #fff5f5;
-        }
-
-        .form-control.is-invalid:focus, .form-select.is-invalid:focus {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15);
-        }
-
-        /* Input group icons */
-        .input-group-text {
-            background-color: #e9ecef;
-            border-color: #ced4da;
-            color: #495057;
-        }
-
-        .form-control:focus + .input-group-text {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: #fff;
-        }
-
-        /* Field containers */
-        .field-container {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .field-container:hover {
-            border-color: #dee2e6;
-        }
-
-        .field-container:focus-within {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.1);
-        }
-
-        /* Form sections */
-        .form-section {
-            background: #fff;
-            border-radius: 0.5rem;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid #e9ecef;
-        }
-
-        .form-section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e9ecef;
-        }
-    </style>
-@endpush
 
 <div class="text-center mb-4">
     <p class="text-muted">Fill in the details below to {{ $equipment->exists ? 'update' : 'create' }} equipment for your office</p>
@@ -382,3 +287,5 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 });
 </script>
+            
+

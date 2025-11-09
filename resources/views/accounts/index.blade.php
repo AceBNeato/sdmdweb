@@ -2,6 +2,8 @@
 
 @push('styles')
     <link href="{{ asset('css/accounts/accounts.css') }}" rel="stylesheet">
+    <style>
+    </style>
 @endpush
 
 @section('title', auth()->user()->is_admin ? 'SDMD Admin - Accounts' : (auth()->user()->hasRole('technician') ? 'SDMD Technician - Accounts' : (auth()->user()->hasRole('staff') ? 'SDMD Staff - Accounts' : 'SDMD Accounts')))
@@ -63,14 +65,6 @@
                     </select>
                 </div>
 
-                <div class="filter-group">
-                    <label for="status">Status</label>
-                    <select id="status" name="status" class="form-select">
-                        <option value="all">All Status</option>
-                        <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
 
                 <div class="flex items-end gap-2">
                     <button type="submit" class="btn btn-primary">
@@ -84,7 +78,7 @@
         </div>
     </div>
 
-    @if(request()->hasAny(['search', 'role', 'office', 'status']))
+    @if(request()->hasAny(['search', 'role', 'office']))
         <div class="alert alert-info mb-3">
             <i class='bx bx-info-circle me-2'></i>
             Found {{ $users->total() }} user(s) matching your criteria.
@@ -107,9 +101,6 @@
                 @endphp
                 <br>Office: <strong>{{ $selectedOffice ? $selectedOffice->name : request('office') }}</strong>
             @endif
-            @if(request()->has('status') && request('status') !== 'all')
-                <br>Status: <strong>{{ ucfirst(request('status')) }}</strong>
-            @endif
         </div>
     @endif
 
@@ -123,7 +114,6 @@
                     <th scope="col">Role</th>
                     <th scope="col">Campus</th>
                     <th scope="col">Office</th>
-                    <th scope="col">Status</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
@@ -150,11 +140,6 @@
                             <div class="text-truncate" style="max-width: 120px;" title="{{ $user->office?->name ?? 'N/A' }}">
                                 {{ $user->office?->name ?? 'N/A' }}
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge {{ $user->is_active ? 'bg-success' : 'bg-secondary' }} fs-6 px-2 py-1">
-                                {{ $user->is_active ? 'Active' : 'Inactive' }}
-                            </span>
                         </td>
                         <td>
                             <div class="btn-group" role="group">
