@@ -374,7 +374,7 @@
                 @if($errors->has('email') && !session('lockout'))
                 <!-- Wrong credentials alarm -->
                 <div class="mt-4 text-center">
-                    <div class="bg-red-900 border-2 border-red-600 text-red-200 px-4 py-3 rounded-lg relative shadow-lg animate-bounce">
+                    <div class="bg-red-900 border-2 border-red-600 text-red-200 px-4 py-3 rounded-lg relative shadow-lg">
                         <div class="flex items-center justify-center mb-2">
                             <span class="text-2xl mr-2">⚠️</span>
                             <strong class="font-bold text-red-100 text-lg" style="color: #fca5a5 !important;">INVALID CREDENTIALS</strong>

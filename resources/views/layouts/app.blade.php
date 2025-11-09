@@ -439,7 +439,6 @@
 
     @stack('scripts')
 
-    <script src="{{ asset('js/session-lock.js') }}"></script>
     <!-- Session Lock Modal - Outside app container to cover everything -->
     <div id="session-lock-modal" class="session-lock-overlay" style="display: none;">
         <div class="session-lock-modal">
@@ -465,7 +464,6 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/session-lock.js') }}"></script>
     <script>
         // Aggressive back button prevention for SDMD
         (function() {
@@ -649,6 +647,7 @@
             unlockUrl: '@if(auth()->guard("technician")->check()){{ route("technician.unlock.session") }}@elseif(auth()->guard("staff")->check()){{ route("staff.unlock.session") }}@else{{ route("unlock.session") }}@endif'
         };
     </script>
+    <script src="{{ asset('js/session-lock.js') }}"></script>
     @endif
 
     <script>
