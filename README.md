@@ -1,59 +1,169 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SDMD Equipment Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Equipment and maintenance lifecycle tracking for the Systems and Data Management Division (SDMD). Built on Laravel 12 with Vite-powered assets and role-based access control.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1. Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Backend:** PHP 8.2, Laravel 12
+- **Frontend:** Vite, Vue/Alpine (Blade templates), Tailwind/Bootstrap mix *(see resources/css & resources/js)*
+- **Database:** MySQL / MariaDB
+- **Runtime:** Node.js 18+, Composer 2+
+- **Recommended Dev Environment:** Laragon on Windows (ships with required PHP extensions)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 2. System Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Component | Minimum Version | Notes |
+|-----------|-----------------|-------|
+| PHP | 8.2.x | Enable `fileinfo`, `openssl`, `pdo_mysql`, `mbstring`, `curl`, `zip` |
+| Composer | 2.6+ | Used for PHP dependency management |
+| Node.js / npm | Node 18+, npm 9+ | Required for Vite asset build |
+| Database | MySQL 8 / MariaDB 10.5 | Update `.env` with credentials |
+| Git | latest | Source control |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+> **Windows users:** Laragon includes PHP, MySQL, and Node out of the box. Ensure PHP is added to your PATH before running artisan commands from terminals outside Laragon.
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 3. Quick Start (Fresh Install)
 
-### Premium Partners
+```bash
+# 1. Clone project
+git clone https://github.com/<org>/sdmdweb.git
+cd sdmdweb
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# 2. Install PHP dependencies
+composer install
 
-## Contributing
+# 3. Environment + app key
+cp .env.example .env
+php artisan key:generate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 4. Configure .env
+#   - DB_DATABASE=sdmd
+#   - DB_USERNAME=root
+#   - DB_PASSWORD=secret
+#   - APP_URL=http://sdmd.test (or your domain)
 
-## Code of Conduct
+# 5. Run migrations + seeders (creates roles, offices, default users)
+php artisan migrate --seed
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 6. Link storage for uploaded avatars, QR codes, etc. (REQUIRED)
+php artisan storage:link
 
-## Security Vulnerabilities
+# 7. Install and compile assets
+npm install
+npm run build   # production assets
+# or npm run dev for hot reload
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 8. Serve application
+php artisan serve
+# Visit: http://127.0.0.1:8000
+```
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 4. Seeded Accounts & Roles
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | superadmin@sdmd.ph | superadmin123 |
+| Super Admin (2) | superadmin2@sdmd.ph | superadmin123 |
+| Admin | arthurdalemicaroz@gmail.com | 12345678 |
+
+> Update credentials immediately in production. Extra demo users/roles can be added in `database/seeders`.
+
+---
+
+## 5. Useful Artisan & npm Commands
+
+| Command | Purpose |
+|---------|---------|
+| `php artisan migrate:fresh --seed` | Reset database and reseed demo data |
+| `php artisan storage:link` | **Important:** expose `storage/app/public` via `public/storage` |
+| `php artisan queue:work` | Run queued jobs (if using notifications or async tasks) |
+| `php artisan optimize:clear` | Clear config, route, view caches |
+| `npm run dev` | Watch + hot reload assets |
+| `npm run build` | Compile & minify production assets |
+
+### Composer Scripts
+
+- `composer run dev` ⇒ boots Laravel server, queue listener, and Vite concurrently
+- `composer run setup` ⇒ full install workflow (composer + key + migrate + npm build)
+
+---
+
+## 6. Environment Tips
+
+- **File Uploads:** uploaded avatars/QR codes live in `storage/app/public`. Missing images usually mean `php artisan storage:link` was skipped.
+- **Sessions:** configured via `config/session.php`; adjust timeout/security as needed.
+- **Mail & Queues:** set `MAIL_*` + queue driver in `.env` before enabling email alerts or background jobs.
+- **Logging:** check `storage/logs/laravel.log` when debugging.
+
+---
+
+## 7. Project Map
+
+```
+app/
+├── Http/
+│   ├── Controllers/        # Admin, Technician, Staff portals
+│   ├── Middleware/         # Security headers, activity logging
+│   └── Kernel.php          # Middleware registration
+├── Models/                 # Equipment, Users, Roles
+├── Services/               # PDF generation, etc.
+
+database/
+├── migrations/             # Schema definition
+└── seeders/                # RBAC, campuses, equipment types
+
+resources/
+├── views/                  # Blade templates
+├── css/ & js/              # Vite entrypoints
+└── lang/                   # Localisation strings
+
+public/
+├── storage/ -> ../storage/app/public (symlink)
+└── assets/ (generated)
+```
+
+---
+
+## 8. Testing & Quality
+
+```bash
+# Run automated tests
+php artisan test
+
+# Static analysis / formatting (optional but recommended)
+./vendor/bin/pint
+```
+
+---
+
+## 9. Maintenance Checklist
+
+- Clear caches after env/config changes:
+  ```bash
+  php artisan optimize:clear
+  ```
+- Update dependencies regularly:
+  ```bash
+  composer update
+  npm update
+  ```
+- Back up `.env` and database before deployment.
+- Configure HTTPS and trusted proxies when deploying behind load balancers.
+
+---
+
+## 10. License & Attribution
+
+This project is released under the [MIT License](LICENSE).
+
+<div align="center">
+  <sub>Maintained by the SDMD development team.</sub>
+</div>

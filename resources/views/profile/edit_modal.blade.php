@@ -4,18 +4,17 @@
     $updateRoute = $routePrefix === 'staff' ? route('staff.profile.update') : ($routePrefix === 'technician' && Route::has('technician.profile.update') ? route('technician.profile.update') : '#');
 @endphp
 
-<form action="{{ $updateRoute }}" method="POST" enctype="multipart/form-data" id="profileEditForm">
+<form action="{{ $updateRoute }}" method="POST" enctype="multipart/form-data" id="profileEditForm" class="profile-edit-form">
     @csrf
     @method('PUT')
 
     <div class="mb-3 text-center">
-        <div class="d-inline-block position-relative">
+        <div class="profile-avatar-wrapper">
             <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/SDMDlogo.png') }}"
-                 class="rounded-circle"
-                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #f0f0f0;"
+                 class="profile-avatar profile-avatar-md"
                  id="profileImagePreview"
                  onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">
-            <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0" onclick="document.getElementById('profileImageInput').click()">
+            <button type="button" class="btn btn-sm btn-primary profile-avatar-upload-btn" onclick="document.getElementById('profileImageInput').click()">
                 <i class='bx bx-upload'></i>
             </button>
         </div>

@@ -116,7 +116,7 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
     ->name('technician.')
     ->group(function () {
         // Dashboard (Profile)
-        Route::get('/', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'profile'])
+        Route::get('/', [\App\Http\Controllers\Technician\TechnicianController::class, 'profile'])
             ->name('profile');
 
         // Profile update route
@@ -124,7 +124,7 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
             ->name('profile.update');
 
         // Profile edit form route (for consistency, though modal is used)
-        Route::get('/profile/edit', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'editProfile'])
+        Route::get('/profile/edit', [\App\Http\Controllers\Technician\TechnicianController::class, 'editProfile'])
             ->name('profile.edit');
 
         // Update profile (admin route for technicians)
@@ -374,6 +374,10 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
 
             // Main Dashboard Route
             Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
+            // Admin Profile (modal only)
+            Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
+            Route::get('/profile/edit', [AdminController::class, 'editProfile'])->name('profile.edit');
 
             // ============================================================================
             // USER & ACCOUNT MANAGEMENT

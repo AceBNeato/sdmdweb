@@ -1,0 +1,100 @@
+/* Profile modal shared styles */
+
+.profile-body{
+    padding: 1rem !important;
+}
+
+.profile-modal .row,
+.profile-edit-form .row {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 1rem !important;
+    align-items: center !important;
+}
+
+.profile-modal .col-md-8,
+.profile-edit-form .col-md-8 {
+    width: 90% !important;
+    height: auto !important;
+}
+
+.profile-modal .col-md-4{
+    width: 50% !important;
+}
+
+
+
+.profile-modal .col-md-6{    
+    padding: 1rem !important;
+    margin-top: 0rem !important;
+    width: 100% !important;
+}
+
+.profile-modal,
+.profile-edit-form {
+    font-family: 'Inter', sans-serif !important;
+}
+
+.profile-modal .profile-avatar-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+}
+
+.profile-edit-form .profile-avatar-wrapper {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    position: relative !important;
+}
+
+.profile-avatar {
+    border-radius: 50% !important;
+    border: 3px solid #f0f0f0 !important;
+    object-fit: cover !important;
+    background-color: #fff !important;
+}
+
+.profile-avatar-lg {
+    width: 140px !important;
+    height: 140px !important;
+}
+
+.profile-avatar-md {
+    width: 120px !important;
+    height: 120px !important;
+}
+
+.profile-avatar-upload-btn {
+    position: absolute !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    border-radius: 50% !important;
+    width: 38px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.profile-avatar-upload-btn i {
+    font-size: 1.1rem !important;
+}
+
+.profile-edit-form .form-label {
+    font-weight: 600 !important;
+}
+
+.profile-edit-form textarea.form-control {
+    resize: vertical !important;
+}
+
+@media (max-width: 576px) {
+    .profile-modal .col-md-4,
+    .profile-modal .col-md-8 {
+        text-align: center !important;
+    }
+}

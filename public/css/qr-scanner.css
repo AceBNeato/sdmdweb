@@ -1,0 +1,107 @@
+/* QR Scanner page styles */
+.qr-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-height: 70vh;
+    background: linear-gradient(to bottom, #7790c2ff, #333348ff);
+}
+
+.qr-container h1 {
+    color: #fff;
+    position: absolute;
+    left: 50%;
+    top: 20%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.qr-section {
+    background-color: #ffffff;
+    padding: 50px 30px;
+    border: 1.5px solid #b2b2b2;
+    border-radius: 0.25em;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
+    max-width: 420px;
+    width: 100%;
+}
+
+#my-qr-reader {
+    padding: 20px !important;
+    border: 1.5px solid #b2b2b2 !important;
+    border-radius: 8px;
+}
+
+.qr-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+
+.qr-btn {
+    padding: 10px 20px;
+    border: 1px solid #b2b2b2;
+    outline: none;
+    border-radius: 0.25em;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    background-color: #008000ad;
+    transition: 0.3s background-color;
+}
+
+.qr-btn:hover {
+    background-color: #008000;
+}
+
+#my-qr-reader .alert-success .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: none;
+}
+
+#my-qr-reader .alert-success .btn:hover {
+    transform: translateY(-1px);
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.15);
+}
+
+#my-qr-reader .alert-success .btn-primary:hover {
+    background-color: #0056b3;
+}
+
+#my-qr-reader .alert-success .btn-success:hover {
+    background-color: #0f5132;
+}
+
+#my-qr-reader .alert-success .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+#my-qr-reader .alert-success .d-flex {
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+@media (max-width: 576px) {
+    .qr-container {
+        padding: 20px 10px;
+        min-height: 60vh;
+    }
+
+    #my-qr-reader .alert-success .d-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #my-qr-reader .alert-success .btn {
+        margin-bottom: 0.5rem;
+    }
+}

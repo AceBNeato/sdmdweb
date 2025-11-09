@@ -3,7 +3,7 @@
             <div class="equipment-image text-center">
                 @if($equipment->qr_code_image_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($equipment->qr_code_image_path))
                     <img src="{{ asset('storage/' . $equipment->qr_code_image_path) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid" >
-                @elseif($equipment->qr_code)
+                @elseif($equipment->qr_code && Route::has($prefix . '.equipment.qrcode'))
                     <img src="{{ route($prefix . '.equipment.qrcode', $equipment) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid"  onerror="console.log('QR Code image failed to load'); this.style.display='none';">
                 @else
                     <div class="d-flex align-items-center justify-content-center h-100 text-muted" style="min-height: 200px;">
@@ -25,28 +25,34 @@
 
             <div class="action-buttons mt-3">
                 @can('equipment.edit')
-                <button type="button" class="btn btn-primary edit-equipment-btn"
-                        data-equipment-id="{{ $equipment->id }}"
-                        data-url="{{ route($prefix . '.equipment.edit', $equipment) }}"
-                        title="Edit Equipment">
-                    <i class='bx bx-edit-alt'></i> EDIT
-                </button>
+                    @if(Route::has($prefix . '.equipment.edit'))
+                    <button type="button" class="btn btn-primary edit-equipment-btn"
+                            data-equipment-id="{{ $equipment->id }}"
+                            data-url="{{ route($prefix . '.equipment.edit', $equipment) }}"
+                            title="Edit Equipment">
+                        <i class='bx bx-edit-alt'></i> EDIT
+                    </button>
+                    @endif
                 @endcan
 
                 @can('reports.view')
-                <a href="{{ route($prefix . '.reports.history', $equipment->id) }}" class="btn btn-primary" title="View History">
-                    <i class='bx bx-history'></i> HISTORY
-                </a>
+                    @if(Route::has($prefix . '.reports.history'))
+                    <a href="{{ route($prefix . '.reports.history', $equipment->id) }}" class="btn btn-primary" title="View History">
+                        <i class='bx bx-history'></i> HISTORY
+                    </a>
+                    @endif
                 @endcan
 
                 @can('equipment.delete')
-                <form action="{{ route($prefix . '.equipment.destroy', $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this equipment?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger" title="Delete Equipment">
-                        <i class='bx bx-trash-alt'></i> DELETE
-                    </button>
-                </form>
+                    @if(Route::has($prefix . '.equipment.destroy'))
+                    <form action="{{ route($prefix . '.equipment.destroy', $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this equipment?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger" title="Delete Equipment">
+                            <i class='bx bx-trash-alt'></i> DELETE
+                        </button>
+                    </form>
+                    @endif
                 @endcan
             </div>
 

@@ -10,8 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\PdfService;
-use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\IOFactory;
 
 class ReportController extends BaseController
 {
@@ -174,7 +172,7 @@ class ReportController extends BaseController
     {
         $request->validate([
             'equipment_id' => 'required|exists:equipment,id',
-            'format' => 'required|in:pdf,csv,word',
+            'format' => 'required|in:pdf,csv',
         ]);
 
         $equipment = Equipment::with(['office', 'maintenanceLogs'])->findOrFail($request->equipment_id);
@@ -186,10 +184,6 @@ class ReportController extends BaseController
 
         if ($request->format === 'csv') {
             return $this->exportEquipmentHistoryCsv($equipment);
-        }
-
-        if ($request->format === 'word') {
-            return $this->exportEquipmentHistoryWord($equipment);
         }
 
         return $this->generateEquipmentHistoryPdf($equipment);
@@ -249,127 +243,5 @@ class ReportController extends BaseController
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Export equipment history as Word document
-     *
-     * @param  \App\Models\Equipment  $equipment
-     * @return \Illuminate\Http\Response
-     */
-    private function exportEquipmentHistoryWord(Equipment $equipment)
-    {
-        $phpWord = new PhpWord();
-
-        // Set document properties
-        $properties = $phpWord->getDocInfo();
-        $properties->setCreator('USeP ICT System');
-        $properties->setCompany('University of Southeastern Philippines');
-        $properties->setTitle('ICT Equipment History Sheet');
-        $properties->setDescription('Equipment maintenance and history tracking');
-
-        // Add a section
-        $section = $phpWord->addSection([
-            'marginLeft' => 720,    // 0.5 inch
-            'marginRight' => 720,   // 0.5 inch
-            'marginTop' => 720,     // 0.5 inch
-            'marginBottom' => 720,  // 0.5 inch
-        ]);
-
-        // Header with university information
-        $header = $section->addHeader();
-        $header->addText('Republic of the Philippines', ['bold' => true, 'size' => 12], ['alignment' => 'center']);
-        $header->addText('University of Southeastern Philippines', ['bold' => true, 'size' => 14], ['alignment' => 'center']);
-        $header->addText('Iñigo St., Bo. Obrero, Davao City 8000', ['size' => 10], ['alignment' => 'center']);
-        $header->addText('Telephone: (082) 227-8192', ['size' => 10], ['alignment' => 'center']);
-        $header->addText('Website: www.usep.edu.ph', ['size' => 10], ['alignment' => 'center']);
-        $header->addText('Email: president@usep.edu.ph', ['size' => 10], ['alignment' => 'center']);
-
-        // Form information table (top right)
-        $table = $header->addTable();
-        $table->addRow();
-        $table->addCell(2000)->addText('Form No.', ['size' => 9]);
-        $table->addCell(3000)->addText('FM-USeP-ICT-04', ['size' => 9]);
-        $table->addRow();
-        $table->addCell(2000)->addText('Issue Status', ['size' => 9]);
-        $table->addCell(3000)->addText('01', ['size' => 9]);
-        $table->addRow();
-        $table->addCell(2000)->addText('Revision No.', ['size' => 9]);
-        $table->addCell(3000)->addText('00', ['size' => 9]);
-        $table->addRow();
-        $table->addCell(2000)->addText('Date Effective', ['size' => 9]);
-        $table->addCell(3000)->addText('23 December 2022', ['size' => 9]);
-        $table->addRow();
-        $table->addCell(2000)->addText('Approved by', ['size' => 9]);
-        $table->addCell(3000)->addText('President', ['size' => 9]);
-
-        // Title
-        $section->addText('ICT EQUIPMENT HISTORY SHEET', ['bold' => true, 'size' => 16], ['alignment' => 'center']);
-        $section->addTextBreak(1);
-
-        // Equipment details table
-        $equipmentTable = $section->addTable();
-        $equipmentTable->addRow();
-        $equipmentTable->addCell(3000)->addText('Equipment:', ['bold' => true]);
-        $equipmentTable->addCell(6000)->addText($equipment->model_number);
-
-        $equipmentTable->addRow();
-        $equipmentTable->addCell(3000)->addText('Property/Serial Number:', ['bold' => true]);
-        $equipmentTable->addCell(6000)->addText($equipment->serial_number);
-
-        $equipmentTable->addRow();
-        $equipmentTable->addCell(3000)->addText('Location:', ['bold' => true]);
-        $equipmentTable->addCell(6000)->addText($equipment->office->name ?? 'N/A');
-
-        $section->addTextBreak(1);
-
-        // History table
-        $historyTable = $section->addTable([
-            'borderSize' => 6,
-            'borderColor' => '000000',
-            'cellMargin' => 80
-        ]);
-
-        // Header row
-        $historyTable->addRow();
-        $historyTable->addCell(1200)->addText('Date', ['bold' => true], ['alignment' => 'center']);
-        $historyTable->addCell(1200)->addText('JO Number', ['bold' => true], ['alignment' => 'center']);
-        $historyTable->addCell(2500)->addText('Actions Taken', ['bold' => true], ['alignment' => 'center']);
-        $historyTable->addCell(2000)->addText('Remarks', ['bold' => true], ['alignment' => 'center']);
-        $historyTable->addCell(1500)->addText('Responsible SDMD Personnel', ['bold' => true], ['alignment' => 'center']);
-
-        // Data rows
-        foreach ($equipment->history as $entry) {
-            $historyTable->addRow();
-            $historyTable->addCell(1200)->addText($entry->created_at ? $entry->created_at->format('m/d/Y') : '');
-            $historyTable->addCell(1200)->addText($entry->jo_number ?? '');
-            $historyTable->addCell(2500)->addText($entry->action_taken ?? '');
-            $historyTable->addCell(2000)->addText($entry->remarks ?? '');
-            $historyTable->addCell(1500)->addText($entry->responsible_person ?? ($entry->user ? $entry->user->name : ''));
-        }
-
-        // Add empty rows to make it look like a form
-        $emptyRows = max(0, 20 - $equipment->history->count());
-        for ($i = 0; $i < $emptyRows; $i++) {
-            $historyTable->addRow();
-            $historyTable->addCell(1200)->addText('');
-            $historyTable->addCell(1200)->addText('');
-            $historyTable->addCell(2500)->addText('');
-            $historyTable->addCell(2000)->addText('');
-            $historyTable->addCell(1500)->addText('');
-        }
-
-        // Footer
-        $section->addTextBreak(2);
-        $footerTable = $section->addTable();
-        $footerTable->addRow();
-        $footerTable->addCell(7000)->addText('Systems and Data Management Division (SDMD)', ['size' => 10]);
-        $footerTable->addCell(2000)->addText('Page 1 of 1', ['size' => 10], ['alignment' => 'right']);
-
-        // Generate filename and save
-        $filename = "equipment_history_{$equipment->id}_" . now()->format('Y-m-d') . '.docx';
-        $tempFile = tempnam(sys_get_temp_dir(), 'word_export');
-        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
-        $objWriter->save($tempFile);
-
-        return response()->download($tempFile, $filename)->deleteFileAfterSend(true);
-    }
+    // Word export removed
 }

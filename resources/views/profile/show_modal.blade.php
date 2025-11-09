@@ -2,14 +2,13 @@
     $user = $user ?? (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user());
 @endphp
 
-<div class="container-fluid">
+<div class="container-fluid profile-modal">
     <div class="row g-3">
         <div class="col-md-4">
-            <div class="text-center">
+            <div class="text-center profile-avatar-wrapper">
                 <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/SDMDlogo.png') }}"
                      alt="Profile Picture"
-                     class="rounded-circle img-fluid"
-                     style="width: 140px; height: 140px; object-fit: cover; border: 3px solid #f0f0f0;"
+                     class="profile-avatar profile-avatar-lg img-fluid"
                      onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">
                 <h5 class="mt-3 mb-1">{{ $user->name }}</h5>
                 <div class="text-muted small">{{ $user->position ?? 'User' }}</div>
@@ -47,24 +46,6 @@
                 </div>
                 @endif
             </div>
-
-            @isset($recentActivities)
-            <hr class="my-3">
-            <h6 class="mb-2">Recent Activity</h6>
-            <div class="list-group list-group-flush">
-                @forelse($recentActivities as $activity)
-                    <div class="list-group-item px-0 d-flex justify-content-between">
-                        <div>
-                            <div class="fw-semibold small">{{ $activity->action }}</div>
-                            <div class="text-muted small">{{ $activity->description ?? '—' }}</div>
-                        </div>
-                        <div class="text-muted small">{{ $activity->created_at->timezone(config('app.timezone'))->diffForHumans() }}</div>
-                    </div>
-                @empty
-                    <div class="text-muted small">No activity yet.</div>
-                @endforelse
-            </div>
-            @endisset
         </div>
     </div>
 </div>

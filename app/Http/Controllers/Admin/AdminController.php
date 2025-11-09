@@ -10,6 +10,9 @@ use App\Models\EquipmentType;
 use App\Models\Category;
 use App\Models\Campus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Activity;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -59,18 +62,7 @@ class AdminController extends Controller
         $roles = Role::where('name', '!=', 'super-admin')->get();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
-        // Determine the view based on the route
-        if ($request->routeIs('admin.accounts')) {
-            $view = 'accounts.index';
-        } elseif ($request->routeIs('staff.accounts')) {
-            $view = 'accounts.index';
-        } elseif ($request->routeIs('technician.accounts')) {
-            $view = 'accounts.index';
-        } else {
-            $view = 'accounts.index'; // default
-        }
-
-        return view($view, compact('users', 'roles', 'campuses'));
+      return view('accounts.index', compact('users', 'roles', 'campuses'));
     }
 
     public function equipment(Request $request)
@@ -110,5 +102,74 @@ class AdminController extends Controller
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
         return view('equipment.index', compact('equipment', 'equipmentTypes', 'categories', 'campuses'));
+    }
+
+    /**
+     * Show the admin profile in a modal-only flow.
+     */
+    public function profile()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Please log in to view your profile.');
+        }
+
+        try {
+            $user->loadMissing(['office', 'campus']);
+
+            $recentActivities = Activity::where('user_id', $user->id)
+                ->latest()
+                ->take(5)
+                ->get();
+
+            if ($recentActivities->isEmpty()) {
+                Activity::create([
+                    'user_id' => $user->id,
+                    'action' => 'Account Created',
+                    'description' => 'Admin account created in the system',
+                ]);
+
+                $recentActivities = Activity::where('user_id', $user->id)
+                    ->latest()
+                    ->take(5)
+                    ->get();
+            }
+
+            if (request()->ajax() || request()->boolean('modal')) {
+                return view('profile.show_modal', [
+                    'user' => $user,
+                    'recentActivities' => $recentActivities,
+                ]);
+            }
+
+            return redirect()->route('admin.dashboard');
+        } catch (\Exception $e) {
+            Log::error('Admin profile error: ' . $e->getMessage(), [
+                'admin_id' => $user->id ?? null,
+            ]);
+
+            return back()->with('error', 'Failed to load profile. Please try again.');
+        }
+    }
+
+    /**
+     * Show the admin edit profile modal.
+     */
+    public function editProfile()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Please log in to edit your profile.');
+        }
+
+        if (request()->ajax() || request()->boolean('modal')) {
+            return view('profile.edit_modal', [
+                'admin' => $user,
+            ]);
+        }
+
+        return redirect()->route('admin.dashboard');
     }
 }

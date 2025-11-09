@@ -14,119 +14,12 @@ $historyUrl = '/' . $prefix . '/equipment';
 
 
 @push('styles')
-<style>
-    /* Adjusted styles for integration */
-    body {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        text-align: center;
-    }   
-
-    .qr-actions {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .qr-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        background: linear-gradient(to bottom, #7790c2ff, #333348ff);
-    }
-
-    .qr-container h1 {
-        color: #ffffff;
-        position: absolute;
-        left: 50%;
-        top: 20%;
-        transform: translate(-50%, -50%);
-        z-index: 1;
-    }
-
-    .section {
-        background-color: #ffffff;
-        padding: 50px 30px;
-        border: 1.5px solid #b2b2b2;
-        border-radius: 0.25em;
-        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
-        max-width: 400px;
-    }
-
-    #my-qr-reader {
-        padding: 20px !important;
-        border: 1.5px solid #b2b2b2 !important;
-        border-radius: 8px;
-    }
-
-    button {
-        padding: 10px 20px;
-        border: 1px solid #b2b2b2;
-        outline: none;
-        border-radius: 0.25em;
-        color: white;
-        font-size: 15px;
-        cursor: pointer;
-        margin-top: 15px;
-        margin-bottom: 10px;
-        background-color: #008000ad;
-        transition: 0.3s background-color;
-    }
-
-    button:hover {
-        background-color: #008000;
-    }
-
-    #my-qr-reader .alert-success .btn {
-        border-radius: 8px;
-        font-weight: 500;
-        padding: 0.5rem 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border: none;
-    }
-
-    #my-qr-reader .alert-success .btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    #my-qr-reader .alert-success .btn-primary:hover {
-        background-color: #0056b3;
-    }
-
-    #my-qr-reader .alert-success .btn-success:hover {
-        background-color: #0f5132;
-    }
-
-    #my-qr-reader .alert-success .btn-secondary:hover {
-        background-color: #5a6268;
-    }
-
-    #my-qr-reader .alert-success .d-flex {
-        justify-content: center;
-        gap: 0.75rem;
-    }
-
-    @media (max-width: 576px) {
-        #my-qr-reader .alert-success .d-flex {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        #my-qr-reader .alert-success .btn {
-            margin-bottom: 0.5rem;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{{ asset('css/qr-scanner.css') }}">
 @endpush
 
 @section('content')
     <div class="qr-container">
-        <div class="section">
+        <div class="qr-section">
             <div id="my-qr-reader">
             </div>
         </div>
@@ -206,7 +99,7 @@ $historyUrl = '/' . $prefix . '/equipment';
                                 <a href="${routes.view}?history_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-plus me-1"></i>Add History Sheet
                                 </a>
-                                <button onclick="resetScanner()" class="btn btn-outline-secondary btn-sm">
+                                <button onclick="resetScanner()" class="btn btn-outline-secondary btn-sm qr-btn">
                                     <i class="bx bx-qr-scan me-1"></i>Scan Another
                                 </button>
                             </div>
@@ -218,7 +111,7 @@ $historyUrl = '/' . $prefix . '/equipment';
                         <div class="alert alert-danger">
                             <h5 class="alert-heading">Scan Failed</h5>
                             <p>${data.message || 'Unable to locate equipment for this QR code.'}</p>
-                            <button onclick="resetScanner()" class="btn btn-primary btn-sm">Try Again</button>
+                            <button onclick="resetScanner()" class="btn btn-primary btn-sm qr-btn">Try Again</button>
                         </div>
                     `;
                 }
@@ -229,7 +122,7 @@ $historyUrl = '/' . $prefix . '/equipment';
                     <div class="alert alert-danger">
                         <h5 class="alert-heading">Error</h5>
                         <p>An error occurred while processing the QR code.</p>
-                        <button onclick="resetScanner()" class="btn btn-primary btn-sm">Try Again</button>
+                        <button onclick="resetScanner()" class="btn btn-primary btn-sm qr-btn">Try Again</button>
                     </div>
                 `;
             });

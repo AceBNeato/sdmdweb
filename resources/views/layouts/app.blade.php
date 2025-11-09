@@ -18,6 +18,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="{{ asset('css/session-lock.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/profile-modal.css') }}" rel="stylesheet">
     @stack('styles')
     <style>
         @keyframes fadeIn {
@@ -255,13 +256,18 @@
             }
 
             // Guard-aware profile URL
-            $profileUrl = $prefix === 'admin'
-                ? (isset($currentUser) ? route('admin.accounts.show', $currentUser->id) : route('admin.accounts.index'))
-                : ($prefix === 'technician' ? route('technician.profile') : route('staff.profile'));
-            // Modal endpoint for profile (staff/technician only)
-            $profileModalUrl = $prefix === 'technician'
-                ? url('/technician?modal=1')
-                : ($prefix === 'staff' ? url('/staff/profile?modal=1') : $profileUrl);
+            $profileUrl = match ($prefix) {
+                'technician' => route('technician.profile'),
+                'staff' => route('staff.profile'),
+                default => route('admin.profile'),
+            };
+
+            // Modal endpoint for profile for all guards
+            $profileModalUrl = match ($prefix) {
+                'technician' => url('/technician?modal=1'),
+                'staff' => url('/staff/profile?modal=1'),
+                default => url('/admin/profile?modal=1'),
+            };
         @endphp
         <aside class="sidebar">
             <a class="brand" href="javascript:window.location.reload();">
@@ -340,15 +346,9 @@
                     <i class='bx bx-chevron-up dropdown-arrow'></i>
                 </button>
                 <div class="profile-menu" id="profileDropdownMenu">
-                    @if($prefix === 'admin')
-                    <a href="{{ $profileUrl }}" class="profile-menu-item">
-                        <i class='bx bx-user'></i> My Profile
-                    </a>
-                    @else
                     <a href="#" class="profile-menu-item open-profile-modal" data-url="{{ $profileModalUrl }}">
                         <i class='bx bx-user'></i> My Profile
                     </a>
-                    @endif
                     <div class="profile-menu-divider"></div>
                     <a href="#" onclick="event.preventDefault(); if(!this.hasAttribute('disabled')){ this.setAttribute('disabled','disabled'); this.style.pointerEvents='none'; document.getElementById('logout-form').submit(); }" class="profile-menu-item logout-item">
                         <i class='bx bx-log-out'></i> Logout

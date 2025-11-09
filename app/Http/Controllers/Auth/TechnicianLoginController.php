@@ -303,7 +303,7 @@ class TechnicianLoginController extends Controller
 
             // The user itself contains the technician data
             $technician = $user;
-            
+
             // Fetch recent activities for the user
             $recentActivities = Activity::where('user_id', $user->id)
                 ->latest()
@@ -325,7 +325,14 @@ class TechnicianLoginController extends Controller
                     ->get();
             }
 
-            return view('technician.profile.index', compact('user', 'technician', 'recentActivities'));
+            if (request()->ajax() || request()->boolean('modal')) {
+                return view('profile.show_modal', [
+                    'user' => $technician,
+                    'recentActivities' => $recentActivities,
+                ]);
+            }
+
+            return redirect()->route('technician.qr-scanner');
             
         } catch (\Exception $e) {
             Log::error('Error loading profile: ' . $e->getMessage());
@@ -349,6 +356,10 @@ class TechnicianLoginController extends Controller
         // Get the technician data from user record (since we integrated technician fields into users table)
         $technician = $user; // The user itself now contains technician data
 
-        return view('technician.profile.edit', compact('user', 'technician'));
+        if (request()->ajax() || request()->boolean('modal')) {
+            return view('profile.edit_modal', compact('technician'));
+        }
+
+        return redirect()->route('technician.qr-scanner');
     }
 }
