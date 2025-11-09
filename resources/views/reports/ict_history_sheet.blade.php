@@ -196,6 +196,9 @@
         <a href="{{ route('technician.reports.equipment.history.export.pdf', $equipment) }}" class="btn btn-primary" target="_blank">
             <i class='bx bx-file-pdf'></i> Export PDF
         </a>
+        <a href="{{ route('admin.reports.export') }}?equipment_id={{ $equipment->id }}&format=word" class="btn btn-primary" target="_blank">
+            <i class='bx bx-file-word'></i> Export Word
+        </a>
         <button onclick="window.print()" class="btn btn-primary" style="margin-left: 10px;">
             <i class='bx bx-printer'></i> Print
         </button>

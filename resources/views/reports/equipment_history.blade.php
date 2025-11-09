@@ -1,10 +1,12 @@
-@extends('layouts.admin')
+@extends('layouts.app')
 
-@section('title', 'Equipment History Report - SDMD')
 @section('page_title', 'Equipment History Report')
-@section('breadcrumbs', 'Admin / Reports / Equipment History')
+@section('page_description', 'Detailed equipment service history')
 
 @section('content')
+@if(!auth()->user()->hasPermissionTo('reports.view'))
+    @php abort(403) @endphp
+@else
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -135,6 +137,7 @@
         </div>
     </div>
 </div>
+@endif
 @endsection
 
 @push('styles')

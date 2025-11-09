@@ -1,1 +1,1 @@
-@extends('admin.offices.form', ['office' => new App\Models\Office()])
+@extends('offices.form', ['office' => new App\Models\Office()])

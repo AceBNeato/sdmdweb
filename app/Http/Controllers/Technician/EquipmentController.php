@@ -25,7 +25,7 @@ class EquipmentController extends BaseController
      * @param  \App\Models\Equipment  $equipment
      * @return \Illuminate\View\View
      */
-    public function show(Equipment $equipment)
+    public function show(Request $request, Equipment $equipment)
     {
         $user = Auth::guard('technician')->user();
 
@@ -72,7 +72,13 @@ class EquipmentController extends BaseController
             }
         }
 
-        return view('equipment.show', compact('equipment'));
+        $prefix = 'technician'; // For technician routes
+
+        if ($request->ajax()) {
+            return view('equipment.show_modal', compact('equipment', 'prefix'));
+        }
+
+        return view('equipment.show_modal', compact('equipment', 'prefix'));
     }
 
     /**
@@ -177,7 +183,7 @@ class EquipmentController extends BaseController
             $query->where('is_active', true);
         }])->get();
         
-        return view('equipment.form', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
+        return view('equipment.form_modal', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
     }
 
     /**
@@ -286,7 +292,12 @@ class EquipmentController extends BaseController
             $query->where('is_active', true);
         }])->get();
 
-        return view('equipment.form', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
+        if (request()->ajax()) {
+            // Return partial view for modal
+            return view('equipment.form_modal', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
+        }
+
+        return view('equipment.form_modal', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
     }
 
     /**
@@ -810,6 +821,11 @@ class EquipmentController extends BaseController
         //     return redirect()->back()->with('error', 'You do not have permission to access this equipment.');
         // }
             
+        if (request()->ajax()) {
+            // Return partial view for modal
+            return view('equipment.history_modal', compact('equipment'));
+        }
+
         // Load the view
         return view('equipment.history.create', [
             'equipment' => $equipment->load('office')
@@ -1110,18 +1126,17 @@ class EquipmentController extends BaseController
                 'request_all' => $request->all()
             ]);
 
-            // Find all JO numbers for this equipment on this date
+            // Find all JO numbers for this date across all equipment
             $joQuery = 'JO-' . $date . '-%';
             \Log::info('JO query pattern:', ['pattern' => $joQuery]);
 
-            $existingJO = EquipmentHistory::where('equipment_id', $equipment->id)
-                ->where('jo_number', 'like', $joQuery)
+            $existingJO = EquipmentHistory::where('jo_number', 'like', $joQuery)
                 ->orderBy('jo_number')
                 ->pluck('jo_number')
                 ->toArray();
 
             \Log::info('Database results:', [
-                'query_executed' => "WHERE equipment_id = {$equipment->id} AND jo_number LIKE '{$joQuery}'",
+                'query_executed' => "WHERE jo_number LIKE '{$joQuery}'",
                 'count_found' => count($existingJO),
                 'jo_numbers_found' => $existingJO
             ]);
@@ -1134,7 +1149,7 @@ class EquipmentController extends BaseController
                 \Log::info('JO parts:', ['parts' => $parts, 'count' => count($parts)]);
 
                 if (count($parts) >= 4) {
-                    $sequence = (int) $parts[3]; // JO-YYYY-MM-DD-XX -> XX
+                    $sequence = (int) end($parts); // JO-YYYY-MM-DD-XX -> XX
                     $existingSequences[] = $sequence;
                     \Log::info('Extracted sequence:', ['sequence' => $sequence]);
                 } else {

@@ -467,7 +467,7 @@ hr{
 
 .action-buttons {
     display: flex;
-    padding: 1rem;
+    padding: 1rem 0;
     gap: 1rem;
     justify-content: flex-start;
     align-items: center;

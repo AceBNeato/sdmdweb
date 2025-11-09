@@ -88,15 +88,9 @@ class TechnicianLoginController extends Controller
     {
         $user = Auth::guard('technician')->user();
 
-        // Clear remember token
-        if ($user) {
-            $user->update(['remember_token' => null]);
-        }
-
         Auth::guard('technician')->logout();
 
         // Completely destroy session
-        $request->session()->flush();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -104,7 +98,7 @@ class TechnicianLoginController extends Controller
         $logoutToken = bin2hex(random_bytes(32));
         session(['logout_token' => $logoutToken]);
 
-        return redirect(route('logout.redirect'))->withHeaders([
+        return redirect('/login?logout=' . time())->withHeaders([
             'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0, no-transform, private, proxy-revalidate',
             'Pragma' => 'no-cache',
             'Expires' => '0',

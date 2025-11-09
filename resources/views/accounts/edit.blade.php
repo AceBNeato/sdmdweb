@@ -4,6 +4,9 @@
 @section('breadcrumbs', 'Accounts / User Management / Edit User')
 
 @push('styles')
+
+<link rel="stylesheet" href="{{ asset('css/accounts/accounts.css') }}">
+
 <style>
     .form-card {
         background: white;
@@ -525,6 +528,21 @@
 
                 </div>
                 @endif
+
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary">
+                    <i class='bx bx-x'></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class='bx bx-save'></i> Update User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @push('scripts')
 <script>

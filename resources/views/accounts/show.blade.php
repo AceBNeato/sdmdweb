@@ -22,7 +22,7 @@
         <a href="{{ route('accounts.edit', $user) }}"
            class="btn btn-sm btn-outline-secondary"
            title="edit">
-            <i class='bx bx-edit'></i>
+            <i class='bx bx-edit'></i>Edit Account
         </a>
         @endif
     </div>
@@ -145,15 +145,6 @@
                             </span>
                         @endif
 
-                        @if($user->is_admin)
-                            <span class="status-badge badge-warning">
-                                <i class='bx bx-crown'></i> Administrator
-                            </span>
-                        @else
-                            <span class="status-badge badge-info">
-                                <i class='bx bx-user'></i> Regular User
-                            </span>
-                        @endif
                     </div>
                 </div>
             </div>

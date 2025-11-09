@@ -136,7 +136,7 @@ class EquipmentController extends Controller
      * @param  \App\Models\Equipment  $equipment
      * @return \Illuminate\View\View
      */
-    public function show(Equipment $equipment)
+    public function show(Request $request, Equipment $equipment)
     {
         $user = Auth::guard('staff')->user();
 
@@ -182,7 +182,13 @@ class EquipmentController extends Controller
             }
         }
 
-        return view('equipment.show', compact('equipment'));
+        $prefix = 'staff'; // For staff routes
+
+        if (request()->ajax()) {
+            return view('equipment.show_modal', compact('equipment', 'prefix'));
+        }
+
+        return view('equipment.show_modal', compact('equipment', 'prefix'));
     }
 
     /**
@@ -203,7 +209,13 @@ class EquipmentController extends Controller
         $categories = $this->getEquipmentCategories();
         $equipmentTypes = $this->getEquipmentTypes();
         $campuses = Campus::with('offices')->get();
-        return view('equipment.form', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
+
+        if (request()->ajax()) {
+            // Return partial view for modal
+            return view('equipment.form_modal', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
+        }
+
+        return view('equipment.form_modal', compact('equipment', 'categories', 'equipmentTypes', 'campuses'));
     }
 
     /**

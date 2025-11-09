@@ -163,8 +163,8 @@ class AdminLoginController extends Controller
                     'roles' => $user->roles->pluck('name')->toArray()
                 ]);
 
-                // Redirect to admin dashboard
-                return redirect()->intended(route('admin.accounts'));
+                // Redirect to admin QR scanner
+                return redirect()->intended(route('admin.qr-scanner'));
             }
 
             // If we get here, authentication failed

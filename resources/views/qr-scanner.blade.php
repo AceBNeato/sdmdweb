@@ -1,5 +1,11 @@
 @extends('layouts.app')
 
+@php
+$prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+$scanRoute = route($prefix . '.equipment.scan');
+$viewUrl = '/' . $prefix . '/equipment';
+$historyUrl = '/' . $prefix . '/equipment';
+@endphp
 
 @section('title', 'QR Scanner')
 
@@ -26,7 +32,7 @@
 
     .qr-container {
         display: flex;
-        justify-content: center; /* Align to the right */
+        justify-content: center;
         align-items: center;
         padding: 20px;
         background: linear-gradient(to bottom, #7790c2ff, #333348ff);
@@ -47,22 +53,13 @@
         border: 1.5px solid #b2b2b2;
         border-radius: 0.25em;
         box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
-        max-width: 400px; /* Limit width for better right alignment */
+        max-width: 400px;
     }
 
     #my-qr-reader {
         padding: 20px !important;
         border: 1.5px solid #b2b2b2 !important;
         border-radius: 8px;
-    }
-
-    #my-qr-reader img[alt="Info icon"] {
-        display: none;
-    }
-
-    #my-qr-reader img[alt="Camera based scan"] {
-        width: 100px !important;
-        height: 100px !important;
     }
 
     button {
@@ -81,11 +78,6 @@
 
     button:hover {
         background-color: #008000;
-    }
-
-    #html5-qrcode-anchor-scan-type-change {
-        text-decoration: none !important;
-        color: #1d9bf0;
     }
 
     #my-qr-reader .alert-success .btn {
@@ -142,6 +134,12 @@
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
+        const routes = {!! json_encode([
+            'scan' => $scanRoute,
+            'view' => $viewUrl,
+            'history' => $historyUrl,
+        ]) !!};
+
         function domReady(fn) {
             if (
                 document.readyState === "complete" ||
@@ -180,7 +178,7 @@
                 </div>
             `;
 
-            fetch('{{ route("technician.equipment.scan") }}', {
+            fetch(routes.scan, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -202,12 +200,12 @@
                             <p class="mb-0"><strong>Office:</strong> ${data.equipment.office || 'N/A'}</p>
                             <hr>
                             <div class="qr-actions">
-                            <button class="btn btn-outline-secondary btn-sm"><a href="{{ url('technician/equipment') }}/${data.equipment.id}">
+                            <a href="${routes.view}?view_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-show me-1"></i>View Details
-                                </a></button>
-                                <button class="btn btn-outline-secondary btn-sm"><a href="{{ url('technician/equipment') }}/${data.equipment.id}/history/create">
+                                </a>
+                                <a href="${routes.view}?history_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-plus me-1"></i>Add History Sheet
-                                </a></button>
+                                </a>
                                 <button onclick="resetScanner()" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-qr-scan me-1"></i>Scan Another
                                 </button>

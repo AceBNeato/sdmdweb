@@ -88,15 +88,9 @@ public function login(Request $request)
     {
         $user = Auth::guard('staff')->user();
 
-        // Clear remember token
-        if ($user) {
-            $user->update(['remember_token' => null]);
-        }
-
         Auth::guard('staff')->logout();
 
         // Completely destroy session
-        $request->session()->flush();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -104,7 +98,7 @@ public function login(Request $request)
         $logoutToken = bin2hex(random_bytes(32));
         session(['logout_token' => $logoutToken]);
 
-        return redirect(route('logout.redirect'))->withHeaders([
+        return redirect('/login?logout=' . time())->withHeaders([
             'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0, no-transform, private, proxy-revalidate',
             'Pragma' => 'no-cache',
             'Expires' => '0',

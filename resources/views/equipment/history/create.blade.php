@@ -17,7 +17,7 @@
                 <div>
                     <p class="text-muted mt-1">Record maintenance or service activity for {{ $equipment->model_number }} (SN: {{ $equipment->serial_number }})</p>
                 </div>
-                <a href="{{ route('technician.equipment.show', $equipment) }}" class="btn btn-outline-secondary">
+                <a href="{{ auth()->guard('technician')->check() ? route('technician.equipment.show', $equipment) : route('admin.equipment.show', $equipment) }}" class="btn btn-outline-secondary">
                     <i class='bx bx-arrow-back me-1'></i> Back to Equipment
                 </a>
             </div>
@@ -32,7 +32,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('technician.equipment.history.store', $equipment) }}" method="POST">
+            <form action="{{ auth()->guard('technician')->check() ? route('technician.equipment.history.store', $equipment) : route('admin.equipment.history.store', $equipment) }}" method="POST">
                 @csrf
 
                 <div class="row">
@@ -106,7 +106,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class='bx bx-save me-1'></i> Save History Entry
                     </button>
-                    <a href="{{ route('technician.equipment.show', $equipment) }}" class="btn btn-outline-secondary">
+                    <a href="{{ auth()->guard('technician')->check() ? route('technician.equipment.show', $equipment) : route('admin.equipment.show', $equipment) }}" class="btn btn-outline-secondary">
                         <i class='bx bx-x me-1'></i> Cancel
                     </a>
                 </div>
@@ -162,6 +162,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const joSequenceInput = document.getElementById('jo_sequence');
     const joNumberInput = document.getElementById('jo_number');
 
+    let justAlerted = false;
+
+    let justAlertedDate = false;
+
     // Update JO prefix when date changes
     function updateJOPrefix() {
         const selectedDate = dateInput.value;
@@ -190,10 +194,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Only allow numbers
         this.value = this.value.replace(/[^0-9]/g, '');
         updateFullJONumber();
+        // Reset alert flag when user starts typing
+        justAlerted = false;
     });
 
     // Validate consecutive sequence when sequence loses focus (real-time like date validation)
     joSequenceInput.addEventListener('blur', function() {
+        // Skip validation if we just showed an alert
+        if (justAlerted) return;
+
         const sequence = joSequenceInput.value.trim();
         const date = dateInput.value;
 
@@ -210,7 +219,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Validating sequence in real-time:', sequenceNum, 'for date:', date);
 
         // Check if this sequence is valid for the selected date
-        fetch('{{ route("technician.equipment.check-sequences", $equipment) }}', {
+        console.log('Checking sequences for date:', date.split('T')[0], 'equipment ID:', {{ $equipment->id }});
+        fetch('{{ auth()->guard('technician')->check() ? route("technician.equipment.check-sequences", $equipment) : route("admin.equipment.check-sequences", $equipment) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -237,8 +247,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     alert(message);
-                    joSequenceInput.focus();
-                    joSequenceInput.select();
+                    justAlerted = true;
+                    // Allow time for user to edit before next check
+                    setTimeout(() => {
+                        justAlerted = false;
+                        joSequenceInput.focus();
+                        joSequenceInput.select();
+                    }, 100);
                 }
             }
         })
@@ -262,22 +277,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Prevent backdating
     dateInput.addEventListener('change', function() {
+        if (justAlertedDate) {
+            justAlertedDate = false;
+            return;
+        }
+
         const selectedDateTime = new Date(this.value);
         const now = new Date();
 
         if (selectedDateTime > now) {
-            alert('Cannot set future dates. Please select current or past date/time.');
+            alert('Cannot set future dates. Please select current date/time.');
+            this.value = now.toISOString().slice(0, 16);
+            updateJOPrefix(); // Re-update prefix after date correction
+            return;
+        }
+
+        if (selectedDateTime < now) {
+            alert('Cannot backdate repair records. Please select current date/time.');
             this.value = now.toISOString().slice(0, 16);
             updateJOPrefix(); // Re-update prefix after date correction
             return;
         }
 
         // Check if trying to backdate beyond last repair record
+        console.log('Checking backdating for date:', this.value);
         checkBackdating(this.value);
     });
 
     function checkBackdating(selectedDateTime) {
-        fetch('{{ route("technician.equipment.check-latest-repair", $equipment) }}', {
+        console.log('Calling checkBackdating API with date:', selectedDateTime);
+        fetch('{{ auth()->guard('technician')->check() ? route("technician.equipment.check-latest-repair", $equipment) : route("admin.equipment.check-latest-repair", $equipment) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -287,8 +316,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            console.log('checkBackdating response:', data);
             if (!data.can_backdate) {
-                alert('Cannot backdate beyond the latest repair record for this equipment.');
+                console.log('Backdating not allowed, showing alert');
+                alert(`The earliest allowed repair date is ${data.latest_date}. Please select that date or later.`);
+                justAlertedDate = true;
                 dateInput.value = data.latest_date;
                 updateJOPrefix(); // Re-update prefix after date correction
             }

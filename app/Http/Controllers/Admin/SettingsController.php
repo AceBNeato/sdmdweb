@@ -22,15 +22,12 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'session_timeout_minutes' => 'required|integer|min:1|max:60',
             'session_lockout_minutes' => 'required|integer|min:1|max:60',
         ]);
 
-        Setting::setValue('session_timeout_minutes', $request->session_timeout_minutes, 'integer', 'Session timeout in minutes for inactivity');
         Setting::setValue('session_lockout_minutes', $request->session_lockout_minutes, 'integer', 'Session lockout in minutes for screen lock');
 
         // Clear any cached settings
-        Cache::forget('settings.session_timeout_minutes');
         Cache::forget('settings.session_lockout_minutes');
 
         return back()->with('success', 'Settings updated successfully!');

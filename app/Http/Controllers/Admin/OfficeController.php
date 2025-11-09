@@ -68,7 +68,7 @@ class OfficeController extends BaseController
     public function create()
     {
         $campuses = Campus::where('is_active', true)->get();
-        return view('admin.offices.create', compact('campuses'));
+        return view('offices.create', compact('campuses'));
     }
 
     /**

@@ -26,8 +26,11 @@ use App\Http\Controllers\Admin\OfficeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Auth\StaffLoginController;
+use App\Http\Controllers\PublicEquipmentController;
 use App\Http\Controllers\Auth\TechnicianLoginController;
+use App\Http\Controllers\Auth\StaffLoginController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\AdminLoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +42,12 @@ Route::redirect('/', '/login')->name('home');
 
 // Redirect /home to root for backward compatibility
 Route::redirect('/home', '/');
+
+// Public QR Code Scanner (no authentication required)
+Route::prefix('public')->name('public.')->group(function () {
+    Route::get('/qr-scanner', [PublicEquipmentController::class, 'scanner'])->name('qr-scanner');
+    Route::post('/equipment/scan', [PublicEquipmentController::class, 'scanQrCode'])->name('equipment.scan');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -75,17 +84,13 @@ Route::get('/logout', function() { return redirect('/'); });
 Route::post('/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])
     ->name('logout');
 
-// Unlock Session (for session lock modal) - Allow all authenticated guards
-Route::post('/unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSession'])
-    ->name('unlock.session');
-
 // Staff unlock session
 Route::post('/staff/unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSessionStaff'])
     ->name('staff.unlock.session')
     ->middleware('auth:staff');
 
 // Technician unlock session
-Route::post('/technician/unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSessionTechnician'])
+Route::post('/technician/unlock-session', [AuthController::class, 'unlockSessionTechnician'])
     ->name('technician.unlock.session')
     ->middleware('auth:technician');
 
@@ -111,28 +116,28 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
     ->name('technician.')
     ->group(function () {
         // Dashboard (Profile)
-        Route::get('/', [TechnicianLoginController::class, 'profile'])
+        Route::get('/', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'profile'])
             ->name('profile');
 
         // Profile update route
-        Route::match(['put', 'post'], '/profile/update', [TechnicianLoginController::class, 'updateProfile'])
+        Route::match(['put', 'post'], '/profile/update', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'updateProfile'])
             ->name('profile.update');
 
         // Profile edit form route (for consistency, though modal is used)
-        Route::get('/profile/edit', [TechnicianLoginController::class, 'editProfile'])
+        Route::get('/profile/edit', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'editProfile'])
             ->name('profile.edit');
 
         // Update profile (admin route for technicians)
-        Route::post('/admin/technician/profile/update', [TechnicianLoginController::class, 'updateProfile'])
+        Route::post('/admin/technician/profile/update', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'updateProfile'])
             ->name('admin.technician.profile.update');
 
 
         // QR Scanner (Modal in Equipment)
-        Route::get('/qr-scanner', [TechnicianLoginController::class, 'qrScanner'])
+        Route::get('/qr-scanner', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'qrScanner'])
             ->name('qr-scanner');
 
         // Logout
-        Route::post('/logout', [TechnicianLoginController::class, 'logout'])
+        Route::post('/logout', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'logout'])
             ->name('logout');
 
         // Equipment
@@ -311,7 +316,7 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])->prefix('admin
             });
 
         // Logout
-        Route::post('/logout', [StaffLoginController::class, 'logout'])
+        Route::post('/logout', [\App\Http\Controllers\Auth\StaffLoginController::class, 'logout'])
             ->name('logout');
 
         // Equipment
@@ -379,6 +384,10 @@ Route::middleware(['auth', 'ddos.protect'])->group(function () {
     // Accounts - accessible to all authenticated users
     Route::get('/accounts', [AdminController::class, 'accounts'])
         ->name('accounts.index');
+
+    // Unlock Session (for session lock modal) - Allow all authenticated guards
+    Route::post('/unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSession'])
+        ->name('unlock.session');
 
     // Unified Accounts Routes
     Route::prefix('accounts')->name('accounts.')->group(function () {
@@ -555,7 +564,30 @@ Route::prefix('admin')
                     Route::post('/scan', [EquipmentController::class, 'scanQrCode'])
                         ->name('scan')
                         ->middleware('permission:equipment.view');
+
+                    // History routes
+                    Route::prefix('{equipment}')->group(function () {
+                        Route::get('/history/create', [EquipmentController::class, 'createHistory'])
+                            ->name('history.create')
+                            ->middleware('permission:history.create');
+                        Route::post('/history', [EquipmentController::class, 'storeHistory'])
+                            ->name('history.store')
+                            ->middleware('permission:history.store');
+                        Route::post('/generate-jo', [EquipmentController::class, 'generateJONumber'])
+                            ->name('generate-jo');
+                        Route::post('/check-latest-repair', [EquipmentController::class, 'checkLatestRepair'])
+                            ->name('check-latest-repair');
+                        Route::post('/check-sequences', [EquipmentController::class, 'checkSequences'])
+                            ->name('check-sequences');
+                        Route::post('/clear-history-prompt', [EquipmentController::class, 'clearHistoryPrompt'])
+                            ->name('clear-history-prompt');
+                    });
                 });
+
+            // QR Scanner
+            Route::get('/qr-scanner', [EquipmentController::class, 'qrScanner'])
+                ->name('qr-scanner')
+                ->middleware('permission:qr.scan');
 
             // Maintenance
             Route::prefix('maintenance')
@@ -590,6 +622,7 @@ Route::prefix('admin')
                     })->middleware('permission:reports.generate');
                     
                     // Additional report routes
+                    Route::get('/export', [ReportController::class, 'export'])->name('export');
                 });
             Route::resource('reports', ReportController::class)->except(['index'])->middleware('permission:reports.generate');
 
@@ -619,7 +652,6 @@ Route::prefix('admin')
                 ->group(function () {
                     Route::get('/', function() {
                         $settings = [
-                            'session_timeout_minutes' => \App\Models\Setting::getSessionTimeoutMinutes(),
                             'session_lockout_minutes' => \App\Models\Setting::getSessionLockoutMinutes(),
                         ];
                         return view('settings.index', compact('settings'));

@@ -1,0 +1,195 @@
+<div class="row align-items-center">
+        <div class="col-md-4" style="background: white; border-radius: 12px; padding: 20px;">
+            <div class="equipment-image text-center">
+                @if($equipment->qr_code_image_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($equipment->qr_code_image_path))
+                    <img src="{{ asset('storage/' . $equipment->qr_code_image_path) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid" >
+                @elseif($equipment->qr_code)
+                    <img src="{{ route($prefix . '.equipment.qrcode', $equipment) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid"  onerror="console.log('QR Code image failed to load'); this.style.display='none';">
+                @else
+                    <div class="d-flex align-items-center justify-content-center h-100 text-muted" style="min-height: 200px;">
+                        <div class="text-center">
+                            <i class='bx bx-qr-scan text-6xl opacity-50 mb-2'></i>
+                            <small class="d-block">No QR Code</small>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="mt-3">
+                    <small class="text-muted">Scan this code for quick access</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h1 class="equipment-title">{{ $equipment->model_number }}</h1>
+            <div class="equipment-subtitle">{{ $equipment->equipmentType->name ?? 'Unknown Type' }} • {{ $equipment->serial_number }}</div>
+
+            <div class="action-buttons mt-3">
+                @can('equipment.edit')
+                <button type="button" class="btn btn-primary edit-equipment-btn"
+                        data-equipment-id="{{ $equipment->id }}"
+                        data-url="{{ route($prefix . '.equipment.edit', $equipment) }}"
+                        title="Edit Equipment">
+                    <i class='bx bx-edit-alt'></i> EDIT
+                </button>
+                @endcan
+
+                @can('reports.view')
+                <a href="{{ route($prefix . '.reports.history', $equipment->id) }}" class="btn btn-primary" title="View History">
+                    <i class='bx bx-history'></i> HISTORY
+                </a>
+                @endcan
+
+                @can('equipment.delete')
+                <form action="{{ route($prefix . '.equipment.destroy', $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this equipment?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger" title="Delete Equipment">
+                        <i class='bx bx-trash-alt'></i> DELETE
+                    </button>
+                </form>
+                @endcan
+            </div>
+
+            <div class="mt-3">
+                <p><strong>Status:</strong> <span class="badge status-{{ str_replace('_', '-', $equipment->status ?? 'unknown') }}">{{ ucfirst(str_replace('_', ' ', $equipment->status ?? 'unknown')) }}</span></p>
+                <p><strong>Condition:</strong> <span class="badge status-{{ str_replace('_', '-', $equipment->condition ?? 'unknown') }}">{{ ucfirst(str_replace('_', ' ', $equipment->condition ?? 'unknown')) }}</span></p>
+                <p><strong>Office:</strong> {{ $equipment->office ? $equipment->office->name : 'Not assigned' }}</p>
+                @if($equipment->description)
+                    <p><strong>Description:</strong> {{ $equipment->description }}</p>
+                @endif
+            </div>
+
+        
+        <div class="detail-card">
+            <h5><i class='bx bx-cog me-2'></i>Technical Details</h5>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class='bx bx-barcode'></i>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-label">Serial Number</div>
+                    <div class="detail-value">{{ $equipment->serial_number }}</div>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class='bx bx-chip'></i>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-label">Model Number</div>
+                    <div class="detail-value">{{ $equipment->model_number }}</div>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class='bx bx-category'></i>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-label">Equipment Type</div>
+                    <div class="detail-value">{{ $equipment->equipmentType->name ?? 'Unknown Type' }}</div>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class='bx bx-calendar'></i>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-label">Acquisition Date</div>
+                    <div class="detail-value">
+                        {{ $equipment->purchase_date ? $equipment->purchase_date->format('M d, Y') : 'N/A' }}
+                    </div>
+                </div>
+            </div>
+
+            @if($equipment->cost_of_purchase)
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class='bx bx-dollar'></i>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-label">Cost of Purchase</div>
+                    <div class="detail-value">
+                        ₱{{ number_format($equipment->cost_of_purchase, 2) }}
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+</div>
+
+
+<script>
+$(document).ready(function() {
+    // Handle EDIT button clicks within the show modal
+    $('.edit-equipment-btn').on('click', function() {
+        var equipmentId = $(this).data('equipment-id');
+        var url = $(this).data('url');
+        var modal = $('#editEquipmentModal');
+        var content = $('#editEquipmentContent');
+
+        // Close the view modal if it's open
+        $('#viewEquipmentModal').modal('hide');
+
+        // Show loading spinner
+        content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+
+        // Load content via AJAX
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                content.html(response);
+            },
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                content.html('<div class="alert alert-danger">Failed to load equipment form. Error: ' + xhr.status + ' - ' + error + '</div>');
+            }
+        });
+
+        // Show modal
+        modal.modal('show');
+    });
+
+    // Handle form submission within edit modal
+    $(document).on('submit', '#editEquipmentModal form', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: form.attr('action'),
+            type: form.attr('method'),
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                // Close modal and reload page
+                $('#editEquipmentModal').modal('hide');
+                location.reload();
+            },
+            error: function(xhr) {
+                // Handle errors - show validation errors
+                if (xhr.status === 422) {
+                    var errors = xhr.responseJSON.errors;
+                    // Display validation errors
+                    var errorHtml = '<div class="alert alert-danger"><ul>';
+                    for (var field in errors) {
+                        errorHtml += '<li>' + errors[field][0] + '</li>';
+                    }
+                    errorHtml += '</ul></div>';
+                    $('#editEquipmentContent').prepend(errorHtml);
+                } else {
+                    $('#editEquipmentContent').prepend('<div class="alert alert-danger">An error occurred. Please try again.</div>');
+                }
+            }
+        });
+    });
+});
+</script>

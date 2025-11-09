@@ -355,6 +355,16 @@
     <!-- Toast Notifications Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Modals Stack -->
+    @stack('modals')
+
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    @stack('scripts')
+
+    <script src="{{ asset('js/session-lock.js') }}"></script>
     <!-- Session Lock Modal - Outside app container to cover everything -->
     <div id="session-lock-modal" class="session-lock-overlay" style="display: none;">
         <div class="session-lock-modal">
@@ -561,7 +571,7 @@
         window.sessionData = {
             lockoutTimeoutMinutes: {{ \App\Models\Setting::getSessionLockoutMinutes() }},
             timeoutTimeoutMinutes: {{ \App\Models\Setting::getSessionTimeoutMinutes() }},
-            unlockUrl: '{{ route("unlock.session") }}'
+            unlockUrl: '@if(auth()->guard("technician")->check()){{ route("technician.unlock.session") }}@elseif(auth()->guard("staff")->check()){{ route("staff.unlock.session") }}@else{{ route("unlock.session") }}@endif'
         };
     </script>
     @endauth

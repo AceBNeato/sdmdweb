@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.app')
 
 @php
     $campuses = $campuses ?? \App\Models\Campus::where('is_active', true)->get();
@@ -6,25 +6,34 @@
 
 @section('title', $office->exists ? 'Edit Office' : 'Add New Office')
 
-@section('breadcrumbs')
-    <a href="{{ route('admin.accounts') }}">Accounts</a>
-    <span class="separator">/</span>
-    <a href="{{ route('admin.offices.index') }}">Offices</a>
-    <span class="separator">/</span>
-    <span class="current">{{ $office->exists ? 'Edit' : 'Create' }} Office</span>
-@endsection
-
-@section('page_title', 'Offices Managesment')
+@section('page_title', 'Offices Management')
 @section('page_description', 'Manage all offices')
 
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/office/office-common.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pages/office/office-form.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/office.css') }}">
 @endpush
 
 @section('content')
 <div class="content">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+@if(!auth()->user()->hasPermissionTo('settings.manage'))
+    @php abort(403) @endphp
+@else
+
     <!-- Form Card -->
     <div class="office-form-card">
         <div class="form-header">
@@ -174,4 +183,5 @@
         </form>
     </div>
 </div>
+@endif
 @endsection

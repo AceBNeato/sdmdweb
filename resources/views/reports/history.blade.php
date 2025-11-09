@@ -1,7 +1,14 @@
-@extends('layouts.admin')
+@extends('layouts.app')
+
+@php
+    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+@endphp
+
+@section('page_title', 'Equipment History')
+@section('page_description', 'View detailed equipment service history')
 
 @push('styles')
-    <link href="{{ asset('css/admin/reports.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/reports.css') }}" rel="stylesheet">
     <style>
         .history-container {
             background: #fff;
@@ -123,22 +130,32 @@
 
 @section('title', 'Equipment History - ' . ($equipment->model_number ?? 'SDMD'))
 
-@section('breadcrumbs')
-    <li class="breadcrumb-item"><a href="{{ route('admin.reports.index') }}">Reports</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.equipment.index') }}">Equipment</a></li>
-    <li class="breadcrumb-item active">History</li>
-@endsection
-
-@section('page_title', 'Equipment History')
-
 @section('content')
+@if(!auth()->user()->hasPermissionTo('reports.view'))
+    @php abort(403) @endphp
+@else
+
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
 <div class="history-container">
     <div class="action-buttons">
-        <a href="{{ route('admin.equipment.show', $equipment) }}" class="btn btn-outline-secondary no-print">
+        <a href="{{ route($prefix . '.equipment.index') }}" class="btn btn-outline-secondary no-print">
             <i class='bx bx-arrow-back'></i> Back
         </a>
 
-        <a href="{{ route('admin.reports.equipment.history.export', $equipment) }}" class="btn btn-primary no-print" target="_blank">
+        <a href="{{ route($prefix . '.reports.equipment.history.export', $equipment) }}" class="btn btn-primary no-print" target="_blank">
             <i class='bx bx-printer'></i> Print
         </a>
     </div>
@@ -198,4 +215,5 @@
         </div>
     @endif
 </div>
+@endif
 @endsection

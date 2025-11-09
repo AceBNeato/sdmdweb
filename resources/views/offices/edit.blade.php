@@ -1,1 +1,1 @@
-@extends('admin.offices.form')
+@extends('offices.form')

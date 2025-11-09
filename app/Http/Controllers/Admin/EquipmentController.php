@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use App\Models\Category;
 use App\Models\Equipment;
+use App\Models\EquipmentHistory;
 use App\Models\Office;
 use App\Models\Staff;
 use App\Models\User;
@@ -13,6 +14,7 @@ use App\Models\Activity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 
@@ -25,6 +27,9 @@ class EquipmentController extends Controller
         $this->middleware('permission:equipment.create')->only(['create', 'store']);
         $this->middleware('permission:equipment.edit')->only(['edit', 'update']);
         $this->middleware('permission:equipment.delete')->only(['destroy']);
+        $this->middleware('permission:history.create')->only(['createHistory']);
+        $this->middleware('permission:history.store')->only(['storeHistory']);
+        $this->middleware('permission:qr.scan')->only(['qrScanner']);
     }
     public function index(Request $request)
     {
@@ -96,7 +101,7 @@ class EquipmentController extends Controller
         $offices = Office::where('is_active', true)->orderBy('name')->get();
         $staff = collect(); // Empty collection for create - staff will be loaded via AJAX
 
-        return view('equipment.form', compact('equipment', 'equipmentTypes', 'campuses', 'categories', 'offices', 'staff'));
+        return view('equipment.form_modal', compact('equipment', 'equipmentTypes', 'campuses', 'categories', 'offices', 'staff'));
     }
 
     public function store(Request $request)
@@ -163,7 +168,7 @@ class EquipmentController extends Controller
             ->with('success', 'Equipment added successfully.');
     }
 
-    public function show(Equipment $equipment)
+    public function show(Request $request, Equipment $equipment)
     {
         $equipment->load('office', 'equipmentType');
 
@@ -176,18 +181,11 @@ class EquipmentController extends Controller
         // Generate QR code image if missing
         if (!$equipment->qr_code_image_path || !Storage::disk('public')->exists($equipment->qr_code_image_path)) {
             try {
-                $qrData = json_encode([
-                    'id' => $equipment->id,
-                    'type' => 'equipment',
-                    'model_number' => $equipment->model_number,
-                    'serial_number' => $equipment->serial_number,
-                    'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
-                    'office' => $equipment->office ? $equipment->office->name : 'N/A',
-                    'status' => $equipment->status,
-                ]);
+                // Generate QR code with URL that opens public scanner
+                $qrUrl = route('public.qr-scanner') . '?id=' . $equipment->id;
 
                 $qrSize = '200x200';
-                $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrData) . "&size={$qrSize}&format=png";
+                $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrUrl) . "&size={$qrSize}&format=png";
 
                 $response = Http::get($apiUrl);
 
@@ -202,7 +200,14 @@ class EquipmentController extends Controller
             }
         }
 
-        return view('equipment.show', compact('equipment'));
+        if (request()->ajax()) {
+            // Return partial view for modal
+            $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+            return view('equipment.show_modal', compact('equipment', 'prefix'));
+        }
+
+        $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+        return view('equipment.show_modal', compact('equipment', 'prefix'));
     }
 
     public function edit(Equipment $equipment)
@@ -216,7 +221,12 @@ class EquipmentController extends Controller
         $categories = Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
         $offices = Office::where('is_active', true)->orderBy('name')->get();
 
-        return view('equipment.form', compact('equipment', 'equipmentTypes', 'campuses', 'categories', 'offices'));
+        if (request()->ajax()) {
+            // Return partial view for modal
+            return view('equipment.form_modal', compact('equipment', 'equipmentTypes', 'campuses', 'categories', 'offices'));
+        }
+
+        return view('equipment.form_modal', compact('equipment', 'equipmentTypes', 'campuses', 'categories', 'offices'));
     }
 
     public function update(Request $request, Equipment $equipment)
@@ -292,43 +302,216 @@ class EquipmentController extends Controller
         ];
     }
 
-    public function qrCode(Equipment $equipment)
+    public function createHistory(Equipment $equipment)
     {
-        // If QR code image is saved, return it
-        if ($equipment->qr_code_image_path && Storage::disk('public')->exists($equipment->qr_code_image_path)) {
-            return response()->file(public_path('storage/' . $equipment->qr_code_image_path));
+        // Permission check
+        if (!auth()->user()->hasPermissionTo('history.create')) {
+            abort(403);
         }
 
-        // Fallback to generating on-the-fly if no saved image
-        if (!$equipment->qr_code) {
-            $equipment->qr_code = 'EQP-' . Str::upper(Str::random(8));
-            $equipment->save();
+        if (request()->ajax()) {
+            // Return partial view for modal
+            return view('equipment.history_modal', compact('equipment'));
         }
 
-        // Generate QR code using QRServer API
-        $qrData = json_encode([
-            'id' => $equipment->id,
-            'type' => 'equipment',
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
-            'office' => $equipment->office ? $equipment->office->name : 'N/A',
-            'status' => $equipment->status,
-            'url' => route('admin.equipment.show', $equipment),
-            'qr_code' => $equipment->qr_code,
-            'created_at' => $equipment->created_at->toISOString(),
+        // Load the view
+        return view('equipment.history.create', [
+            'equipment' => $equipment->load('office')
+        ]);
+    }
+
+    public function storeHistory(Request $request, Equipment $equipment)
+    {
+        // Permission check
+        if (!auth()->user()->hasPermissionTo('history.store')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date|before_or_equal:now',
+            'jo_sequence' => 'required|string|max:2|regex:/^[0-9]{1,2}$/',
+            'action_taken' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
+            'equipment_status' => 'required|in:serviceable,for_repair,defective',
         ]);
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrData) . "&size=300x300&format=svg";
+        // Build the full JO number from date and sequence
+        $date = \Carbon\Carbon::parse($validated['date']);
+        $joNumber = 'JO-' . $date->format('Y-m-d') . '-' . str_pad($validated['jo_sequence'], 2, '0', STR_PAD_LEFT);
 
-        $response = Http::get($apiUrl);
-
-        if ($response->successful()) {
-            return response($response->body())->header('Content-Type', 'image/svg+xml');
+        // Check if JO number already exists
+        if (\App\Models\EquipmentHistory::where('jo_number', $joNumber)->exists()) {
+            return back()->withErrors(['jo_sequence' => 'This Job Order number already exists. Please choose a different sequence.'])
+                         ->withInput();
         }
 
-        // Fallback: return a simple text response
-        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
+        // Additional validation: prevent backdating beyond latest repair
+        $selectedDateTime = new \DateTime($validated['date']);
+        $latestRepair = \App\Models\EquipmentHistory::where('equipment_id', $equipment->id)
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($latestRepair) {
+            $latestDateTime = new \DateTime($latestRepair->date);
+            if ($selectedDateTime < $latestDateTime) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Cannot backdate beyond the latest repair record for this equipment.');
+            }
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $user = auth()->user();
+
+            $history = new \App\Models\EquipmentHistory([
+                'equipment_id' => $equipment->id,
+                'user_id' => $user->id,
+                'date' => $validated['date'],
+                'jo_number' => $joNumber,
+                'action_taken' => $validated['action_taken'],
+                'remarks' => $validated['remarks'],
+                'responsible_person' => $user->name,
+            ]);
+
+            $history->save();
+
+            // Update equipment status
+            $updateData = [
+                'status' => $validated['equipment_status'],
+                'assigned_by_id' => $user->id,
+            ];
+
+            // If setting status to serviceable, also set condition to good
+            if ($validated['equipment_status'] === 'serviceable') {
+                $updateData['condition'] = 'good';
+            }
+
+            $equipment->update($updateData);
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            $successMessage = 'History sheet saved!';
+            $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
+            $successMessage .= ' Equipment status updated to ' . $statusText . '.';
+
+            // Add condition update message if status was set to serviceable
+            if ($validated['equipment_status'] === 'serviceable') {
+                $successMessage .= ' Equipment condition set to Good.';
+            }
+
+            return redirect()
+                ->route('admin.equipment.index')
+                ->with('success', $successMessage);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to add history entry. Please try again.');
+        }
+    }
+
+    public function generateJONumber(Request $request, Equipment $equipment)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+            $date = $request->date;
+
+            // Find the next sequence number for this date
+            $latestJO = EquipmentHistory::where('jo_number', 'like', 'JO-' . $date . '-%')
+                ->orderBy('jo_number', 'desc')
+                ->first();
+
+            $sequence = 1;
+            if ($latestJO) {
+                // Extract sequence from latest JO number (format: JO-YYYY-MM-DD-XX)
+                $parts = explode('-', $latestJO->jo_number);
+                if (count($parts) >= 4) {
+                    $sequence = (int) end($parts) + 1;
+                }
+            }
+
+            // Format sequence with leading zero if needed
+            $sequenceFormatted = str_pad($sequence, 2, '0', STR_PAD_LEFT);
+
+            $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
+
+            // Double-check uniqueness (in case of concurrent requests)
+            $exists = EquipmentHistory::where('jo_number', $joNumber)->exists();
+            if ($exists) {
+                // Find next available sequence
+                for ($i = $sequence + 1; $i <= 99; $i++) {
+                    $sequenceFormatted = str_pad($i, 2, '0', STR_PAD_LEFT);
+                    $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
+                    if (!EquipmentHistory::where('jo_number', $joNumber)->exists()) {
+                        break;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'jo_number' => $joNumber
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating JO number: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function checkLatestRepair(Request $request, Equipment $equipment)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+            $selectedDateTime = new \DateTime($request->date);
+
+            // Find the latest repair record for this equipment
+            $latestRepair = EquipmentHistory::where('equipment_id', $equipment->id)
+                ->orderBy('date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($latestRepair) {
+                $latestDateTime = new \DateTime($latestRepair->date);
+
+                // If trying to set a date earlier than the latest repair, prevent it
+                if ($selectedDateTime < $latestDateTime) {
+                    return response()->json([
+                        'can_backdate' => false,
+                        'latest_date' => $latestDateTime->format('Y-m-d\TH:i'),
+                        'message' => 'Cannot backdate beyond the latest repair record.'
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'can_backdate' => true
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking latest repair: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function qrScanner()
+    {
+        return view('qr-scanner');
     }
 
     public function downloadQrCode(Equipment $equipment)
@@ -339,21 +522,10 @@ class EquipmentController extends Controller
             $equipment->save();
         }
 
-        // Generate QR code using QRServer API
-        $qrData = json_encode([
-            'id' => $equipment->id,
-            'type' => 'equipment',
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
-            'office' => $equipment->office ? $equipment->office->name : 'N/A',
-            'status' => $equipment->status,
-            'url' => route('admin.equipment.show', $equipment),
-            'qr_code' => $equipment->qr_code,
-            'created_at' => $equipment->created_at->toISOString(),
-        ]);
+        // Generate QR code using QRServer API with URL for public scanner
+        $qrUrl = route('public.qr-scanner') . '?id=' . $equipment->id;
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrData) . "&size=300x300&format=svg";
+        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrUrl) . "&size=300x300&format=svg";
 
         $response = Http::get($apiUrl);
 
@@ -440,11 +612,99 @@ class EquipmentController extends Controller
                 'serial_number' => $equipment->serial_number,
                 'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
                 'location' => $equipment->location,
-                'office' => $equipment->office->name ?? 'N/A',
+                'office' => $equipment->office ? $equipment->office->name : 'N/A',
                 'status' => $equipment->status,
                 'qr_code_image_path' => $equipment->qr_code_image_path,
-                'maintenance_logs' => $equipment->maintenanceLogs()->latest()->take(5)->get(['action', 'details', 'created_at'])->toArray()
             ]
         ]);
+    }
+
+    public function checkSequences(Request $request, Equipment $equipment)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+            $date = $request->date;
+
+            \Log::info('=== checkSequences START ===', [
+                'equipment_id' => $equipment->id,
+                'date_requested' => $date,
+                'request_all' => $request->all()
+            ]);
+
+            // Find all JO numbers for this date across all equipment
+            $joQuery = 'JO-' . $date . '-%';
+            \Log::info('JO query pattern:', ['pattern' => $joQuery]);
+
+            $existingJO = EquipmentHistory::where('jo_number', 'like', $joQuery)
+                ->orderBy('jo_number')
+                ->pluck('jo_number')
+                ->toArray();
+
+            \Log::info('Database results:', [
+                'query_executed' => "WHERE jo_number LIKE '{$joQuery}'",
+                'count_found' => count($existingJO),
+                'jo_numbers_found' => $existingJO
+            ]);
+
+            // Extract sequences from JO numbers
+            $existingSequences = [];
+            foreach ($existingJO as $joNumber) {
+                \Log::info('Processing JO number:', ['jo_number' => $joNumber]);
+                $parts = explode('-', $joNumber);
+                \Log::info('JO parts:', ['parts' => $parts, 'count' => count($parts)]);
+
+                if (count($parts) >= 4) {
+                    $sequence = (int) end($parts); // JO-YYYY-MM-DD-XX -> XX
+                    $existingSequences[] = $sequence;
+                    \Log::info('Extracted sequence:', ['sequence' => $sequence]);
+                } else {
+                    \Log::info('Invalid JO format, skipping:', ['jo_number' => $joNumber]);
+                }
+            }
+
+            \Log::info('All extracted sequences:', ['sequences' => $existingSequences]);
+
+            // Sort sequences
+            sort($existingSequences);
+
+            // For strict consecutive numbering, find the next required sequence
+            $nextSequence = 1;
+            foreach ($existingSequences as $seq) {
+                if ($seq === $nextSequence) {
+                    $nextSequence++;
+                } else {
+                    // Gap found - this shouldn't happen with strict validation
+                    // But if it does, nextSequence remains at the gap position
+                    break;
+                }
+            }
+
+            \Log::info('Strict consecutive validation', [
+                'existing_sequences_sorted' => $existingSequences,
+                'next_required_sequence' => $nextSequence,
+                'total_entries' => count($existingSequences)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'existing_sequences' => $existingSequences,
+                'next_sequence' => $nextSequence
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in checkSequences', [
+                'error' => $e->getMessage(),
+                'equipment_id' => $equipment->id,
+                'date' => $request->date ?? 'null'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking sequences: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
