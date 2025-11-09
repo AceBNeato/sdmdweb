@@ -1,3 +1,22 @@
+
+
+@php
+    $currentUser = null;
+    $prefix = 'admin';
+
+    if (auth('staff')->check()) {
+        $currentUser = auth('staff')->user();
+        $prefix = 'staff';
+    } elseif (auth('technician')->check()) {
+        $currentUser = auth('technician')->user();
+        $prefix = 'technician';
+    } elseif (auth()->check()) {
+        $currentUser = auth()->user();
+        $prefix = 'admin';
+    }
+@endphp
+
+
 <div class="row align-items-center">
         <div class="col-md-4" style="background: white; border-radius: 12px; padding: 20px;">
             <div class="equipment-image text-center">
@@ -24,27 +43,22 @@
             <div class="equipment-subtitle">{{ $equipment->equipmentType->name ?? 'Unknown Type' }} • {{ $equipment->serial_number }}</div>
 
             <div class="action-buttons mt-3">
-                @can('equipment.edit')
-                    @if(Route::has($prefix . '.equipment.edit'))
+                @if($currentUser && $currentUser->hasPermissionTo('equipment.edit') && Route::has($prefix . '.equipment.edit'))
                     <button type="button" class="btn btn-primary edit-equipment-btn"
                             data-equipment-id="{{ $equipment->id }}"
                             data-url="{{ route($prefix . '.equipment.edit', $equipment) }}"
                             title="Edit Equipment">
                         <i class='bx bx-edit-alt'></i> EDIT
                     </button>
-                    @endif
-                @endcan
+                @endif
 
-                @can('reports.view')
-                    @if(Route::has($prefix . '.reports.history'))
+                @if($currentUser && $currentUser->hasPermissionTo('reports.view') && Route::has($prefix . '.reports.history'))
                     <a href="{{ route($prefix . '.reports.history', $equipment->id) }}" class="btn btn-primary" title="View History">
                         <i class='bx bx-history'></i> HISTORY
                     </a>
-                    @endif
-                @endcan
+                @endif
 
-                @can('equipment.delete')
-                    @if(Route::has($prefix . '.equipment.destroy'))
+                @if($currentUser && $currentUser->hasPermissionTo('equipment.delete') && Route::has($prefix . '.equipment.destroy'))
                     <form action="{{ route($prefix . '.equipment.destroy', $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this equipment?')">
                         @csrf
                         @method('DELETE')
@@ -52,8 +66,7 @@
                             <i class='bx bx-trash-alt'></i> DELETE
                         </button>
                     </form>
-                    @endif
-                @endcan
+                @endif
             </div>
 
             <div class="mt-3">
