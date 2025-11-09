@@ -238,7 +238,7 @@
             }
         @endphp
         <aside class="sidebar">
-            <a class="brand" href="{{ $prefix === 'admin' ? url('/admin/accounts') : url('/accounts') }}">
+            <a class="brand" href="javascript:window.location.reload();">
                 <img src="{{ asset('images/SDMDlogo.png') }}" alt="SDMD logo">
                 <div class="tt">
                     <p class="user-info">{{  auth()->user()->roles->first()->name ?? 'No Role' }}</p></div>

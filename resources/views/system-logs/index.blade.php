@@ -42,8 +42,7 @@
 @endsection
 
 @push('styles')
-  <link href="{{ asset('css/admin/accounts.css') }}" rel="stylesheet">
-  <link href="{{ asset('css/admin/logs.css') }}" rel="stylesheet">
+  <link href="{{ asset('css/logs.css') }}" rel="stylesheet">
 @endpush
 
 @section('title', $typeLabel . ' - SDMD Admin')
@@ -51,7 +50,7 @@
 @section('content')
 <div class="content logs-dashboard">
 
-@if(!auth()->user()->hasPermissionTo('logs.view'))
+@if(!auth()->user()->hasPermissionTo('system.logs.view'))
     @php abort(403) @endphp
 @else
 
