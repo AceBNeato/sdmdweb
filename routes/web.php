@@ -426,205 +426,162 @@ Route::middleware('aggressive.back.prevent')->group(function () {
     })->name('logout.redirect');
 });
 
-Route::prefix('admin')
+Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
+    ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        // Authentication
+        // Authentication Routes for Staff
         Route::get('logout', function() { return redirect('/'); });
         Route::post('logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])
             ->name('logout');
-
-        Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])->group(function () {
-
-                
-            Route::get('equipment', [AdminController::class, 'equipment'])
-                ->name('equipment');
+        Route::post('unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSession'])
+            ->name('unlock.session');
 
 
-            // User Creation Form
-            Route::get('accounts/form', [UserController::class, 'create'])
-                ->name('accounts.form');
+            // ============================================================================
+            // ADMIN DASHBOARD & MAIN FEATURES
+            // ============================================================================
 
-            // User Management Routes
+            // Main Dashboard Route
+            Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
+            // ============================================================================
+            // USER & ACCOUNT MANAGEMENT
+            // ============================================================================
+
+            // User Accounts Management
             Route::prefix('accounts')->name('accounts.')->middleware('permission:users.view')->group(function () {
-                // Show user creation form
+                Route::get('/', [UserController::class, 'index'])->name('index');
                 Route::get('form', [UserController::class, 'create'])->name('form');
-                // Show individual user
-                Route::get('{user}', [UserController::class, 'show'])->name('show');
-                // Store new user
                 Route::post('store', [UserController::class, 'store'])->name('store')->middleware('permission:users.create');
-                // Edit user
+                Route::get('{user}', [UserController::class, 'show'])->name('show');
                 Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
-                // Update user
                 Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
-                // Delete user
                 Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
-                // Show accounts form
-                Route::get('accounts/form', [UserController::class, 'create'])->name('accounts.form');
-            });
-
-            // Protected RBAC Routes - Require RBAC verification
-            Route::middleware(['rbac.verify'])->group(function () {
-                // Roles & Permissions
-                Route::resource('rbac/roles', RoleController::class)
-                    ->only(['index', 'edit', 'update'])
-                    ->names('rbac.roles');
-
-                Route::resource('rbac/permissions', PermissionController::class)
-                    ->only(['index'])
-                    ->names('rbac.permissions');
-
-                // Role Permissions Matrix
-                Route::get('rbac/roles/permissions', [RoleController::class, 'permissions'])
-                    ->name('rbac.roles.permissions');
-                Route::post('rbac/roles/permissions', [RoleController::class, 'updatePermissions'])
-                    ->name('rbac.roles.update-permissions');
-
-                // User Management
-                Route::prefix('rbac/users')
-                    ->name('rbac.users.')
-                    ->group(function () {
-                        Route::get('/', [UserController::class, 'index'])->name('index');
-                        Route::get('/create', [UserController::class, 'create'])->name('create');
-                        Route::post('/', [UserController::class, 'store'])->name('store');
-                        Route::get('/{user}', [UserController::class, 'show'])->name('show');
-
-                        // User Role Management
-                        Route::prefix('{user}')->group(function () {
-                            Route::get('/edit-roles', [UserController::class, 'editRoles'])
-                                ->name('edit-roles');
-                            Route::put('/update-roles', [UserController::class, 'updateRoles'])
-                                ->name('update-roles');
-                            Route::delete('/', [UserController::class, 'destroy'])
-                                ->name('destroy');
-
-                            // Add edit and update routes for basic user management
-                            Route::get('/edit', [UserController::class, 'edit'])->name('edit');
-                            Route::put('/', [UserController::class, 'update'])->name('update');
-                        });
-                    });
             });
 
             // Staff Management
-            Route::prefix('staff')
-                ->name('staff.')
-                ->middleware('permission:users.view')
-                ->group(function () {
-                    Route::get('/', [StaffController::class, 'index'])->name('index');
-                    Route::get('/create', [StaffController::class, 'create'])->name('create')->middleware('permission:users.create');
-                    Route::post('/', [StaffController::class, 'store'])->name('store')->middleware('permission:users.create');
-                    Route::get('/{staff}', [StaffController::class, 'show'])->name('show');
-                    Route::get('/{staff}/edit', [StaffController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
-                    Route::put('/{staff}', [StaffController::class, 'update'])->name('update')->middleware('permission:users.edit');
-                    Route::delete('/{staff}', [StaffController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
+            Route::prefix('staff')->name('staff.')->middleware('permission:users.view')->group(function () {
+                Route::get('/', [StaffController::class, 'index'])->name('index');
+                Route::get('create', [StaffController::class, 'create'])->name('create')->middleware('permission:users.create');
+                Route::post('/', [StaffController::class, 'store'])->name('store')->middleware('permission:users.create');
+                Route::get('{staff}', [StaffController::class, 'show'])->name('show');
+                Route::get('{staff}/edit', [StaffController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
+                Route::put('{staff}', [StaffController::class, 'update'])->name('update')->middleware('permission:users.edit');
+                Route::delete('{staff}', [StaffController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
 
-                    // Staff Actions
-                    Route::post('/{staff}/toggle-status', [StaffController::class, 'toggleStatus'])
-                        ->name('toggle-status')->middleware('permission:users.edit');
-                    Route::post('/{staff}/toggle-admin', [StaffController::class, 'toggleAdmin'])
-                        ->name('toggle-admin')->middleware('permission:users.edit');
-                });
+                // Staff Actions
+                Route::post('{staff}/toggle-status', [StaffController::class, 'toggleStatus'])
+                    ->name('toggle-status')->middleware('permission:users.edit');
+                Route::post('{staff}/toggle-admin', [StaffController::class, 'toggleAdmin'])
+                    ->name('toggle-admin')->middleware('permission:users.edit');
+            });
 
             // Technician Management
-            Route::prefix('technicians')
-                ->name('technicians.')
-                ->middleware('permission:users.view')
-                ->group(function () {
-                    Route::get('/', [TechnicianController::class, 'index'])->name('index');
-                    Route::get('/create', [TechnicianController::class, 'create'])->name('create')->middleware('permission:users.create');
-                    Route::post('/', [TechnicianController::class, 'store'])->name('store')->middleware('permission:users.create');
-                    Route::get('/{technician}/edit', [TechnicianController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
-                    Route::put('/{technician}', [TechnicianController::class, 'update'])->name('update')->middleware('permission:users.edit');
-                    Route::delete('/{technician}', [TechnicianController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
+            Route::prefix('technicians')->name('technicians.')->middleware('permission:users.view')->group(function () {
+                Route::get('/', [TechnicianController::class, 'index'])->name('index');
+                Route::get('create', [TechnicianController::class, 'create'])->name('create')->middleware('permission:users.create');
+                Route::post('/', [TechnicianController::class, 'store'])->name('store')->middleware('permission:users.create');
+                Route::get('{technician}', [TechnicianController::class, 'show'])->name('show');
+                Route::get('{technician}/edit', [TechnicianController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
+                Route::put('{technician}', [TechnicianController::class, 'update'])->name('update')->middleware('permission:users.edit');
+                Route::delete('{technician}', [TechnicianController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
+            });
+
+            // ============================================================================
+            // EQUIPMENT MANAGEMENT
+            // ============================================================================
+
+            Route::prefix('equipment')->name('equipment.')->middleware('auth')->group(function () {
+                Route::get('/', [AdminController::class, 'equipment'])->name('index');
+                Route::get('create', [EquipmentController::class, 'create'])->name('create')->middleware('permission:equipment.create');
+                Route::post('/', [EquipmentController::class, 'store'])->name('store')->middleware('permission:equipment.create');
+                Route::get('{equipment}', [EquipmentController::class, 'show'])->name('show');
+                Route::get('{equipment}/edit', [EquipmentController::class, 'edit'])->name('edit')->middleware('permission:equipment.edit');
+                Route::put('{equipment}', [EquipmentController::class, 'update'])->name('update')->middleware('permission:equipment.edit');
+                Route::delete('{equipment}', [EquipmentController::class, 'destroy'])->name('destroy')->middleware('permission:equipment.delete');
+
+                // Equipment Actions
+                Route::get('{equipment}/qrcode', [EquipmentController::class, 'qrCode'])->name('qrcode');
+                Route::get('{equipment}/download-qrcode', [EquipmentController::class, 'downloadQrCode'])->name('download-qrcode');
+                Route::get('{equipment}/print-qrcode', [EquipmentController::class, 'qrCode'])->name('print-qrcode');
+                Route::get('print-qrcodes', [EquipmentController::class, 'printQrcodes'])->name('print-qrcodes');
+
+                // QR Scanner
+                Route::get('scan', [EquipmentController::class, 'scanView'])->name('scan');
+                Route::post('scan', [EquipmentController::class, 'scanQrCode'])->name('scan')->middleware('permission:equipment.view');
+
+                // History Management
+                Route::prefix('{equipment}')->group(function () {
+                    Route::get('history/create', [EquipmentController::class, 'createHistory'])
+                        ->name('history.create')->middleware('permission:history.create');
+                    Route::post('history', [EquipmentController::class, 'storeHistory'])
+                        ->name('history.store')->middleware('permission:history.store');
+                    Route::post('generate-jo', [EquipmentController::class, 'generateJONumber'])->name('generate-jo');
+                    Route::post('check-latest-repair', [EquipmentController::class, 'checkLatestRepair'])->name('check-latest-repair');
+                    Route::post('check-sequences', [EquipmentController::class, 'checkSequences'])->name('check-sequences');
+                    Route::post('clear-history-prompt', [EquipmentController::class, 'clearHistoryPrompt'])->name('clear-history-prompt');
                 });
+            });
 
-            // Equipment Management
-            Route::prefix('equipment')
-                ->name('equipment.')
-                ->middleware('auth')
-                ->group(function () {
-                    Route::get('/', [AdminController::class, 'equipment'])->name('index');
-                    Route::get('/create', [EquipmentController::class, 'create'])->name('create')->middleware('permission:equipment.create');
-                    Route::post('/', [EquipmentController::class, 'store'])->name('store')->middleware('permission:equipment.create');
-                    Route::get('/{equipment}', [EquipmentController::class, 'show'])->name('show');
-                    Route::get('/{equipment}/edit', [EquipmentController::class, 'edit'])->name('edit')->middleware('permission:equipment.edit');
-                    Route::put('/{equipment}', [EquipmentController::class, 'update'])->name('update')->middleware('permission:equipment.edit');
-                    Route::delete('/{equipment}', [EquipmentController::class, 'destroy'])->name('destroy')->middleware('permission:equipment.delete');
+            // ============================================================================
+            // MAINTENANCE & REPAIRS
+            // ============================================================================
 
-                    Route::get('/{equipment}/qrcode', [EquipmentController::class, 'qrCode'])
-                        ->name('qrcode');
-                    Route::get('/{equipment}/download-qrcode', [EquipmentController::class, 'downloadQrCode'])
-                        ->name('download-qrcode');
-                    Route::get('/{equipment}/print-qrcode', [EquipmentController::class, 'qrCode'])
-                        ->name('print-qrcode');
-                    Route::get('/print-qrcodes', [EquipmentController::class, 'printQrcodes'])
-                        ->name('print-qrcodes');
-                    Route::get('/scan', [EquipmentController::class, 'scanView'])
-                        ->name('scan');
-                    Route::post('/scan', [EquipmentController::class, 'scanQrCode'])
-                        ->name('scan')
-                        ->middleware('permission:equipment.view');
+            Route::prefix('maintenance')->name('maintenance.')->middleware('permission:equipment.view')->group(function () {
+                Route::get('/', [MaintenanceController::class, 'index'])->name('index');
+            });
 
-                    // History routes
-                    Route::prefix('{equipment}')->group(function () {
-                        Route::get('/history/create', [EquipmentController::class, 'createHistory'])
-                            ->name('history.create')
-                            ->middleware('permission:history.create');
-                        Route::post('/history', [EquipmentController::class, 'storeHistory'])
-                            ->name('history.store')
-                            ->middleware('permission:history.store');
-                        Route::post('/generate-jo', [EquipmentController::class, 'generateJONumber'])
-                            ->name('generate-jo');
-                        Route::post('/check-latest-repair', [EquipmentController::class, 'checkLatestRepair'])
-                            ->name('check-latest-repair');
-                        Route::post('/check-sequences', [EquipmentController::class, 'checkSequences'])
-                            ->name('check-sequences');
-                        Route::post('/clear-history-prompt', [EquipmentController::class, 'clearHistoryPrompt'])
-                            ->name('clear-history-prompt');
-                    });
+            Route::prefix('repairs')->name('repairs.')->middleware('permission:equipment.view')->group(function () {
+                Route::get('/', [RepairController::class, 'index'])->name('index');
+            });
+
+            // ============================================================================
+            // REPORTS
+            // ============================================================================
+
+            Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
+                Route::get('/', [ReportController::class, 'index'])->name('index');
+                Route::get('{id}/history', [ReportController::class, 'history'])->name('history')->middleware('permission:reports.generate');
+                Route::get('export', [ReportController::class, 'export'])->name('export');
+
+                // Equipment History Reports
+                Route::prefix('equipment/{equipment}')->middleware('permission:reports.generate')->group(function () {
+                    Route::get('history', [ReportController::class, 'equipmentHistory'])->name('equipment.history.view');
+                    Route::get('export', [ReportController::class, 'exportEquipmentHistory'])->name('equipment.history.export');
                 });
+            });
 
-            // QR Scanner
-            Route::get('/qr-scanner', [EquipmentController::class, 'qrScanner'])
-                ->name('qr-scanner')
-                ->middleware('permission:qr.scan');
-
-            // Maintenance
-            Route::prefix('maintenance')
-                ->name('maintenance.')
-                ->middleware('permission:equipment.view')
-                ->group(function () {
-                    Route::get('/', [MaintenanceController::class, 'index'])->name('index');
-                    // Additional maintenance routes
-                });
-
-            // Repairs
-            Route::prefix('repairs')
-                ->name('repairs.')
-                ->middleware('permission:equipment.view')
-                ->group(function () {
-                    Route::get('/', [RepairController::class, 'index'])->name('index');
-                    // Additional repair routes
-                });
-
-            // Reports
-            Route::prefix('reports')
-                ->name('reports.')
-                ->middleware('permission:reports.view')
-                ->group(function () {
-                    Route::get('/', [ReportController::class, 'index'])->name('index');
-                    Route::get('{id}/history', [ReportController::class, 'history'])->name('history')->middleware('permission:reports.generate');
-                    
-                    // Equipment History Routes
-                    Route::prefix('equipment/{equipment}')->group(function () {
-                        Route::get('/history', [ReportController::class, 'equipmentHistory'])->name('equipment.history.view');
-                        Route::get('/export', [ReportController::class, 'exportEquipmentHistory'])->name('equipment.history.export');
-                    })->middleware('permission:reports.generate');
-                    
-                    // Additional report routes
-                    Route::get('/export', [ReportController::class, 'export'])->name('export');
-                });
             Route::resource('reports', ReportController::class)->except(['index'])->middleware('permission:reports.generate');
+
+            // ============================================================================
+            // SYSTEM ADMINISTRATION
+            // ============================================================================
+
+            // RBAC Management (Protected)
+            Route::middleware(['rbac.verify'])->group(function () {
+                Route::resource('rbac/roles', RoleController::class)
+                    ->only(['index', 'edit', 'update'])->names('rbac.roles');
+                Route::resource('rbac/permissions', PermissionController::class)
+                    ->only(['index'])->names('rbac.permissions');
+
+                // Role Permissions Management
+                Route::get('rbac/roles/permissions', [RoleController::class, 'permissions'])->name('rbac.roles.permissions');
+                Route::post('rbac/roles/permissions', [RoleController::class, 'updatePermissions'])->name('rbac.roles.update-permissions');
+
+                // RBAC User Management
+                Route::prefix('rbac/users')->name('rbac.users.')->group(function () {
+                    Route::get('/', [UserController::class, 'index'])->name('index');
+                    Route::get('create', [UserController::class, 'create'])->name('create');
+                    Route::post('/', [UserController::class, 'store'])->name('store');
+                    Route::get('{user}', [UserController::class, 'show'])->name('show');
+                    Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit');
+                    Route::put('{user}', [UserController::class, 'update'])->name('update');
+                    Route::get('{user}/edit-roles', [UserController::class, 'editRoles'])->name('edit-roles');
+                    Route::put('{user}/update-roles', [UserController::class, 'updateRoles'])->name('update-roles');
+                    Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy');
+                });
+            });
 
             // Office Management
             Route::resource('offices', OfficeController::class)->middleware('permission:settings.manage');
@@ -632,31 +589,69 @@ Route::prefix('admin')
                 ->name('offices.toggle-status')->middleware('permission:settings.manage');
 
             // System Logs
-            Route::prefix('system-logs')
-                ->name('system-logs.')
-                // ->middleware('permission:system.logs.view') // Temporarily disabled for testing
-                ->group(function () {
-                    Route::get('/', [\App\Http\Controllers\Admin\SystemLogController::class, 'index'])->name('index');
-                    Route::get('/accounts', [\App\Http\Controllers\Admin\SystemLogController::class, 'accountsLogs'])->name('accounts');
-                    Route::get('/equipment', [\App\Http\Controllers\Admin\SystemLogController::class, 'equipmentLogs'])->name('equipment');
-                    Route::get('/user-logins', [\App\Http\Controllers\Admin\SystemLogController::class, 'userLoginLogs'])->name('user-logins');
-                    Route::get('/downloads', [\App\Http\Controllers\Admin\SystemLogController::class, 'downloadLogs'])->name('downloads');
-                    Route::get('/export', [\App\Http\Controllers\Admin\SystemLogController::class, 'export'])->name('export');
-                    Route::delete('/clear', [\App\Http\Controllers\Admin\SystemLogController::class, 'clear'])->name('clear');
-                });
+            Route::prefix('system-logs')->name('system-logs.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\SystemLogController::class, 'index'])->name('index');
+                Route::get('accounts', [\App\Http\Controllers\Admin\SystemLogController::class, 'accountsLogs'])->name('accounts');
+                Route::get('equipment', [\App\Http\Controllers\Admin\SystemLogController::class, 'equipmentLogs'])->name('equipment');
+                Route::get('user-logins', [\App\Http\Controllers\Admin\SystemLogController::class, 'userLoginLogs'])->name('user-logins');
+                Route::get('downloads', [\App\Http\Controllers\Admin\SystemLogController::class, 'downloadLogs'])->name('downloads');
+                Route::get('export', [\App\Http\Controllers\Admin\SystemLogController::class, 'export'])->name('export');
+                Route::delete('clear', [\App\Http\Controllers\Admin\SystemLogController::class, 'clear'])->name('clear');
+            });
 
             // Settings
-            Route::prefix('settings')
-                ->name('settings.')
-                ->middleware('permission:settings.manage')
-                ->group(function () {
-                    Route::get('/', function() {
-                        $settings = [
-                            'session_lockout_minutes' => \App\Models\Setting::getSessionLockoutMinutes(),
-                        ];
-                        return view('settings.index', compact('settings'));
-                    })->name('index');
-                    Route::post('/', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('update');
-                });
+            Route::prefix('settings')->name('settings.')->middleware('permission:settings.manage')->group(function () {
+                Route::get('/', function() {
+                    $settings = [
+                        'session_lockout_minutes' => \App\Models\Setting::getSessionLockoutMinutes(),
+                    ];
+                    return view('settings.index', compact('settings'));
+                })->name('index');
+                Route::post('/', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('update');
+            });
+
+            // QR Scanner (Global)
+            Route::get('qr-scanner', [EquipmentController::class, 'qrScanner'])
+                ->name('qr-scanner')->middleware('permission:qr.scan');
+
         });
+
+    // ============================================================================
+    // STAFF ROUTES
+    // ============================================================================
+
+    Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
+        ->prefix('staff')
+        ->name('staff.')
+        ->group(function () {
+
+        // Authentication Routes for Staff
+        Route::get('logout', function() { return redirect('/'); });
+        Route::post('logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])
+            ->name('logout');
+        Route::post('unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSession'])
+            ->name('unlock.session');
+
+        // Staff Dashboard
+        Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'dashboard'])->name('dashboard');
+
+        // Equipment Management (View Only)
+        Route::prefix('equipment')->name('equipment.')->middleware('permission:equipment.view')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'equipment'])->name('index');
+            Route::get('{equipment}', [\App\Http\Controllers\Staff\StaffController::class, 'showEquipment'])->name('show');
+        });
+
+        // Reports (Limited Access)
+        Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'reports'])->name('index');
+            Route::get('{id}/history', [\App\Http\Controllers\Staff\StaffController::class, 'reportHistory'])->name('history')->middleware('permission:reports.generate');
+            Route::get('export', [\App\Http\Controllers\Staff\StaffController::class, 'exportReports'])->name('export');
+
+            // Equipment History Reports
+            Route::prefix('equipment/{equipment}')->middleware('permission:reports.generate')->group(function () {
+                Route::get('history', [\App\Http\Controllers\Staff\StaffController::class, 'equipmentHistory'])->name('equipment.history.view');
+                Route::get('export', [\App\Http\Controllers\Staff\StaffController::class, 'exportEquipmentHistory'])->name('equipment.history.export');
+            });
+        });
+
     });

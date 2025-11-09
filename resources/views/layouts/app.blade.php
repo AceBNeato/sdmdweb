@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>@yield('title', auth()->check() ? (auth()->user()->is_admin ? 'SDMD Admin' : (auth()->user()->hasRole('technician') ? 'SDMD Technician' : (auth()->user()->hasRole('staff') ? 'SDMD Staff' : 'SDMD'))) : 'SDMD Login')</title>
+    <title>@yield('title', auth('technician')->check() || auth('staff')->check() || auth()->check() ? ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->is_admin ? 'SDMD Admin' : ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->hasRole('technician') ? 'SDMD Technician' : ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->hasRole('staff') ? 'SDMD Staff' : 'SDMD'))) : 'SDMD Login')</title>
     <link rel="icon" href="{{ asset('images/SDMDlogo.png') }}" sizes="any">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -227,72 +227,84 @@
 <body>
     <div class="app" id="appRoot">
         @php
-            // Determine the correct prefix based on user role for unified navigation
+            // Determine the correct prefix based on user authentication guard
             $prefix = '';
-            if (auth()->user()->hasRole('technician')) {
+            if (auth('technician')->check()) {
                 $prefix = 'technician';
-            } elseif (auth()->user()->hasRole('staff')) {
+            } elseif (auth('staff')->check()) {
                 $prefix = 'staff';
-            } else {
+            } elseif (auth()->check()) {
                 $prefix = 'admin';
             }
+            // Resolve the currently authenticated user across guards
+            $currentUser = auth('technician')->user() ?? auth('staff')->user() ?? auth()->user();
         @endphp
         <aside class="sidebar">
             <a class="brand" href="javascript:window.location.reload();">
                 <img src="{{ asset('images/SDMDlogo.png') }}" alt="SDMD logo">
                 <div class="tt">
-                    <p class="user-info">{{  auth()->user()->roles->first()->name ?? 'No Role' }}</p></div>
+                    <p class="user-info">{{  (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())?->roles?->first()?->name ?? 'No Role' }}</p></div>
             </a>
         <hr>
 
             <nav class="menu">
                 <!-- QR Scanner - available to technicians and admins with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('qr.scan'))
-                <a href="{{ $prefix === 'technician' ? route('technician.qr-scanner') : url('/admin/qr-scanner') }}" class="{{ request()->routeIs('technician.qr-scanner') || (Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.qr-scanner')) ? 'active' : '' }}">
+                @if($currentUser && $currentUser->hasPermissionTo('qr.scan'))
+                @if($prefix === 'admin' || $prefix === 'technician')
+                <a href="{{ route($prefix . '.qr-scanner') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.qr-scanner') ? 'active' : '' }}">
                     <i class='bx bx-qr-scan'></i>QR Scan
                 </a>
                 @endif
+                @endif
 
-                <!-- Accounts - available to users with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('users.view'))
-                <a href="{{ $prefix === 'admin' ? url('/admin/accounts') : url('/accounts') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.accounts') || request()->routeIs('accounts.index') ? 'active' : '' }}">
+                <!-- Accounts - only for admin -->
+                @if($currentUser && $currentUser->hasPermissionTo('users.view'))
+                @if($prefix === 'admin')
+                <a href="{{ route('admin.accounts.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.accounts') ? 'active' : '' }}">
                     <i class='bx bx-user'></i>Accounts
                 </a>
                 @endif
+                @endif
 
-                <!-- Offices - available to admin users with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('settings.manage') && $prefix === 'admin')
-                <a href="{{ url('/admin/offices') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.offices') ? 'active' : '' }}">
+                <!-- Offices - only for admin -->
+                @if($currentUser && $currentUser->hasPermissionTo('settings.manage'))
+                @if($prefix === 'admin')
+                <a href="{{ route('admin.offices.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.offices') ? 'active' : '' }}">
                     <i class='bx bx-building'></i>Office
                 </a>
                 @endif
+                @endif
 
-                <!-- Equipment - available to users with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('equipment.view'))
-                <a href="{{ $prefix === 'admin' ? url('/admin/equipment') : route($prefix . '.equipment.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.equipment') || request()->routeIs('technician.equipment.*') || request()->routeIs('staff.equipment.*') ? 'active' : '' }}">
+                <!-- Equipment - available to all user types -->
+                @if($currentUser && $currentUser->hasPermissionTo('equipment.view'))
+                <a href="{{ route($prefix . '.equipment.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.equipment') || request()->routeIs('technician.equipment.*') || request()->routeIs('staff.equipment.*') ? 'active' : '' }}">
                     <i class='bx bx-cube'></i>Equipments
                 </a>
                 @endif
 
-                <!-- Reports - available to users with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('reports.view') && ($prefix === 'admin' || $prefix === 'technician' || $prefix === 'staff'))
-                <a href="{{ $prefix === 'admin' ? url('/admin/reports') : route($prefix . '.reports.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.reports') || request()->routeIs('technician.reports.*') || request()->routeIs('staff.reports.*') ? 'active' : '' }}">
+                <!-- Reports - available to all user types -->
+                @if($currentUser && $currentUser->hasPermissionTo('reports.view'))
+                <a href="{{ route($prefix . '.reports.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.reports') || request()->routeIs('technician.reports.*') || request()->routeIs('staff.reports.*') ? 'active' : '' }}">
                     <i class='bx bx-bar-chart-alt-2'></i>Reports
                 </a>
                 @endif
 
-                <!-- System Logs - available to admin users with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('system.logs.view') && $prefix === 'admin')
-                <a href="{{ url('/admin/system-logs') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.system-logs') ? 'active' : '' }}">
+                <!-- System Logs - only for admin -->
+                @if($currentUser && $currentUser->hasPermissionTo('system.logs.view'))
+                @if($prefix === 'admin')
+                <a href="{{ route('admin.system-logs.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.system-logs') ? 'active' : '' }}">
                     <i class='bx bx-file-find'></i>System Logs
                 </a>
                 @endif
+                @endif
 
-                <!-- Settings - available to admin users with permission -->
-                @if(auth()->check() && auth()->user()->hasPermissionTo('settings.manage') && $prefix === 'admin')
-                <a href="{{ url('/admin/settings') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.settings') ? 'active' : '' }}">
+                <!-- Settings - only for admin -->
+                @if($currentUser && $currentUser->hasPermissionTo('settings.manage'))
+                @if($prefix === 'admin')
+                <a href="{{ route('admin.settings.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.settings') ? 'active' : '' }}">
                     <i class='bx bx-cog'></i>Settings
                 </a>
+                @endif
                 @endif
             </nav>
 
@@ -300,11 +312,11 @@
             <div class="profile-dropdown">
                 <button class="profile-btn" id="profileDropdownBtn">
                     <i class='bx bx-user-circle'></i>
-                    <span>{{ auth()->user()->name }}</span>
+                    <span>{{ (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->name }}</span>
                     <i class='bx bx-chevron-up dropdown-arrow'></i>
                 </button>
                 <div class="profile-menu" id="profileDropdownMenu">
-                    <a href="{{ $prefix === 'admin' ? route('admin.accounts') : url('/accounts') }}" class="profile-menu-item">
+                    <a href="{{ $prefix === 'admin' ? url('/admin/accounts') : ($prefix === 'technician' ? url('/technician') : url('/staff')) }}" class="profile-menu-item">
                         <i class='bx bx-user'></i> My Profile
                     </a>
                     <div class="profile-menu-divider"></div>
@@ -313,7 +325,7 @@
                     </a>
                 </div>
             </div>
-            <form id="logout-form" action="{{ url('/admin/logout') }}" method="POST" style="display: none;">
+            <form id="logout-form" action="{{ $prefix === 'admin' ? url('/admin/logout') : ($prefix === 'technician' ? url('/technician/logout') : url('/staff/logout')) }}" method="POST" style="display: none;">
                 @csrf
             </form>
         </aside>
@@ -405,7 +417,7 @@
                 });
             }
 
-            @if(!auth()->check())
+            @if(!auth('technician')->check() && !auth('staff')->check() && !auth()->check())
                 // Force redirect to login and prevent any back navigation
                 window.history.replaceState(null, null, '{{ url('/login') }}');
                 window.location.replace('{{ url('/login') }}');
@@ -451,7 +463,7 @@
 
         // Prevent page caching on load
         if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
-            @if(!auth()->check())
+            @if(!auth('technician')->check() && !auth('staff')->check() && !auth()->check())
                 window.location.replace('{{ url('/login') }}');
             @endif
         }
@@ -565,7 +577,7 @@
         });
     </script>
 
-    @auth
+    @if(auth('technician')->check() || auth('staff')->check() || auth()->check())
     <script>
         // Pass session data to JavaScript
         window.sessionData = {
@@ -574,6 +586,6 @@
             unlockUrl: '@if(auth()->guard("technician")->check()){{ route("technician.unlock.session") }}@elseif(auth()->guard("staff")->check()){{ route("staff.unlock.session") }}@else{{ route("unlock.session") }}@endif'
         };
     </script>
-    @endauth
+    @endif
 </body>
 </html>

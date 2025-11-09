@@ -164,7 +164,9 @@ class EquipmentController extends Controller
             Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id . ' - ' . $e->getMessage());
         }
 
-        return redirect()->route('admin.equipment.index')
+        $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+
+        return redirect()->route($prefix . '.equipment.index')
             ->with('success', 'Equipment added successfully.');
     }
 
@@ -252,7 +254,9 @@ class EquipmentController extends Controller
 
         $equipment->update($validated);
 
-        return redirect()->route('admin.equipment.index')
+        $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+
+        return redirect()->route($prefix . '.equipment.index')
             ->with('success', 'Equipment updated successfully.');
     }
 
@@ -260,7 +264,9 @@ class EquipmentController extends Controller
     {
         $equipment->forceDelete();
 
-        return redirect()->route('admin.equipment.index')
+        $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+
+        return redirect()->route($prefix . '.equipment.index')
             ->with('success', 'Equipment deleted successfully.');
     }
 
@@ -365,6 +371,7 @@ class EquipmentController extends Controller
             \Illuminate\Support\Facades\DB::beginTransaction();
 
             $user = auth()->user();
+            $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 
             $history = new \App\Models\EquipmentHistory([
                 'equipment_id' => $equipment->id,
@@ -403,7 +410,7 @@ class EquipmentController extends Controller
             }
 
             return redirect()
-                ->route('admin.equipment.index')
+                ->route($prefix . '.equipment.index')
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {

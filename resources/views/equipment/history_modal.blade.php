@@ -99,7 +99,7 @@
 @endpush
 
 <div class="text-center mb-4">
-    <p class="text-muted">Fill in the details below to add history entry for {{ $equipment->model_number }} (SN: {{ $equipment->serial_number }})</p>
+    <p class="text-muted">Record maintenance or service activity for {{ $equipment->model_number }} (SN: {{ $equipment->serial_number }})</p>
 </div>
 
 @if ($errors->any())
@@ -112,7 +112,7 @@
     </div>
 @endif
 
-<form action="{{ auth()->guard('technician')->check() ? route('technician.equipment.history.store', $equipment) : route('admin.equipment.history.store', $equipment) }}" method="POST">
+<form action="{{ route($prefix . '.equipment.history.store', $equipment) }}" method="POST">
     @csrf
 
     <div class="row">
@@ -193,7 +193,8 @@
 </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize immediately since this is loaded via AJAX into modal
+(function() {
     const dateInput = document.getElementById('date');
     const joPrefixInput = document.getElementById('jo_prefix');
     const joSequenceInput = document.getElementById('jo_sequence');
@@ -256,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check if this sequence is valid for the selected date
         console.log('Checking sequences for date:', date.split('T')[0], 'equipment ID:', {{ $equipment->id }});
-        fetch('{{ auth()->guard('technician')->check() ? route("technician.equipment.check-sequences", $equipment) : route("admin.equipment.check-sequences", $equipment) }}', {
+        fetch('{{ route($prefix . ".equipment.check-sequences", $equipment) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -339,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function checkBackdating(selectedDateTime) {
         console.log('Calling checkBackdating API with date:', selectedDateTime);
-        fetch('{{ auth()->guard('technician')->check() ? route("technician.equipment.check-latest-repair", $equipment) : route("admin.equipment.check-latest-repair", $equipment) }}', {
+        fetch('{{ route($prefix . ".equipment.check-latest-repair", $equipment) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -362,5 +363,5 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error checking backdating:', error);
         });
     }
-});
+})();
 </script>
