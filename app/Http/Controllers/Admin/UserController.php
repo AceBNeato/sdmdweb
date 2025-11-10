@@ -44,7 +44,8 @@ class UserController extends Controller
         // Apply search filter
         if ($search) {
             $usersQuery->where(function($query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%')
+                $query->where('first_name', 'like', '%' . $search . '%')
+                      ->orWhere('last_name', 'like', '%' . $search . '%')
                       ->orWhere('email', 'like', '%' . $search . '%')
                       ->orWhere('position', 'like', '%' . $search . '%')
                       ->orWhere('phone', 'like', '%' . $search . '%');
@@ -77,7 +78,7 @@ class UserController extends Controller
             }
         }
 
-        $users = $usersQuery->orderBy('name')->paginate(10);
+        $users = $usersQuery->orderBy('first_name')->paginate(10);
 
         // Get filter options
         $campuses = \App\Models\Campus::where('is_active', true)->orderBy('name')->get();
@@ -116,7 +117,8 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'position' => 'required|string|max:255',
@@ -141,7 +143,8 @@ class UserController extends Controller
 
         // Create the user with all information
         $user = User::create([
-            'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'phone' => $request->phone ?? null,
@@ -332,7 +335,8 @@ class UserController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
@@ -349,7 +353,8 @@ class UserController extends Controller
 
         // Update user with all information
         $user->update([
-            'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'position' => $validated['position'],

@@ -10,7 +10,7 @@
                      alt="Profile Picture"
                      class="profile-avatar profile-avatar-lg img-fluid"
                      onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">
-                <h5 class="mt-3 mb-1">{{ $user->name }}</h5>
+                <h5 class="mt-3 mb-1">{{ $user->first_name . ' ' . $user->last_name }}</h5>
                 <div class="text-muted small">{{ $user->position ?? 'User' }}</div>
                 <div class="mt-3">
                     <button type="button"
@@ -31,7 +31,7 @@
                     <div class="small text-muted">Phone</div>
                     <div class="fw-semibold">{{ $user->phone ?? 'N/A' }}</div>
                 </div>
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <div class="small text-muted">Address</div>
                     <div class="fw-semibold">{{ $user->address ?? 'N/A' }}</div>
                 </div>

@@ -1,7 +1,7 @@
 @php
     $user = $user ?? auth('staff')->user() ?? auth('technician')->user() ?? auth()->user();
     $routePrefix = auth('technician')->check() ? 'technician' : (auth('staff')->check() ? 'staff' : 'admin');
-    $updateRoute = $routePrefix === 'staff' ? route('staff.profile.update') : ($routePrefix === 'technician' && Route::has('technician.profile.update') ? route('technician.profile.update') : '#');
+    $updateRoute = $routePrefix === 'staff' ? route('staff.profile.update') : ($routePrefix === 'technician' && Route::has('technician.profile.update') ? route('technician.profile.update') : ($routePrefix === 'admin' ? route('admin.profile.update') : '#'));
 @endphp
 
 <form action="{{ $updateRoute }}" method="POST" enctype="multipart/form-data" id="profileEditForm" class="profile-edit-form">
@@ -10,7 +10,7 @@
 
     <div class="mb-3 text-center">
         <div class="profile-avatar-wrapper">
-            <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/SDMDlogo.png') }}"
+            <img src="{{ $user->profile_photo_url }}"
                  class="profile-avatar profile-avatar-md"
                  id="profileImagePreview"
                  onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">
@@ -23,8 +23,12 @@
 
     <div class="row g-3">
         <div class="col-md-6">
-            <label class="form-label">Full Name *</label>
-            <input type="text" name="name" class="form-control" value="{{ old('name', $user->name) }}" required>
+            <label class="form-label">First Name *</label>
+            <input type="text" name="first_name" class="form-control" value="{{ old('first_name', $user->first_name) }}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Last Name *</label>
+            <input type="text" name="last_name" class="form-control" value="{{ old('last_name', $user->last_name) }}" required>
         </div>
         <div class="col-md-6">
             <label class="form-label">Email *</label>
@@ -47,7 +51,7 @@
             <label class="form-label">Specialization</label>
             <input type="text" name="specialization" class="form-control" value="{{ old('specialization', $user->specialization) }}">
         </div>
-        <div class="col-12">
+        <div class="col-md-6">
             <label class="form-label">Skills</label>
             <textarea name="skills" rows="3" class="form-control">{{ old('skills', $user->skills) }}</textarea>
         </div>

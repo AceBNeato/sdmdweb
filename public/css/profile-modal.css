@@ -14,7 +14,7 @@
 
 .profile-modal .col-md-8,
 .profile-edit-form .col-md-8 {
-    width: 90% !important;
+    width: 100% !important;
     height: auto !important;
 }
 
@@ -23,12 +23,12 @@
 }
 
 
-
-.profile-modal .col-md-6{    
+.col-md-6{    
     padding: 1rem !important;
     margin-top: 0rem !important;
-    width: 100% !important;
+    width: 80% !important;
 }
+
 
 .profile-modal,
 .profile-edit-form {

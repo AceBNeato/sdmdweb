@@ -34,7 +34,8 @@ class AdminController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('position', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%");
@@ -166,10 +167,82 @@ class AdminController extends Controller
 
         if (request()->ajax() || request()->boolean('modal')) {
             return view('profile.edit_modal', [
-                'admin' => $user,
+                'user' => $user,
             ]);
         }
 
         return redirect()->route('admin.dashboard');
+    }
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Please log in to update your profile.');
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
+            'address' => 'nullable|string|max:255',
+            'employee_id' => 'nullable|string|max:255',
+            'specialization' => 'nullable|string|max:255',
+            'skills' => 'nullable|string',
+            'current_password' => 'nullable|string',
+            'new_password' => 'nullable|string|min:8|confirmed',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            // Verify current password if changing password
+            if (!empty($validated['new_password'])) {
+                if (!\Hash::check($validated['current_password'], $user->password)) {
+                    return back()->with('error', 'Current password is incorrect.');
+                }
+            }
+
+            $updateData = [
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'employee_id' => $validated['employee_id'] ?? null,
+                'specialization' => $validated['specialization'] ?? null,
+                'skills' => $validated['skills'] ?? null,
+            ];
+
+            // Handle profile photo upload
+            if ($request->hasFile('profile_photo')) {
+                $file = $request->file('profile_photo');
+                $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('public/profile_photos', $filename);
+                $updateData['profile_photo'] = 'profile_photos/' . $filename;
+            }
+
+            $user->update($updateData);
+
+            // Update password if provided
+            if (!empty($validated['new_password'])) {
+                $user->update(['password' => \Hash::make($validated['new_password'])]);
+            }
+
+            // Log the activity
+            Activity::create([
+                'user_id' => $user->id,
+                'action' => 'Profile Updated',
+                'description' => 'Admin profile updated',
+            ]);
+
+            return back()->with('success', 'Profile updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Admin profile update error: ' . $e->getMessage(), [
+                'admin_id' => $user->id,
+            ]);
+
+            return back()->with('error', 'Failed to update profile. Please try again.');
+        }
     }
 }

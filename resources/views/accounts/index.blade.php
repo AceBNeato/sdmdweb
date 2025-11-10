@@ -121,7 +121,7 @@
                 @forelse($users as $user)
                     <tr>
                         <td>
-                            <div class="fw-bold text-primary">{{ $user->name }}</div>
+                            <div class="fw-bold text-primary">{{ $user->first_name . ' ' . $user->last_name }}</div>
                         </td>
                         <td>
                             <div class="fw-semibold">{{ $user->email }}</div>

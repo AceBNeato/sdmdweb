@@ -410,6 +410,7 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
             // Admin Profile (modal only)
             Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
             Route::get('/profile/edit', [AdminController::class, 'editProfile'])->name('profile.edit');
+            Route::put('/profile/update', [AdminController::class, 'updateProfile'])->name('profile.update');
 
             // ============================================================================
             // USER & ACCOUNT MANAGEMENT

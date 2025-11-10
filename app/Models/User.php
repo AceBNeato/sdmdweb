@@ -51,7 +51,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
         'is_active',
@@ -266,6 +267,14 @@ class User extends Authenticatable
     public function can($ability, $arguments = [])
     {
         return $this->hasPermissionTo($ability);
+    }
+
+    /**
+     * Get the user's full name.
+     */
+    public function getNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
     }
 
     /**

@@ -90,7 +90,8 @@ class SystemLogController extends BaseController
                 $q->where('action', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', "%{$search}%")
+                      $userQuery->where('first_name', 'like', "%{$search}%")
+                               ->orWhere('last_name', 'like', "%{$search}%")
                                ->orWhere('email', 'like', "%{$search}%");
                   });
             });
@@ -122,8 +123,8 @@ class SystemLogController extends BaseController
             ->pluck('action');
 
         // Get users for filter dropdown
-        $users = \App\Models\User::select('id', 'name', 'email')
-            ->orderBy('name')
+        $users = \App\Models\User::select('id', 'first_name', 'last_name', 'email')
+            ->orderBy('first_name')
             ->get();
 
         // Paginate results

@@ -342,7 +342,7 @@
             <div class="profile-dropdown">
                 <button class="profile-btn" id="profileDropdownBtn">
                     <i class='bx bx-user-circle'></i>
-                    <span>{{ (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->name }}</span>
+                    <span>{{ (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->first_name . ' ' . (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->last_name }}</span>
                     <i class='bx bx-chevron-up dropdown-arrow'></i>
                 </button>
                 <div class="profile-menu" id="profileDropdownMenu">

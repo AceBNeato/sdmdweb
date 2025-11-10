@@ -338,11 +338,20 @@
 
                     <div class="form-row">
                         <div class="form-group required">
-                            <label for="name">Full Name</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror"
-                                   id="name" name="name" value="{{ old('name', $user->name) }}" required
-                                   placeholder="Enter full name">
-                            @error('name')
+                            <label for="first_name">First Name</label>
+                            <input type="text" class="form-control @error('first_name') is-invalid @enderror"
+                                   id="first_name" name="first_name" value="{{ old('first_name', $user->first_name) }}" required
+                                   placeholder="Enter first name">
+                            @error('first_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="form-group required">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" class="form-control @error('last_name') is-invalid @enderror"
+                                   id="last_name" name="last_name" value="{{ old('last_name', $user->last_name) }}" required
+                                   placeholder="Enter last name">
+                            @error('last_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

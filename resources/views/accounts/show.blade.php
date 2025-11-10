@@ -66,7 +66,7 @@
                     </h6>
 
                     <div class="info-meta">Full Name</div>
-                    <div class="info-value">{{ $user->name }}</div>
+                    <div class="info-value">{{ $user->first_name . ' ' . $user->last_name }}</div>
                 </div>
 
                 <!-- Contact Information Section -->

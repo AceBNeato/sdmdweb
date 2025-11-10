@@ -73,7 +73,8 @@ class AdminUserSeeder extends Seeder
         $superAdmin = User::updateOrCreate(
             ['email' => 'superadmin@sdmd.ph'],
             [
-                'name' => 'Super Administrator',
+                'first_name' => 'Super',
+                'last_name' => 'Administrator',
                 'password' => Hash::make('superadmin123'),
                 'position' => 'Super Administrator',
                 'phone' => '09123456780',
@@ -90,8 +91,9 @@ class AdminUserSeeder extends Seeder
         // Create second super admin user
         $superAdmin2 = User::updateOrCreate(
             ['email' => 'superadmin2@sdmd.ph'],
-            [
-                'name' => 'Super Administrator 2',
+            [   
+                'first_name' => 'Super',
+                'last_name' => 'Administrator 2',
                 'password' => Hash::make('superadmin123'),
                 'position' => 'Super Administrator',
                 'phone' => '09123456780',
@@ -109,7 +111,8 @@ class AdminUserSeeder extends Seeder
         $admin = User::updateOrCreate(
             ['email' => 'arthurdalemicaroz@gmail.com'],
             [
-                'name' => 'Arthur Dale Micaroz',
+                'first_name' => 'Arthur',
+                'last_name' => 'Dale Micaroz',
                 'password' => Hash::make('12345678'),
                 'position' => 'System Administrator',
                 'phone' => '09123456789',
@@ -145,8 +148,8 @@ class AdminUserSeeder extends Seeder
 
         // Output summary
         $this->command->info('Created/Updated Users:');
-        $this->command->info('- Super Admin 1: ' . $superAdmin->name . ' (' . $superAdmin->email . ') - ' . $superAdmin->position . ' at ' . $superAdmin->campus->name . ' - Password: superadmin123');
-        $this->command->info('- Super Admin 2: ' . $superAdmin2->name . ' (' . $superAdmin2->email . ') - ' . $superAdmin2->position . ' at ' . $superAdmin2->campus->name . ' - Password: superadmin123');
-        $this->command->info('- Admin: ' . $admin->name . ' (' . $admin->email . ') - ' . $admin->position . ' at ' . $admin->campus->name . ' - Password: 12345678');
+        $this->command->info('- Super Admin 1: ' . $superAdmin->first_name . ' ' . $superAdmin->last_name . ' (' . $superAdmin->email . ') - ' . $superAdmin->position . ' at ' . $superAdmin->campus->name . ' - Password: superadmin123');
+        $this->command->info('- Super Admin 2: ' . $superAdmin2->first_name . ' ' . $superAdmin2->last_name . ' (' . $superAdmin2->email . ') - ' . $superAdmin2->position . ' at ' . $superAdmin2->campus->name . ' - Password: superadmin123');
+        $this->command->info('- Admin: ' . $admin->first_name . ' ' . $admin->last_name . ' (' . $admin->email . ') - ' . $admin->position . ' at ' . $admin->campus->name . ' - Password: 12345678');
     }
 }
