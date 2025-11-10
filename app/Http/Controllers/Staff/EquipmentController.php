@@ -342,7 +342,53 @@ class EquipmentController extends Controller
         ]);
 
         try {
-            $qrData = json_decode($request->qr_data, true);
+            $qrData = $request->qr_data;
+
+            // Check if QR data is a URL with query parameters
+            if (is_string($qrData) && strpos($qrData, '?') !== false) {
+                // Parse URL query parameters
+                $parsedUrl = parse_url($qrData);
+                if (isset($parsedUrl['query'])) {
+                    parse_str($parsedUrl['query'], $queryParams);
+                    if (isset($queryParams['id'])) {
+                        $equipment = Equipment::with('office', 'equipmentType')
+                            ->find($queryParams['id']);
+
+                        if (!$equipment) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Equipment not found'
+                            ], 404);
+                        }
+
+                        // Check if staff has access to this equipment (equipment from their office)
+                        $user = Auth::guard('staff')->user();
+                        if (!$equipment->office_id || $equipment->office_id !== $user->office_id) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'You do not have access to this equipment'
+                            ], 403);
+                        }
+
+                        return response()->json([
+                            'success' => true,
+                            'equipment' => [
+                                'id' => $equipment->id,
+                                'model_number' => $equipment->model_number,
+                                'serial_number' => $equipment->serial_number,
+                                'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+                                'status' => $equipment->status,
+                                'location' => $equipment->location,
+                                'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                                'qr_code' => $equipment->qr_code,
+                            ]
+                        ]);
+                    }
+                }
+            }
+
+            // Parse QR data as JSON (legacy format)
+            $qrData = json_decode($qrData, true);
 
             if (!$qrData || !isset($qrData['id'])) {
                 return response()->json([

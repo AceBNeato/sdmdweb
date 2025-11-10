@@ -588,7 +588,44 @@ class EquipmentController extends Controller
     {
         $qrData = $request->input('qr_data');
 
-        // Parse QR data
+        // Check if QR data is a URL with query parameters
+        if (is_string($qrData) && strpos($qrData, '?') !== false) {
+            // Parse URL query parameters
+            $parsedUrl = parse_url($qrData);
+            if (isset($parsedUrl['query'])) {
+                parse_str($parsedUrl['query'], $queryParams);
+                if (isset($queryParams['id'])) {
+                    $equipment = Equipment::find($queryParams['id']);
+                    if (!$equipment) {
+                        return response()->json(['success' => false, 'message' => 'Equipment not found']);
+                    }
+
+                    // Log the scan
+                    Activity::create([
+                        'user_id' => auth()->id(),
+                        'action' => 'scanned_qr',
+                        'description' => "Scanned QR code for equipment: {$equipment->model_number}",
+                        'metadata' => ['equipment_id' => $equipment->id]
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'equipment' => [
+                            'id' => $equipment->id,
+                            'model_number' => $equipment->model_number,
+                            'serial_number' => $equipment->serial_number,
+                            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+                            'location' => $equipment->location,
+                            'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                            'status' => $equipment->status,
+                            'qr_code_image_path' => $equipment->qr_code_image_path,
+                        ]
+                    ]);
+                }
+            }
+        }
+
+        // Parse QR data as JSON (legacy format)
         if (is_string($qrData)) {
             $qrData = json_decode($qrData, true);
         }
@@ -626,92 +663,31 @@ class EquipmentController extends Controller
         ]);
     }
 
-    public function checkSequences(Request $request, Equipment $equipment)
+    public function qrCode(Equipment $equipment)
     {
-        $request->validate([
-            'date' => 'required|date',
-        ]);
-
-        try {
-            $date = $request->date;
-
-            \Log::info('=== checkSequences START ===', [
-                'equipment_id' => $equipment->id,
-                'date_requested' => $date,
-                'request_all' => $request->all()
-            ]);
-
-            // Find all JO numbers for this date across all equipment
-            $joQuery = 'JO-' . $date . '-%';
-            \Log::info('JO query pattern:', ['pattern' => $joQuery]);
-
-            $existingJO = EquipmentHistory::where('jo_number', 'like', $joQuery)
-                ->orderBy('jo_number')
-                ->pluck('jo_number')
-                ->toArray();
-
-            \Log::info('Database results:', [
-                'query_executed' => "WHERE jo_number LIKE '{$joQuery}'",
-                'count_found' => count($existingJO),
-                'jo_numbers_found' => $existingJO
-            ]);
-
-            // Extract sequences from JO numbers
-            $existingSequences = [];
-            foreach ($existingJO as $joNumber) {
-                \Log::info('Processing JO number:', ['jo_number' => $joNumber]);
-                $parts = explode('-', $joNumber);
-                \Log::info('JO parts:', ['parts' => $parts, 'count' => count($parts)]);
-
-                if (count($parts) >= 4) {
-                    $sequence = (int) end($parts); // JO-YYYY-MM-DD-XX -> XX
-                    $existingSequences[] = $sequence;
-                    \Log::info('Extracted sequence:', ['sequence' => $sequence]);
-                } else {
-                    \Log::info('Invalid JO format, skipping:', ['jo_number' => $joNumber]);
-                }
-            }
-
-            \Log::info('All extracted sequences:', ['sequences' => $existingSequences]);
-
-            // Sort sequences
-            sort($existingSequences);
-
-            // For strict consecutive numbering, find the next required sequence
-            $nextSequence = 1;
-            foreach ($existingSequences as $seq) {
-                if ($seq === $nextSequence) {
-                    $nextSequence++;
-                } else {
-                    // Gap found - this shouldn't happen with strict validation
-                    // But if it does, nextSequence remains at the gap position
-                    break;
-                }
-            }
-
-            \Log::info('Strict consecutive validation', [
-                'existing_sequences_sorted' => $existingSequences,
-                'next_required_sequence' => $nextSequence,
-                'total_entries' => count($existingSequences)
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'existing_sequences' => $existingSequences,
-                'next_sequence' => $nextSequence
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in checkSequences', [
-                'error' => $e->getMessage(),
-                'equipment_id' => $equipment->id,
-                'date' => $request->date ?? 'null'
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error checking sequences: ' . $e->getMessage()
-            ], 500);
+        // If QR code image is saved, return it
+        if ($equipment->qr_code_image_path && Storage::disk('public')->exists($equipment->qr_code_image_path)) {
+            return response()->file(public_path('storage/' . $equipment->qr_code_image_path));
         }
+
+        // Fallback to generating on-the-fly if no saved image
+        if (!$equipment->qr_code) {
+            $equipment->qr_code = 'EQP-' . Str::upper(Str::random(8));
+            $equipment->save();
+        }
+
+        // Generate QR code using QRServer API with URL for public scanner
+        $qrUrl = route('public.qr-scanner') . '?id=' . $equipment->id;
+
+        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrUrl) . "&size=300x300&format=svg";
+
+        $response = Http::get($apiUrl);
+
+        if ($response->successful()) {
+            return response($response->body())->header('Content-Type', 'image/svg+xml');
+        }
+
+        // Fallback: return a simple text response
+        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
     }
 }
