@@ -117,7 +117,7 @@
                     <i class='bx bx-calendar'></i>
                 </div>
                 <div class="detail-content">
-                    <div class="detail-label">Acquisition Date</div>
+                    <div class="detail-label">Purchase Date</div>
                     <div class="detail-value">
                         {{ $equipment->purchase_date ? $equipment->purchase_date->format('M d, Y') : 'N/A' }}
                     </div>
