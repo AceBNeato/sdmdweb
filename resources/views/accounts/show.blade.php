@@ -67,6 +67,12 @@
 
                     <div class="info-meta">Full Name</div>
                     <div class="info-value">{{ $user->first_name . ' ' . $user->last_name }}</div>
+                
+                
+                    
+                    <div class="info-meta">Employee ID</div>
+                    <div class="info-value">{{ $user->employee_id ?? 'N/A' }}</div>
+                
                 </div>
 
                 <!-- Contact Information Section -->

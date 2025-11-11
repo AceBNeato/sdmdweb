@@ -17,11 +17,19 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use App\Services\StoredProcedureService;
+use App\Services\QrCodeService;
 
 class EquipmentController extends Controller
 {
-    public function __construct()
+    protected $qrCodeService;
+    protected $storedProcedureService;
+
+    public function __construct(QrCodeService $qrCodeService, StoredProcedureService $storedProcedureService)
     {
+        $this->qrCodeService = $qrCodeService;
+        $this->storedProcedureService = $storedProcedureService;
+
         $this->middleware('auth');
         $this->middleware('permission:equipment.view')->only(['index', 'show']);
         $this->middleware('permission:equipment.create')->only(['create', 'store']);
@@ -33,7 +41,7 @@ class EquipmentController extends Controller
     }
     public function index(Request $request)
     {
-        $query = Equipment::with('office', 'category');
+        $query = Equipment::with('office', 'category', 'equipmentType');
 
         // Search functionality
         if ($request->has('search')) {
@@ -133,32 +141,35 @@ class EquipmentController extends Controller
 
         $equipment = Equipment::create($validated);
 
-        // Generate and save QR code using QRServer API
-        $qrData = json_encode([
-            'id' => $equipment->id,
-            'type' => 'equipment',
+        // Log the activity
+        Activity::create([
+            'user_id' => auth()->id(),
+            'action' => 'equipment.store',
+            'description' => "Created new equipment: {$equipment->model_number} ({$equipment->serial_number})"
+        ]);
+
+        // Generate and save QR code using optimized service
+        $qrData = [
+            'type' => 'equipment_url',
+            'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+            'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
             'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
-        ]);
+        ];
 
         try {
-            $qrSize = '200x200';
-            $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrData) . "&size={$qrSize}&format=png";
-
-            $response = Http::get($apiUrl);
-
-            if ($response->successful()) {
-                $fileName = 'equipment_' . $equipment->id . '.png';
-                $path = 'qrcodes/' . $fileName;
-                Storage::disk('public')->put($path, $response->body());
-
-                // Update equipment with QR code image path
-                $equipment->update(['qr_code_image_path' => $path]);
+            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png');
+            if ($qrPath) {
+                $equipment->update(['qr_code_image_path' => $qrPath]);
+                Log::info('QR code generated and saved for new equipment', [
+                    'equipment_id' => $equipment->id,
+                    'qr_path' => $qrPath
+                ]);
             } else {
-                Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id . ' - API returned status: ' . $response->status());
+                Log::warning('Failed to generate QR code for equipment ID: ' . $equipment->id);
             }
         } catch (\Exception $e) {
             Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id . ' - ' . $e->getMessage());
@@ -184,18 +195,21 @@ class EquipmentController extends Controller
         if (!$equipment->qr_code_image_path || !Storage::disk('public')->exists($equipment->qr_code_image_path)) {
             try {
                 // Generate QR code with URL that opens public scanner
-                $qrUrl = route('public.qr-scanner') . '?id=' . $equipment->id;
+                $qrData = [
+                    'type' => 'equipment_url',
+                    'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+                    'equipment_id' => $equipment->id,
+                    'model_number' => $equipment->model_number,
+                    'serial_number' => $equipment->serial_number,
+                    'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+                    'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                    'status' => $equipment->status,
+                ];
 
-                $qrSize = '200x200';
-                $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrUrl) . "&size={$qrSize}&format=png";
+                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png');
 
-                $response = Http::get($apiUrl);
-
-                if ($response->successful()) {
-                    $fileName = 'equipment_' . $equipment->id . '.png';
-                    $path = 'qrcodes/' . $fileName;
-                    Storage::disk('public')->put($path, $response->body());
-                    $equipment->update(['qr_code_image_path' => $path]);
+                if ($qrPath) {
+                    $equipment->update(['qr_code_image_path' => $qrPath]);
                 }
             } catch (\Exception $e) {
                 // QR code generation failed, but continue showing the page
@@ -254,6 +268,13 @@ class EquipmentController extends Controller
 
         $equipment->update($validated);
 
+        // Log the activity
+        Activity::create([
+            'user_id' => auth()->id(),
+            'action' => 'equipment.update',
+            'description' => "Updated equipment: {$equipment->model_number} ({$equipment->serial_number})"
+        ]);
+
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 
         return redirect()->route($prefix . '.equipment.index')
@@ -262,6 +283,13 @@ class EquipmentController extends Controller
 
     public function destroy(Equipment $equipment)
     {
+        // Log the activity before deletion
+        Activity::create([
+            'user_id' => auth()->id(),
+            'action' => 'equipment.destroy',
+            'description' => "Deleted equipment: {$equipment->model_number} ({$equipment->serial_number})"
+        ]);
+
         $equipment->forceDelete();
 
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
@@ -282,6 +310,13 @@ class EquipmentController extends Controller
 
         $equipment->update([
             'status' => $request->status
+        ]);
+
+        // Log the activity
+        Activity::create([
+            'user_id' => auth()->id(),
+            'action' => 'status.update',
+            'description' => "Updated equipment status to {$request->status}: {$equipment->model_number} ({$equipment->serial_number})"
         ]);
 
         return response()->json([
@@ -368,12 +403,11 @@ class EquipmentController extends Controller
         }
 
         try {
-            \Illuminate\Support\Facades\DB::beginTransaction();
-
             $user = auth()->user();
             $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 
-            $history = new \App\Models\EquipmentHistory([
+            // Use stored procedure to create history and update equipment status
+            $historyData = [
                 'equipment_id' => $equipment->id,
                 'user_id' => $user->id,
                 'date' => $validated['date'],
@@ -381,24 +415,17 @@ class EquipmentController extends Controller
                 'action_taken' => $validated['action_taken'],
                 'remarks' => $validated['remarks'],
                 'responsible_person' => $user->name,
-            ]);
-
-            $history->save();
-
-            // Update equipment status
-            $updateData = [
-                'status' => $validated['equipment_status'],
-                'assigned_by_id' => $user->id,
+                'equipment_status' => $validated['equipment_status'],
+                'assigned_by_id' => $user->id
             ];
 
-            // If setting status to serviceable, also set condition to good
-            if ($validated['equipment_status'] === 'serviceable') {
-                $updateData['condition'] = 'good';
+            $success = $this->storedProcedureService->createEquipmentHistory($historyData);
+
+            if (!$success) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Failed to create history entry. Please try again.');
             }
-
-            $equipment->update($updateData);
-
-            \Illuminate\Support\Facades\DB::commit();
 
             $successMessage = 'History sheet saved!';
             $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
@@ -414,8 +441,6 @@ class EquipmentController extends Controller
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
-            
             return back()
                 ->withInput()
                 ->with('error', 'Failed to add history entry. Please try again.');
@@ -429,38 +454,13 @@ class EquipmentController extends Controller
         ]);
 
         try {
-            $date = $request->date;
+            $joNumber = $this->storedProcedureService->generateJONumber($request->date);
 
-            // Find the next sequence number for this date
-            $latestJO = EquipmentHistory::where('jo_number', 'like', 'JO-' . $date . '-%')
-                ->orderBy('jo_number', 'desc')
-                ->first();
-
-            $sequence = 1;
-            if ($latestJO) {
-                // Extract sequence from latest JO number (format: JO-YYYY-MM-DD-XX)
-                $parts = explode('-', $latestJO->jo_number);
-                if (count($parts) >= 4) {
-                    $sequence = (int) end($parts) + 1;
-                }
-            }
-
-            // Format sequence with leading zero if needed
-            $sequenceFormatted = str_pad($sequence, 2, '0', STR_PAD_LEFT);
-
-            $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
-
-            // Double-check uniqueness (in case of concurrent requests)
-            $exists = EquipmentHistory::where('jo_number', $joNumber)->exists();
-            if ($exists) {
-                // Find next available sequence
-                for ($i = $sequence + 1; $i <= 99; $i++) {
-                    $sequenceFormatted = str_pad($i, 2, '0', STR_PAD_LEFT);
-                    $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
-                    if (!EquipmentHistory::where('jo_number', $joNumber)->exists()) {
-                        break;
-                    }
-                }
+            if (!$joNumber) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to generate unique JO number'
+                ], 500);
             }
 
             return response()->json([
@@ -483,30 +483,9 @@ class EquipmentController extends Controller
         ]);
 
         try {
-            $selectedDateTime = new \DateTime($request->date);
+            $result = $this->storedProcedureService->canBackdateRepair($equipment->id, $request->date);
 
-            // Find the latest repair record for this equipment
-            $latestRepair = EquipmentHistory::where('equipment_id', $equipment->id)
-                ->orderBy('date', 'desc')
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            if ($latestRepair) {
-                $latestDateTime = new \DateTime($latestRepair->date);
-
-                // If trying to set a date earlier than the latest repair, prevent it
-                if ($selectedDateTime < $latestDateTime) {
-                    return response()->json([
-                        'can_backdate' => false,
-                        'latest_date' => $latestDateTime->format('Y-m-d\TH:i'),
-                        'message' => 'Cannot backdate beyond the latest repair record.'
-                    ]);
-                }
-            }
-
-            return response()->json([
-                'can_backdate' => true
-            ]);
+            return response()->json($result);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -529,18 +508,30 @@ class EquipmentController extends Controller
             $equipment->save();
         }
 
-        // Generate QR code using QRServer API with URL for public scanner
-        $qrUrl = route('public.qr-scanner') . '?id=' . $equipment->id;
+        // Prepare QR data for download (Admin uses URL-based QR codes for public scanner)
+        $qrData = [
+            'type' => 'equipment_url',
+            'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+            'equipment_id' => $equipment->id,
+            'model_number' => $equipment->model_number,
+            'serial_number' => $equipment->serial_number,
+            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+            'office' => $equipment->office ? $equipment->office->name : 'N/A',
+            'status' => $equipment->status,
+            'generated_at' => now()->toISOString(),
+        ];
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrUrl) . "&size=300x300&format=svg";
+        // Use cached QR code service
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
 
-        $response = Http::get($apiUrl);
-
-        if ($response->successful()) {
+        if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
-            return response($response->body())
-                ->header('Content-Type', 'image/svg+xml')
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+            return response()->download(
+                storage_path('app/public/' . $qrPath),
+                $filename,
+                ['Content-Type' => 'image/svg+xml']
+            );
         }
 
         // Fallback: return a simple text response
@@ -676,18 +667,29 @@ class EquipmentController extends Controller
             $equipment->save();
         }
 
-        // Generate QR code using QRServer API with URL for public scanner
-        $qrUrl = route('public.qr-scanner') . '?id=' . $equipment->id;
+        // Prepare QR data for viewing (Admin uses URL-based QR codes for public scanner)
+        $qrData = [
+            'type' => 'equipment_url',
+            'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+            'equipment_id' => $equipment->id,
+            'model_number' => $equipment->model_number,
+            'serial_number' => $equipment->serial_number,
+            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+            'office' => $equipment->office ? $equipment->office->name : 'N/A',
+            'status' => $equipment->status,
+            'generated_at' => now()->toISOString(),
+        ];
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrUrl) . "&size=300x300&format=svg";
+        // Use cached QR code service
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
 
-        $response = Http::get($apiUrl);
-
-        if ($response->successful()) {
-            return response($response->body())->header('Content-Type', 'image/svg+xml');
+        if ($qrPath && Storage::disk('public')->exists($qrPath)) {
+            // Save path to equipment for future use
+            $equipment->update(['qr_code_image_path' => $qrPath]);
+            return response()->file(public_path('storage/' . $qrPath));
         }
 
         // Fallback: return a simple text response
-        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
+        return response('QR Code not available')->header('Content-Type', 'text/plain');
     }
 }

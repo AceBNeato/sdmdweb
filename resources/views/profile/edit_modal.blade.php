@@ -10,7 +10,7 @@
 
     <div class="mb-3 text-center">
         <div class="profile-avatar-wrapper">
-            <img src="{{ $user->profile_photo_url }}"
+            <img src="{{ ($user->profile_photo ?? $user->profile_photo_path) ? asset('storage/' . ($user->profile_photo ?? $user->profile_photo_path)) : asset('images/SDMDlogo.png') }}"
                  class="profile-avatar profile-avatar-md"
                  id="profileImagePreview"
                  onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">

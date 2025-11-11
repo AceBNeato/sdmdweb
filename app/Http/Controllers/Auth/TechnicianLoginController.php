@@ -55,6 +55,14 @@ class TechnicianLoginController extends Controller
 
             $technician = Auth::guard('technician')->user();
 
+            // Check if user has technician role
+            if (!$technician->hasRole('technician')) {
+                Auth::guard('technician')->logout();
+                return back()->withErrors([
+                    'email' => 'You do not have technician access. Please contact the administrator.',
+                ])->withInput($request->only('email'));
+            }
+
             // Check if technician is active
             if (!$technician->is_available) {
                 Auth::guard('technician')->logout();
@@ -68,6 +76,13 @@ class TechnicianLoginController extends Controller
                 'email' => $technician->email,
                 'specialization' => $technician->specialization,
                 'employee_id' => $technician->employee_id
+            ]);
+
+            // Log to activity table
+            \App\Models\Activity::create([
+                'user_id' => $technician->id,
+                'action' => 'Login',
+                'description' => 'Technician logged into the system'
             ]);
 
             return redirect(route('technician.qr-scanner'));
@@ -362,4 +377,5 @@ class TechnicianLoginController extends Controller
 
         return redirect()->route('technician.qr-scanner');
     }
+
 }

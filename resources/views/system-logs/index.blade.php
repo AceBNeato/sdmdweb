@@ -68,6 +68,101 @@
         </div>
     @endif
 
+    <!-- Filters and Export Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ $currentRoute }}" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Search actions, descriptions, or users...">
+                </div>
+                <div class="col-md-2">
+                    <label for="user_id" class="form-label">User</label>
+                    <select class="form-select" id="user_id" name="user_id">
+                        <option value="all">All Users</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
+                                {{ $user->name ?? $user->first_name . ' ' . $user->last_name }} ({{ $user->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="action" class="form-label">Action</label>
+                    <select class="form-select" id="action" name="action">
+                        <option value="all">All Actions</option>
+                        @foreach($actions as $actionItem)
+                            <option value="{{ $actionItem }}" {{ request('action') == $actionItem ? 'selected' : '' }}>
+                                {{ $actionItem }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request('date_from') }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request('date_to') }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class='bx bx-search'></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    @if(request()->hasAny(['search', 'user_id', 'action', 'date_from', 'date_to']))
+                        <a href="{{ $currentRoute }}" class="btn btn-outline-secondary btn-sm">
+                            <i class='bx bx-x'></i> Clear Filters
+                        </a>
+                    @endif
+                </div>
+                <div>
+                    <a href="{{ route('admin.system-logs.export', request()->query()) }}" class="btn btn-success btn-sm">
+                        <i class='bx bx-download'></i> Export CSV
+                    </a>
+                    @if(auth()->user()->hasPermissionTo('system.logs.manage'))
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#clearLogsModal">
+                            <i class='bx bx-trash'></i> Clear Old Logs
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Logs Modal -->
+    @if(auth()->user()->hasPermissionTo('system.logs.manage'))
+    <div class="modal fade" id="clearLogsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Clear Old System Logs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ route('admin.system-logs.clear') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="days" class="form-label">Delete logs older than (days)</label>
+                            <input type="number" class="form-control" id="days" name="days" value="90" min="1" max="365" required>
+                            <div class="form-text">This action cannot be undone. Recommended: 90 days or older.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Clear Logs</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="card logs-header-card mb-4">
         <div class="card-body">
             <div class="logs-metrics">
@@ -185,8 +280,9 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="logs-user-email">
-                                                <div class="text-muted small">{{ $activity->user->email ?? 'Email not available' }}</div>
+                                        <div class="logs-user-info">
+                                            <div class="fw-medium">{{ $activity->user->name ?? 'Unknown User' }}</div>
+                                            <div class="text-muted small">{{ $activity->user->email ?? 'Email not available' }}</div>
                                         </div>
                                     </div>
                                 </td>

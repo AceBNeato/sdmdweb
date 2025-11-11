@@ -54,7 +54,7 @@ Route::prefix('public')->name('public.')->group(function () {
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['guest', 'honeypot.protect'])->group(function () {
+Route::middleware(['guest'])->group(function () {
     // Unified Login
     Route::get('/login', [\App\Http\Controllers\Auth\AuthController::class, 'showLoginForm'])
         ->name('login');
@@ -111,7 +111,7 @@ Route::post('/staff/login', [StaffLoginController::class, 'login'])
 
 
 
-Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
+Route::middleware(['auth:technician'])
     ->prefix('technician')
     ->name('technician.')
     ->group(function () {
@@ -120,8 +120,8 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
             ->name('profile');
 
         // Profile update route
-        Route::match(['put', 'post'], '/profile/update', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'updateProfile'])
-            ->name('profile.update');
+        // Route::match(['put', 'post'], '/profile/update', [\App\Http\Controllers\Auth\TechnicianLoginController::class, 'updateProfile'])
+        //     ->name('profile.update');
 
         // Profile edit form route (for consistency, though modal is used)
         Route::get('/profile/edit', [\App\Http\Controllers\Technician\TechnicianController::class, 'editProfile'])
@@ -215,8 +215,8 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
         Route::resource('maintenance-logs', \App\Http\Controllers\Technician\MaintenanceLogController::class);
         
         // Profile
-        Route::get('/profile', [\App\Http\Controllers\Technician\ProfileController::class, 'show'])->name('profile.show');
-        Route::put('/profile', [\App\Http\Controllers\Technician\ProfileController::class, 'update'])->name('profile.update');
+        Route::get('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'profile'])->name('profile.show');
+        Route::put('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'updateProfile'])->name('profile.update');
         
         // Reports
         Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
@@ -248,13 +248,13 @@ Route::middleware(['auth:technician', 'prevent.back.cache', 'ddos.protect'])
 | Admin Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     // Admin Accounts
     Route::get('/accounts', [\App\Http\Controllers\Admin\AdminController::class, 'accounts'])
         ->name('accounts');
 });
 
-    Route::middleware(['auth:staff', 'prevent.back.cache', 'ddos.protect'])
+    Route::middleware(['auth:staff'])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
@@ -342,7 +342,7 @@ Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])->prefix('admin
 | Global Authenticated Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'ddos.protect'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     // Accounts - accessible to all authenticated users
     Route::get('/accounts', [AdminController::class, 'accounts'])
         ->name('accounts.index');
@@ -388,7 +388,7 @@ Route::middleware('aggressive.back.prevent')->group(function () {
     })->name('logout.redirect');
 });
 
-Route::middleware(['auth', 'prevent.back.cache', 'ddos.protect'])
+Route::middleware(['auth'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

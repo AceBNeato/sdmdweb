@@ -19,7 +19,8 @@ class Staff extends Authenticatable
      */
     protected $fillable = [
         'user_id',
-        'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
         'phone',
@@ -130,6 +131,14 @@ class Staff extends Authenticatable
         return $this->belongsToMany(\App\Models\Equipment::class, 'equipment_user', 'user_id', 'equipment_id')
             ->withTimestamps()
             ->withPivot(['assigned_at', 'returned_at', 'notes']);
+    }
+
+    /**
+     * Scope to get only active staff
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
 }

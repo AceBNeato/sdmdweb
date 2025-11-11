@@ -9,12 +9,15 @@ use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
+use App\Services\StoredProcedureService;
 
 class UserController extends Controller
 {
-    public function __construct()
+    protected $storedProcedureService;
+
+    public function __construct(StoredProcedureService $storedProcedureService)
     {
+        $this->storedProcedureService = $storedProcedureService;
         // Middleware is now applied in routes/web.php
     }
 
@@ -141,8 +144,8 @@ class UserController extends Controller
         $office = \App\Models\Office::find($validated['office_id']);
         $campus_id = $office ? $office->campus_id : null;
 
-        // Create the user with all information
-        $user = User::create([
+        // Prepare data for stored procedure
+        $userData = [
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
@@ -151,20 +154,17 @@ class UserController extends Controller
             'position' => $validated['position'],
             'office_id' => $validated['office_id'],
             'campus_id' => $campus_id,
-            'is_active' => true,
-            'is_admin' => false,
-        ]);
+            'role_ids' => [$validated['roles']], // Single role as array
+            'created_by_id' => auth()->id()
+        ];
 
-        // Assign roles
-        $user->roles()->sync([$validated['roles']]);
+        // Use stored procedure to create user with roles
+        $userId = $this->storedProcedureService->createUserWithRoles($userData);
 
-        // Sync role permissions to permission_user table
-        $role = Role::find($validated['roles']);
-        if ($role) {
-            $rolePermissions = $role->permissions;
-            foreach ($rolePermissions as $permission) {
-                $user->permissions()->syncWithoutDetaching([$permission->id => ['is_active' => true]]);
-            }
+        if (!$userId) {
+            return redirect()->back()
+                ->with('error', 'Failed to create user. Please try again.')
+                ->withInput();
         }
 
         return redirect()->route('accounts.index')

@@ -11,7 +11,8 @@ class Technician extends Model
 
     protected $fillable = [
         'user_id',
-        'name',
+        'first_name',
+        'last_name',
         'email',
         'phone',
         'specialization',
@@ -58,7 +59,7 @@ class Technician extends Model
             return asset('storage/' . $this->profile_photo_path);
         }
 
-        $name = trim(collect(explode(' ', $this->name))->map(function ($segment) {
+        $name = trim(collect(explode(' ', $this->first_name))->map(function ($segment) {
             return mb_substr($segment, 0, 1);
         })->join(' '));
 

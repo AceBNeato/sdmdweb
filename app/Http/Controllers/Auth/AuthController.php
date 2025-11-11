@@ -186,6 +186,13 @@ class AuthController extends Controller
                     'roles' => $user->roles->pluck('name')->toArray()
                 ]);
 
+                // Log to activity table
+                \App\Models\Activity::create([
+                    'user_id' => $user->id,
+                    'action' => 'Login',
+                    'description' => 'User logged into the system'
+                ]);
+
                 // Redirect based on user roles
                 if ($user->is_admin) {
                     return redirect()->intended(route('admin.qr-scanner'));
@@ -251,27 +258,22 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Destroy all authentication completely
-        Auth::guard('web')->logout();
-        Auth::guard('staff')->logout();
-        Auth::guard('technician')->logout();
+        // Logout only from authenticated guards to speed up the process
+        $guards = ['web', 'staff', 'technician'];
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                Auth::guard($guard)->logout();
+            }
+        }
 
-        // Completely destroy session
+        // Invalidate and regenerate session
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Generate a unique logout token to prevent any cached content
-        $logoutToken = bin2hex(random_bytes(32));
-        session(['logout_token' => $logoutToken]);
-
+        // Simple redirect with basic cache control for speed
         return redirect('/login?logout=' . time())->withHeaders([
-            'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0, no-transform, private, proxy-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-            'X-Frame-Options' => 'DENY',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Back-Button-Prevention' => 'ultra-aggressive',
-            'X-Logout-Token' => $logoutToken
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache'
         ]);
     }
 

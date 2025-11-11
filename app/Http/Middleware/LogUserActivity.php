@@ -20,27 +20,32 @@ class LogUserActivity
     {
         if (Auth::check()) {
             $user = Auth::user();
-            $action = $request->method() . ' ' . $request->path();
 
-            // Log to Laravel's log file
-            Log::info('User Activity', [
-                'user_id' => $user->id,
-                'user_name' => $user->name,
-                'action' => $action,
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
+            // Only log GET requests for page navigation, exclude AJAX and API calls
+            if ($request->method() === 'GET' && !$request->ajax() && !$this->isApiRequest($request)) {
+                $action = 'Page View: ' . $request->path();
 
-            // Log to database activities table
-            try {
-                Activity::create([
+                // Log to Laravel's log file
+                Log::info('User Page View', [
                     'user_id' => $user->id,
+                    'user_name' => $user->name,
                     'action' => $action,
-                    'description' => $this->getActionDescription($request),
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'url' => $request->fullUrl(),
                 ]);
-            } catch (\Exception $e) {
-                // Log the error but don't break the request
-                Log::error('Failed to log user activity to database: ' . $e->getMessage());
+
+                // Log to database activities table
+                try {
+                    Activity::create([
+                        'user_id' => $user->id,
+                        'action' => $action,
+                        'description' => $this->getPageViewDescription($request),
+                    ]);
+                } catch (\Exception $e) {
+                    // Log the error but don't break the request
+                    Log::error('Failed to log user page view to database: ' . $e->getMessage());
+                }
             }
         }
 
@@ -48,73 +53,68 @@ class LogUserActivity
     }
 
     /**
-     * Get a human-readable description of the action.
+     * Get a human-readable description of the page view.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return string
      */
-    private function getActionDescription(Request $request): string
+    private function getPageViewDescription(Request $request): string
     {
-        $method = $request->method();
         $path = $request->path();
 
-        // Extract meaningful descriptions based on common patterns
+        // Extract meaningful descriptions based on common page patterns
         if (str_contains($path, '/equipment/')) {
-            if ($method === 'GET' && str_contains($path, '/create')) {
+            if (str_contains($path, '/create')) {
                 return 'Viewed equipment creation form';
-            } elseif ($method === 'POST' && !str_contains($path, '/scan')) {
-                return 'Created new equipment';
-            } elseif ($method === 'GET' && !str_contains($path, '/create') && !str_contains($path, '/edit') && !str_contains($path, '/qrcode')) {
+            } elseif (str_contains($path, '/edit')) {
+                return 'Viewed equipment edit form';
+            } elseif (!str_contains($path, '/qrcode') && !str_contains($path, '/download')) {
                 return 'Viewed equipment details';
-            } elseif ($method === 'PUT') {
-                return 'Updated equipment information';
-            } elseif ($method === 'DELETE') {
-                return 'Deleted equipment';
-            } elseif (str_contains($path, '/scan')) {
-                return 'Scanned equipment QR code';
+            }
+        }
+
+        if (str_contains($path, '/profile')) {
+            if (str_contains($path, '/edit')) {
+                return 'Viewed profile edit form';
+            } else {
+                return 'Viewed profile page';
             }
         }
 
         if (str_contains($path, '/reports/')) {
-            return 'Accessed reports section';
-        }
-
-        if (str_contains($path, '/profile')) {
-            if ($method === 'PUT' || $method === 'POST') {
-                return 'Updated profile information';
-            } else {
-                return 'Viewed profile';
-            }
+            return 'Viewed reports section';
         }
 
         if (str_contains($path, '/admin/accounts')) {
-            return 'Accessed user accounts management';
+            return 'Viewed user accounts management';
         }
 
         if (str_contains($path, '/admin/equipment')) {
-            return 'Accessed equipment management';
-        }
-
-        if (str_contains($path, '/admin/offices')) {
-            return 'Accessed offices management';
+            return 'Viewed equipment management';
         }
 
         if (str_contains($path, '/admin/system-logs')) {
-            return 'Accessed system logs';
+            return 'Viewed system logs';
         }
 
-        // Default descriptions based on HTTP method
-        switch ($method) {
-            case 'GET':
-                return 'Viewed page: ' . $path;
-            case 'POST':
-                return 'Created or submitted data on: ' . $path;
-            case 'PUT':
-                return 'Updated data on: ' . $path;
-            case 'DELETE':
-                return 'Deleted data on: ' . $path;
-            default:
-                return 'Performed action on: ' . $path;
-        }
+        // Default description for page views
+        return 'Viewed page: ' . $path;
+    }
+
+    /**
+     * Check if the request is an API request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    private function isApiRequest(Request $request): bool
+    {
+        $path = $request->path();
+
+        // Check for common API patterns
+        return str_contains($path, '/api/') ||
+               str_contains($path, '/ajax/') ||
+               $request->expectsJson() ||
+               str_contains($request->header('Accept', ''), 'application/json');
     }
 }

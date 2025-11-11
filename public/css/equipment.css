@@ -367,12 +367,6 @@ body {
 }
 
 
-.modal-dialog {
-    max-width: 60% !important;
-    margin-right: auto;
-    margin-left: auto;
-}   
-
 .modal-body{
     padding: 2rem;
     align-items: center;

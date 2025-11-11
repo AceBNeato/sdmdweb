@@ -163,6 +163,13 @@ class AdminLoginController extends Controller
                     'roles' => $user->roles->pluck('name')->toArray()
                 ]);
 
+                // Log to activity table
+                \App\Models\Activity::create([
+                    'user_id' => $user->id,
+                    'action' => 'Login',
+                    'description' => 'Admin logged into the system'
+                ]);
+
                 // Redirect to admin QR scanner
                 return redirect()->intended(route('admin.qr-scanner'));
             }

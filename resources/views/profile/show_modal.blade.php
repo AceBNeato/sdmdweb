@@ -6,12 +6,12 @@
     <div class="row g-3">
         <div class="col-md-4">
             <div class="text-center profile-avatar-wrapper">
-                <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/SDMDlogo.png') }}"
+                <img src="{{ ($user->profile_photo ?? $user->profile_photo_path) ? asset('storage/' . ($user->profile_photo ?? $user->profile_photo_path)) : asset('images/SDMDlogo.png') }}"
                      alt="Profile Picture"
                      class="profile-avatar profile-avatar-lg img-fluid"
                      onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">
                 <h5 class="mt-3 mb-1">{{ $user->first_name . ' ' . $user->last_name }}</h5>
-                <div class="text-muted small">{{ $user->position ?? 'User' }}</div>
+                <div class="text-muted small">{{ $user->position ?? $user->specialization ?? 'User' }}</div>
                 <div class="mt-3">
                     <button type="button"
                             class="btn btn-primary open-edit-profile-modal"
@@ -43,6 +43,11 @@
                 <div class="col-md-6">
                     <div class="small text-muted">Office</div>
                     <div class="fw-semibold">{{ optional($user->office)->name }}</div>
+                </div>
+                @elseif(method_exists($user, 'staff') && $user->staff && $user->staff->office)
+                <div class="col-md-6">
+                    <div class="small text-muted">Office</div>
+                    <div class="fw-semibold">{{ optional($user->staff->office)->name }}</div>
                 </div>
                 @endif
             </div>

@@ -55,6 +55,14 @@ public function login(Request $request)
 
         $staff = Auth::guard('staff')->user();
 
+        // Check if user has staff role
+        if (!$staff->hasRole('staff')) {
+            Auth::guard('staff')->logout();
+            return back()->withErrors([
+                'email' => 'You do not have staff access. Please contact the administrator.',
+            ])->withInput($request->only('email'));
+        }
+
         // Check if staff is active
         if (!$staff->is_active) {
             Auth::guard('staff')->logout();
@@ -68,6 +76,13 @@ public function login(Request $request)
             'email' => $staff->email,
             'position' => $staff->position,
             'is_admin' => $staff->is_admin
+        ]);
+
+        // Log to activity table
+        \App\Models\Activity::create([
+            'user_id' => $staff->id,
+            'action' => 'Login',
+            'description' => 'Staff logged into the system'
         ]);
 
         return redirect(route('staff.equipment.index'));
@@ -86,26 +101,16 @@ public function login(Request $request)
      */
     public function logout(Request $request)
     {
-        $user = Auth::guard('staff')->user();
-
         Auth::guard('staff')->logout();
 
-        // Completely destroy session
+        // Invalidate and regenerate session
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Generate logout token
-        $logoutToken = bin2hex(random_bytes(32));
-        session(['logout_token' => $logoutToken]);
-
+        // Simple redirect with basic cache control for speed
         return redirect('/login?logout=' . time())->withHeaders([
-            'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0, no-transform, private, proxy-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-            'X-Frame-Options' => 'DENY',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Back-Button-Prevention' => 'ultra-aggressive',
-            'X-Logout-Token' => $logoutToken
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache'
         ]);
     }
 

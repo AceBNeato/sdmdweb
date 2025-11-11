@@ -48,4 +48,12 @@ class Office extends Model
     {
         return $this->hasMany(Equipment::class);
     }
+
+    /**
+     * Scope to get only active offices
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

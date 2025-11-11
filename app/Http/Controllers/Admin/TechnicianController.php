@@ -31,9 +31,9 @@ class TechnicianController extends Controller
     public function create()
     {
         $technician = new Technician();
-        $staff = Staff::whereDoesntHave('technician')
-            ->where('is_active', true)
-            ->get(['id', 'name', 'email']);
+        $staff = Staff::active()
+            ->whereDoesntHave('technician')
+            ->get(['id', 'first_name', 'last_name', 'email']);
             
         return view('admin.accounts.technicians.form', compact('technician', 'staff'));
     }
@@ -70,8 +70,23 @@ class TechnicianController extends Controller
 
     public function edit(Technician $technician)
     {
-        $staff = Staff::where('is_active', true)->get(['id', 'name', 'email']);
+        $staff = Staff::active()->get(['id', 'first_name', 'last_name', 'email']);
         return view('admin.accounts.technicians.form', compact('technician', 'staff'));
+    }
+
+    public function show(Technician $technician)
+    {
+        // Load staff relationship to get office info
+        $technician->loadMissing('staff.office');
+
+        if (request()->ajax() || request()->boolean('modal')) {
+            return view('profile.show_modal', [
+                'user' => $technician,
+                'recentActivities' => [] // Technicians don't have activities in this system yet
+            ]);
+        }
+
+        return redirect()->route('admin.technicians.index');
     }
 
     public function update(Request $request, Technician $technician)

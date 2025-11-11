@@ -153,7 +153,8 @@ class StaffController extends Controller
 
         // First validate the basic fields
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => [
                 'required',
                 'string',
@@ -225,7 +226,8 @@ class StaffController extends Controller
 
             // Update all user fields including employee_id in a single update
             $updateData = [
-                'name' => $validated['name'],
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
@@ -272,7 +274,8 @@ class StaffController extends Controller
                     'redirect' => route('staff.profile'),
                     'user' => [
                         'id' => $user->id,
-                        'name' => $user->name,
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'profile_photo' => $user->profile_photo ? asset('storage/' . $user->profile_photo) : null,

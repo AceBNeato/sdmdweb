@@ -120,10 +120,11 @@
 
         /* Profile Dropdown */
         .profile-dropdown {
+            z-index: 100;
             position: absolute;
             display: flex;
             flex-wrap: wrap-reverse;
-            bottom: 0;
+            bottom: 0px;
             left: 0;
             right: 0;
             padding: 20px 15px 20px 15px;

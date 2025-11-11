@@ -60,7 +60,8 @@ class StaffController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'position' => 'required|string|max:255',
             'office_id' => 'required|exists:offices,id',
@@ -119,7 +120,8 @@ class StaffController extends Controller
     public function update(Request $request, User $staff)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($staff->id)],
             'position' => 'required|string|max:255',
             'office_id' => 'required|exists:offices,id',
