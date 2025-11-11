@@ -57,6 +57,8 @@ class User extends Authenticatable
         'password',
         'is_active',
         'email_verified_at',
+        'email_verification_token',
+        'email_verification_token_expires_at',
         'phone',
         'profile_photo',
         'position',
@@ -283,5 +285,44 @@ class User extends Authenticatable
     public function getAllPermissions()
     {
         return $this->permissions;
+    }
+
+    /**
+     * Check if the user's email is verified.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return !is_null($this->email_verified_at);
+    }
+
+    /**
+     * Mark the user's email as verified.
+     */
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+            'email_verification_token' => null,
+            'email_verification_token_expires_at' => null,
+        ])->save();
+    }
+
+    /**
+     * Send email verification notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        // This will be handled by the EmailVerificationController
+        // when admin creates user
+    }
+
+    /**
+     * Get the email verification URL.
+     */
+    public function getEmailVerificationUrl(): string
+    {
+        return route('email.verify', [
+            'token' => $this->email_verification_token
+        ]);
     }
 }

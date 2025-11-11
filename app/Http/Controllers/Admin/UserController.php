@@ -10,14 +10,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Services\StoredProcedureService;
+use App\Services\EmailService;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
     protected $storedProcedureService;
+    protected $emailService;
 
-    public function __construct(StoredProcedureService $storedProcedureService)
+    public function __construct(StoredProcedureService $storedProcedureService, EmailService $emailService)
     {
         $this->storedProcedureService = $storedProcedureService;
+        $this->emailService = $emailService;
         // Middleware is now applied in routes/web.php
     }
 
@@ -167,8 +172,64 @@ class UserController extends Controller
                 ->withInput();
         }
 
+        \Illuminate\Support\Facades\Log::info('User created with ID: ' . $userId);
+
+        // Get the created user
+        $user = User::find($userId);
+
+        if (!$user) {
+            \Illuminate\Support\Facades\Log::error('User not found after creation, ID: ' . $userId);
+            return redirect()->back()
+                ->with('error', 'User was created but could not be retrieved. Please contact administrator.')
+                ->withInput();
+        }
+
+        \Illuminate\Support\Facades\Log::info('User found: ' . $user->id . ' - ' . $user->email);
+
+        // Generate email verification token
+        $verificationToken = Str::random(64);
+        $user->email_verification_token = $verificationToken;
+        $user->email_verification_token_expires_at = Carbon::now()->addHours(24);
+
+        try {
+            $user->save();
+            \Illuminate\Support\Facades\Log::info('User saved with verification token');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to save user with verification token: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'User created but failed to set up email verification.')
+                ->withInput();
+        }
+
+        // Create verification URL
+        $verificationUrl = route('email.verify', ['token' => $verificationToken]);
+        \Illuminate\Support\Facades\Log::info('Verification URL generated: ' . $verificationUrl);
+
+        // Send verification email
+        try {
+            $emailSent = $this->emailService->sendEmailVerification($user, $verificationUrl);
+            \Illuminate\Support\Facades\Log::info('Email sending result: ' . ($emailSent ? 'SUCCESS' : 'FAILED'));
+        } catch (\Exception $e) {
+            // Log the error but don't fail the user creation
+            \Illuminate\Support\Facades\Log::error('Email verification failed during user creation', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage()
+            ]);
+            $emailSent = false;
+        }
+
+        $message = 'User created successfully.';
+        if ($emailSent) {
+            $message .= ' Verification email sent to ' . $user->email . '.';
+        } else {
+            $message .= ' However, failed to send verification email.';
+        }
+
+        \Illuminate\Support\Facades\Log::info('User creation completed: ' . $message);
+
         return redirect()->route('accounts.index')
-            ->with('success', 'User created successfully.');
+            ->with('success', $message);
     }
 
 
