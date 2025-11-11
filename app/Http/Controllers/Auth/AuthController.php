@@ -69,26 +69,37 @@ class AuthController extends Controller
                 \Log::info("PHPMailer: $str");
             };
             
+            // Using localhost SMTP (XAMPP/Laragon default)
             $mail->isSMTP();
-            $mail->Host = env('MAIL_HOST', 'smtp.mailtrap.io');
-            $mail->SMTPAuth = true;
-            $mail->Username = env('MAIL_USERNAME');
-            $mail->Password = env('MAIL_PASSWORD');
-            $mail->SMTPSecure = env('MAIL_ENCRYPTION', 'tls');
-            $mail->Port = env('MAIL_PORT', 2525);
-            $mail->SMTPOptions = [
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ];
+            $mail->Host = '127.0.0.1';  // Localhost
+            $mail->Port = 1025;         // Default mailpit/mailhog port
+            $mail->SMTPAuth = false;    // No authentication needed for local
+            $mail->SMTPAutoTLS = false; // Disable TLS for local
+            
+            // Debug SMTP connection
+            \Log::info('Using local SMTP server', [
+                'host' => $mail->Host,
+                'port' => $mail->Port,
+                'auth' => $mail->SMTPAuth ? 'enabled' : 'disabled'
+            ]);
 
-            // Recipients
-            $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@sdmd.com');
-            $fromName = env('MAIL_FROM_NAME', 'SDMD System');
+            // Set sender from .env configuration
+            $fromEmail = config('mail.from.address');
+            $fromName = config('mail.from.name');
+            
+            if (empty($fromEmail) || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+                $fromEmail = 'noreply@' . parse_url(config('app.url'), PHP_URL_HOST) ?: 'example.com';
+            }
+            
             $mail->setFrom($fromEmail, $fromName);
             $mail->addAddress($request->email, $user->name);
+            
+            // Log the email being sent
+            \Log::info('Sending password reset email', [
+                'to' => $request->email,
+                'from' => $fromEmail,
+                'name' => $fromName
+            ]);
 
             // Content
             $resetUrl = url(route('password.reset', [
@@ -114,9 +125,21 @@ class AuthController extends Controller
             return back()->with('status', 'We have emailed your password reset link!');
             
         } catch (\Exception $e) {
-            $errorMsg = 'Failed to send reset link: ' . $e->getMessage();
-            \Log::error($errorMsg);
-            \Log::error('PHPMailer Error: ' . $mail->ErrorInfo);
+            $errorMsg = 'Failed to send reset link. Please try again later.';
+            $debugInfo = [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ];
+            
+            if (isset($mail) && property_exists($mail, 'ErrorInfo')) {
+                $debugInfo['phpmailer_error'] = $mail->ErrorInfo;
+            }
+            
+            \Log::error('Password reset email failed', $debugInfo);
+            
+            // Return a user-friendly error message
             return back()->withErrors(['email' => $errorMsg]);
         }
     }
