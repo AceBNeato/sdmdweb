@@ -49,6 +49,7 @@ return [
             'verify_peer_name' => false,
             'allow_self_signed' => true,
             'local_domain' => env('MAIL_EHLO_DOMAIN', 'localhost'),
+        ],
 
         'ses' => [
             'transport' => 'ses',
