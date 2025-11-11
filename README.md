@@ -45,11 +45,13 @@ php artisan key:generate
 # 4. Configure .env
 #   - DB_DATABASE=sdmd
 #   - DB_USERNAME=root
+
 #   - DB_PASSWORD=secret
 #   - APP_URL=http://sdmd.test (or your domain)
 
 # 5. Run migrations + seeders (creates roles, offices, default users)
 php artisan migrate --seed
+
 
 # 6. Link storage for uploaded avatars, QR codes, etc. (REQUIRED)
 php artisan storage:link
@@ -58,6 +60,8 @@ php artisan storage:link
 npm install
 npm run build   # production assets
 # or npm run dev for hot reload
+
+Ye
 
 # 8. Serve application
 php artisan serve

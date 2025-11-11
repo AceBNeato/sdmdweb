@@ -14,9 +14,118 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Providers\RouteServiceProvider;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
 class AuthController extends Controller
 {
+    /**
+     * Show the forgot password form.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showForgotPasswordForm()
+    {
+        return view('auth.passwords.email');
+    }
+
+    /**
+     * Send a password reset link to the given user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return back()->withErrors(['email' => 'We can\'t find a user with that email address.']);
+        }
+
+        // Generate password reset token
+        $token = Str::random(64);
+        
+        // Store token in password_resets table
+        DB::table('password_resets')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token' => $token,
+                'created_at' => now()
+            ]
+        );
+
+        // Send email using PHPMailer
+        try {
+            $mail = new PHPMailer(true);
+            
+            // Server settings with detailed error reporting
+            $mail->SMTPDebug = 2; // Enable verbose debug output
+            $mail->Debugoutput = function($str, $level) {
+                \Log::info("PHPMailer: $str");
+            };
+            
+            $mail->isSMTP();
+            $mail->Host = env('MAIL_HOST', 'smtp.mailtrap.io');
+            $mail->SMTPAuth = true;
+            $mail->Username = env('MAIL_USERNAME');
+            $mail->Password = env('MAIL_PASSWORD');
+            $mail->SMTPSecure = env('MAIL_ENCRYPTION', 'tls');
+            $mail->Port = env('MAIL_PORT', 2525);
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
+
+            // Recipients
+            $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@sdmd.com');
+            $fromName = env('MAIL_FROM_NAME', 'SDMD System');
+            $mail->setFrom($fromEmail, $fromName);
+            $mail->addAddress($request->email, $user->name);
+
+            // Content
+            $resetUrl = url(route('password.reset', [
+                'token' => $token,
+                'email' => $request->email
+            ], false));
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Reset Your Password';
+            $mail->Body    = "
+                <h2>Password Reset Request</h2>
+                <p>You are receiving this email because we received a password reset request for your account.</p>
+                <p>Click the button below to reset your password:</p>
+                <a href='{$resetUrl}' style='display: inline-block; padding: 10px 20px; background: #1e40af; color: white; text-decoration: none; border-radius: 4px;'>Reset Password</a>
+                <p>If you did not request a password reset, no further action is required.</p>
+                <p>This password reset link will expire in 60 minutes.</p>
+            ";
+            $mail->AltBody = "To reset your password, visit the following link: {$resetUrl}";
+
+            $mail->send();
+
+            \Log::info('Password reset email sent successfully to ' . $request->email);
+            return back()->with('status', 'We have emailed your password reset link!');
+            
+        } catch (\Exception $e) {
+            $errorMsg = 'Failed to send reset link: ' . $e->getMessage();
+            \Log::error($errorMsg);
+            \Log::error('PHPMailer Error: ' . $mail->ErrorInfo);
+            return back()->withErrors(['email' => $errorMsg]);
+        }
+    }
+
+    /**
+     * Show the login form.
+     *
+     * @return \Illuminate\View\View
+     */
     public function showLoginForm()
     {
         // Check if this is a blocked access attempt
