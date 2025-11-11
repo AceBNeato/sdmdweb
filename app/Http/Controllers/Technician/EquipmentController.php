@@ -723,12 +723,12 @@ class EquipmentController extends BaseController
             'created_at' => $equipment->created_at->format('Y-m-d H:i:s'),
         ];
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode(json_encode($equipmentData)) . "&size=300x300&format=svg";
+        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode(json_encode($equipmentData)) . "&size=300x300&format=png";
 
         $response = Http::get($apiUrl);
 
         if ($response->successful()) {
-            return response($response->body())->header('Content-Type', 'image/svg+xml');
+            return response($response->body())->header('Content-Type', 'image/png');
         }
 
         // Fallback: return a simple text response
@@ -767,14 +767,14 @@ class EquipmentController extends BaseController
             'created_at' => $equipment->created_at->format('Y-m-d H:i:s'),
         ];
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode(json_encode($equipmentData)) . "&size=300x300&format=svg";
+        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode(json_encode($equipmentData)) . "&size=300x300&format=png";
 
         $response = Http::get($apiUrl);
 
         if ($response->successful()) {
             return response($response->body())
-                ->header('Content-Type', 'image/svg+xml')
-                ->header('Content-Disposition', 'attachment; filename="qrcode-' . $equipment->id . '.svg"');
+                ->header('Content-Type', 'image/png')
+                ->header('Content-Disposition', 'attachment; filename="qrcode-' . $equipment->id . '.png"');
         }
 
         // Fallback: return a simple text response

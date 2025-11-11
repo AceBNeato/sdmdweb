@@ -19,24 +19,7 @@
 
 <div class="row align-items-center">
         <div class="col-md-4" style="background: white; border-radius: 12px; padding: 20px;">
-            <div class="equipment-image text-center">
-                @if($equipment->qr_code_image_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($equipment->qr_code_image_path))
-                    <img src="{{ asset('storage/' . $equipment->qr_code_image_path) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid" >
-                @elseif($equipment->qr_code && Route::has($prefix . '.equipment.qrcode'))
-                    <img src="{{ route($prefix . '.equipment.qrcode', $equipment) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid"  onerror="console.log('QR Code image failed to load'); this.style.display='none';">
-                @else
-                    <div class="d-flex align-items-center justify-content-center h-100 text-muted" style="min-height: 200px;">
-                        <div class="text-center">
-                            <i class='bx bx-qr-scan text-6xl opacity-50 mb-2'></i>
-                            <small class="d-block">No QR Code</small>
-                        </div>
-                    </div>
-                @endif
-
-                <div class="mt-3">
-                    <small class="text-muted">Scan this code for quick access</small>
-                </div>
-            </div>
+            
         </div>
         <div class="col-md-8">
             <h1 class="equipment-title">{{ $equipment->model_number }}</h1>
@@ -138,6 +121,26 @@
             </div>
             @endif
         </div>
+        <div class="equipment-image text-center">
+
+        
+                <div class="mt-3">
+                    <small class="text-muted">Scan this code for quick access</small>
+                </div>
+                @if($equipment->qr_code_image_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($equipment->qr_code_image_path))
+                    <img src="{{ asset('storage/' . $equipment->qr_code_image_path) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid" >
+                @elseif($equipment->qr_code && Route::has($prefix . '.equipment.qrcode'))
+                    <img src="{{ route($prefix . '.equipment.qrcode', $equipment) }}" alt="QR Code for {{ $equipment->model_number }}" class="img-fluid"  onerror="console.log('QR Code image failed to load'); this.style.display='none';">
+                @else
+                    <div class="d-flex align-items-center justify-content-center h-100 text-muted" style="min-height: 200px;">
+                        <div class="text-center">
+                            <i class='bx bx-qr-scan text-6xl opacity-50 mb-2'></i>
+                            <small class="d-block">No QR Code</small>
+                        </div>
+                    </div>
+                @endif
+
+            </div>
 </div>
 
 

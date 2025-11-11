@@ -26,6 +26,14 @@ class EquipmentController extends Controller
     }
 
     /**
+     * Display the QR scanner page for staff users.
+     */
+    public function qrScanner()
+    {
+        return view('qr-scanner');
+    }
+
+    /**
      * Display a listing of the equipment.
      *
      * @return \Illuminate\View\View
@@ -414,6 +422,10 @@ class EquipmentController extends Controller
             // Parse QR data as JSON (legacy format)
             $qrData = json_decode($qrData, true);
 
+            if (is_array($qrData) && isset($qrData['equipment_id']) && !isset($qrData['id'])) {
+                $qrData['id'] = $qrData['equipment_id'];
+            }
+
             if (!$qrData || !isset($qrData['id'])) {
                 return response()->json([
                     'success' => false,
@@ -545,7 +557,7 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use
@@ -593,15 +605,15 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
+            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';
 
             return response()->download(
                 storage_path('app/public/' . $qrPath),
                 $filename,
-                ['Content-Type' => 'image/svg+xml']
+                ['Content-Type' => 'image/png']
             );
         }
 
@@ -645,15 +657,15 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
+            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';
 
             return response()->download(
                 storage_path('app/public/' . $qrPath),
                 $filename,
-                ['Content-Type' => 'image/svg+xml']
+                ['Content-Type' => 'image/png']
             );
         }
 

@@ -279,13 +279,11 @@
         <hr>
 
             <nav class="menu">
-                <!-- QR Scanner - available to technicians and admins with permission -->
-                @if($currentUser && $currentUser->hasPermissionTo('qr.scan'))
-                @if($prefix === 'admin' || $prefix === 'technician')
-                <a href="{{ route($prefix . '.qr-scanner') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.qr-scanner') ? 'active' : '' }}">
+                <!-- QR Scanner - available to roles with permission -->
+                @if($currentUser && $currentUser->hasPermissionTo('qr.scan') && in_array($prefix, ['admin', 'technician', 'staff']))
+                <a href="{{ route($prefix . '.qr-scanner') }}" class="{{ Route::currentRouteName() === $prefix . '.qr-scanner' ? 'active' : '' }}">
                     <i class='bx bx-qr-scan'></i>QR Scan
                 </a>
-                @endif
                 @endif
 
                 <!-- Accounts - only for admin -->

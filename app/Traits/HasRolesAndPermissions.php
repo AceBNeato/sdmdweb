@@ -79,33 +79,36 @@ trait HasRolesAndPermissions
 
     /**
      * Check if the user has the given permission (direct or through roles).
+     * Direct permissions can override role permissions:
+     * - Active direct permission: grants access
+     * - Inactive direct permission: denies access (even if role grants it)
+     * - No direct permission: use role permissions
      */
     public function hasPermissionTo($permission): bool
     {
-        // First check direct permissions
+        // First check if there's a direct permission set for this user
+        $directPermissionQuery = $this->permissions();
+
         if (is_string($permission)) {
-            $directPermission = $this->permissions()
-                ->where('name', $permission)
-                ->wherePivot('is_active', true)
-                ->exists();
+            $directPermissionQuery->where('name', $permission);
+        } elseif ($permission instanceof Permission) {
+            $directPermissionQuery->where('id', $permission->id);
+        }
 
-            if ($directPermission) {
-                return true;
+        $directPermission = $directPermissionQuery->first();
+
+        // If direct permission exists
+        if ($directPermission) {
+            // Check the pivot is_active status
+            $pivot = $directPermission->pivot;
+            if ($pivot && $pivot->is_active) {
+                return true; // Direct permission is active, grant access
+            } else {
+                return false; // Direct permission is inactive, deny access
             }
         }
 
-        if ($permission instanceof Permission) {
-            $directPermission = $this->permissions()
-                ->where('id', $permission->id)
-                ->wherePivot('is_active', true)
-                ->exists();
-
-            if ($directPermission) {
-                return true;
-            }
-        }
-
-        // Check permissions through roles
+        // No direct permission set, check permissions through roles
         if (is_string($permission)) {
             return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
                 $query->where('name', $permission);

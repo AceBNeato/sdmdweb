@@ -522,15 +522,15 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
+            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';
 
             return response()->download(
                 storage_path('app/public/' . $qrPath),
                 $filename,
-                ['Content-Type' => 'image/svg+xml']
+                ['Content-Type' => 'image/png']
             );
         }
 
@@ -556,18 +556,87 @@ class EquipmentController extends Controller
 
     public function printQrcodes(Request $request)
     {
-        $query = Equipment::with('office');
+        $selectedOfficeId = $request->get('office_id', 'all');
 
-        // Filter by office
-        if ($request->has('office_id') && $request->office_id !== 'all') {
-            $query->where('office_id', $request->office_id);
+        $query = Equipment::with(['office', 'equipmentType']);
+
+        if ($selectedOfficeId !== 'all' && $selectedOfficeId !== null) {
+            $query->where('office_id', $selectedOfficeId);
         }
 
-        $equipment = $query->latest()->get();
+        $equipment = $query
+            ->orderBy('office_id')
+            ->orderBy('model_number')
+            ->get();
 
-        $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
+        $campuses = Campus::with(['offices' => function ($query) {
+            $query->where('is_active', true)->orderBy('name');
+        }])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-        return view('equipment.print-qrcodes', compact('equipment', 'campuses'));
+        $viewData = [
+            'campuses' => $campuses,
+            'equipment' => $equipment,
+            'selectedOfficeId' => $selectedOfficeId,
+            'routePrefix' => 'admin',
+            'printPdfRoute' => route('admin.equipment.print-qrcodes.pdf'),
+        ];
+
+        if ($request->ajax()) {
+            return view('equipment.print-qrcodes_modal', $viewData);
+        }
+
+        $redirectParams = array_filter([
+            'print_qrcodes' => 1,
+            'office_id' => $selectedOfficeId !== 'all' ? $selectedOfficeId : null,
+        ], static function ($value) {
+            return $value !== null;
+        });
+
+        return redirect()->route('admin.equipment.index', $redirectParams);
+    }
+
+    public function printQrcodesPdf(Request $request)
+    {
+        $equipmentIdsParam = $request->input('equipment_ids', []);
+
+        if (is_string($equipmentIdsParam)) {
+            $equipmentIds = array_filter(array_map('trim', explode(',', $equipmentIdsParam)));
+        } elseif (is_array($equipmentIdsParam)) {
+            $equipmentIds = array_filter($equipmentIdsParam);
+        } else {
+            $equipmentIds = [];
+        }
+
+        if (empty($equipmentIds)) {
+            return redirect()
+                ->route('admin.equipment.index')
+                ->with('error', 'Please select at least one equipment to print.');
+        }
+
+        $equipments = Equipment::with(['office', 'equipmentType'])
+            ->whereIn('id', $equipmentIds)
+            ->orderBy('office_id')
+            ->orderBy('model_number')
+            ->get();
+
+        if ($equipments->isEmpty()) {
+            return redirect()
+                ->route('admin.equipment.index')
+                ->with('error', 'Selected equipment could not be found.');
+        }
+
+        $generatedAt = now();
+        $generatedBy = optional(auth()->user())->name ?? 'SDMD System';
+
+        return view('equipment.qr-code-pdf', [
+            'equipments' => $equipments,
+            'generatedAt' => $generatedAt,
+            'generatedBy' => $generatedBy,
+            'routePrefix' => 'admin',
+        ]);
     }
 
     public function scanView()
@@ -619,6 +688,10 @@ class EquipmentController extends Controller
         // Parse QR data as JSON (legacy format)
         if (is_string($qrData)) {
             $qrData = json_decode($qrData, true);
+        }
+
+        if (is_array($qrData) && isset($qrData['equipment_id']) && !isset($qrData['id'])) {
+            $qrData['id'] = $qrData['equipment_id'];
         }
 
         if (!$qrData || !isset($qrData['id'])) {
@@ -681,7 +754,7 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use

@@ -30,8 +30,8 @@ use App\Http\Controllers\PublicEquipmentController;
 use App\Http\Controllers\Auth\TechnicianLoginController;
 use App\Http\Controllers\Auth\StaffLoginController;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Auth\AdminLoginController;
-use App\Http\Controllers\EmailVerificationController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\SocialAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -109,6 +109,12 @@ Route::middleware(['guest'])->group(function () {
         ->name('admin.login.form');
     Route::post('/login/admin', [\App\Http\Controllers\Auth\AdminLoginController::class, 'login'])
         ->name('admin.login');
+
+    // Google OAuth Routes
+    Route::get('/auth/google', [SocialAuthController::class, 'redirectToGoogle'])
+        ->name('auth.google');
+    Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback'])
+        ->name('auth.google.callback');
 
 // Logout
 Route::get('/logout', function() { return redirect('/'); });
@@ -308,6 +314,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 ->name('profile.update');
         });
 
+        // QR Scanner
+        Route::get('qr-scanner', [\App\Http\Controllers\Staff\EquipmentController::class, 'qrScanner'])
+            ->name('qr-scanner')
+            ->middleware('permission:qr.scan');
+
         // Equipment Management
         Route::prefix('equipment')
             ->name('equipment.')
@@ -498,6 +509,8 @@ Route::middleware(['auth'])
                 Route::get('/', [AdminController::class, 'equipment'])->name('index');
                 Route::get('create', [EquipmentController::class, 'create'])->name('create')->middleware('permission:equipment.create');
                 Route::post('/', [EquipmentController::class, 'store'])->name('store')->middleware('permission:equipment.create');
+                Route::get('print-qrcodes', [EquipmentController::class, 'printQrcodes'])->name('print-qrcodes');
+                Route::get('print-qrcodes/pdf', [EquipmentController::class, 'printQrcodesPdf'])->name('print-qrcodes.pdf');
                 Route::get('{equipment}', [EquipmentController::class, 'show'])->name('show');
                 Route::get('{equipment}/edit', [EquipmentController::class, 'edit'])->name('edit')->middleware('permission:equipment.edit');
                 Route::put('{equipment}', [EquipmentController::class, 'update'])->name('update')->middleware('permission:equipment.edit');
@@ -507,7 +520,6 @@ Route::middleware(['auth'])
                 Route::get('{equipment}/qrcode', [EquipmentController::class, 'qrCode'])->name('qrcode');
                 Route::get('{equipment}/download-qrcode', [EquipmentController::class, 'downloadQrCode'])->name('download-qrcode');
                 Route::get('{equipment}/print-qrcode', [EquipmentController::class, 'qrCode'])->name('print-qrcode');
-                Route::get('print-qrcodes', [EquipmentController::class, 'printQrcodes'])->name('print-qrcodes');
 
                 // QR Scanner
                 Route::get('scan', [EquipmentController::class, 'scanView'])->name('scan');

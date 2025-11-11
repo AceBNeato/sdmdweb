@@ -15,16 +15,10 @@ class EquipmentSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get Tagum campus offices (6 offices)
-        $tagumCampus = Campus::where('code', 'TAGUM')->first();
-        if (!$tagumCampus) {
-            $this->command->error('Tagum campus not found');
-            return;
-        }
-
-        $offices = Office::where('campus_id', $tagumCampus->id)->get();
-        if ($offices->count() < 6) {
-            $this->command->error('Not enough offices in Tagum campus');
+        // Get all offices (now only 3: SDMD, IT, COA)
+        $offices = Office::all();
+        if ($offices->count() < 3) {
+            $this->command->error('Not enough offices found');
             return;
         }
 
@@ -73,12 +67,9 @@ class EquipmentSeeder extends Seeder
         ];
 
         $departments = [
-            'PRESIDENT' => 'Administration',
-            'REGISTRAR' => 'Student Services',
+            'SDMD' => 'Systems Development and Maintenance Department',
             'IT' => 'Information Technology',
-            'HR' => 'Human Resources',
-            'FINANCE' => 'Finance',
-            'LIBRARY' => 'Library Services',
+            'COA' => 'College of Agriculture',
         ];
 
         $locations = [
@@ -90,16 +81,16 @@ class EquipmentSeeder extends Seeder
             'Print Station',
         ];
 
-        $statuses = ['available', 'maintenance', 'not_available'];
+        $statuses = ['serviceable', 'for_repair', 'defective'];
         $conditions = ['excellent', 'good', 'fair'];
 
         $equipmentCount = 0;
-        $officesArray = $offices->take(6)->values(); // Take first 6 offices
+        $officesArray = $offices; // Use all offices
 
         foreach ($officesArray as $officeIndex => $office) {
             $department = $departments[$office->code] ?? 'General';
 
-            for ($i = 0; $i < 5; $i++) { // 5 equipment per office
+            for ($i = 0; $i < 10; $i++) { // 10 equipment per office for total of 30
                 $type = array_rand($equipmentTypes);
                 $typeData = $equipmentTypes[$type];
                 $brand = $typeData['brands'][array_rand($typeData['brands'])];
@@ -116,6 +107,7 @@ class EquipmentSeeder extends Seeder
                 $modelNumber = $brand . '-' . strtoupper(substr($type, 0, 3)) . '-' . str_pad($equipmentCount + 1, 3, '0', STR_PAD_LEFT);
                 $serialNumber = strtoupper($brand) . rand(100000000, 999999999);
                 $status = $statuses[array_rand($statuses)];
+                $condition = $conditions[array_rand($conditions)];
 
                 $equipment = Equipment::create([
                     'model_number' => $modelNumber,
@@ -127,6 +119,7 @@ class EquipmentSeeder extends Seeder
                     'qr_code' => 'EQP-' . strtoupper(Str::random(8)),
                     'qr_code_image_path' => 'qrcodes/equipment_' . ($equipmentCount + 1) . '.png',
                     'status' => $status,
+                    'condition' => $condition,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

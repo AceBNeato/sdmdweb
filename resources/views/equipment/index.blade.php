@@ -11,6 +11,178 @@
     <script>
     $(document).ready(function() {
 
+        const printQrcodesModal = $('#printQrcodesModal');
+        const printQrcodesContent = $('#printQrcodesContent');
+        const printModalLoadingMarkup = '<div class="text-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+        function loadPrintQrcodesModal(options = {}) {
+            if (!printQrcodesModal.length || !printQrcodesContent.length) {
+                return;
+            }
+
+            const requestUrl = options.url || ($('.print-qrcodes-btn').data('url') || null);
+
+            if (!requestUrl) {
+                return;
+            }
+
+            let requestData;
+
+            if (options.data !== undefined) {
+                if (typeof options.data === 'string') {
+                    requestData = options.data;
+                } else {
+                    requestData = options.data;
+                }
+            } else if (options.params instanceof URLSearchParams) {
+                requestData = options.params.toString();
+            } else {
+                requestData = { office_id: options.officeId || $('#office_id').val() || 'all' };
+            }
+
+            printQrcodesContent.html(printModalLoadingMarkup);
+            printQrcodesModal.modal('show');
+
+            $.ajax({
+                url: requestUrl,
+                type: 'GET',
+                data: requestData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    printQrcodesContent.html(response);
+                    initPrintQrcodesModalInteractions();
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                    printQrcodesContent.html('<div class="alert alert-danger">Failed to load QR codes. Please try again.</div>');
+                }
+            });
+        }
+
+        function initPrintQrcodesModalInteractions() {
+            const modal = $('#printQrcodesModal');
+
+            if (!modal.length) {
+                return;
+            }
+
+            const selectAllCheckbox = modal.find('#selectAllQrcodes');
+            const selectedCountDisplay = modal.find('.selected-count-value');
+            const printButton = modal.find('.print-selected-btn');
+            const qrPreviewGrid = modal.find('.qr-preview-grid');
+            const pdfForm = modal.find('#printQrcodesPdfForm');
+            const pdfUrl = printButton.data('pdf-url');
+
+            function getSelectedIds() {
+                return modal.find('.qr-select-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+            }
+
+            function updateSelections() {
+                const selectedIds = getSelectedIds();
+                const totalCheckboxes = modal.find('.qr-select-checkbox').length;
+
+                modal.find('.qr-preview-item').each(function() {
+                    const id = $(this).data('equipment-id').toString();
+                    $(this).toggle(selectedIds.includes(id));
+                });
+
+                selectedCountDisplay.text(selectedIds.length);
+
+                if (selectAllCheckbox.length) {
+                    selectAllCheckbox.prop('checked', selectedIds.length === totalCheckboxes && totalCheckboxes > 0);
+                }
+
+                if (printButton.length) {
+                    printButton.prop('disabled', selectedIds.length === 0);
+                }
+
+                if (pdfForm && pdfForm.length) {
+                    pdfForm.find('input[name="equipment_ids"]').val(selectedIds.join(','));
+                }
+            }
+
+            modal.off('submit', '#printQrFilterForm').on('submit', '#printQrFilterForm', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                loadPrintQrcodesModal({
+                    url: form.attr('action'),
+                    data: form.serialize()
+                });
+            });
+
+            modal.off('change', '.qr-select-checkbox').on('change', '.qr-select-checkbox', function() {
+                updateSelections();
+            });
+
+            modal.off('change', '#selectAllQrcodes').on('change', '#selectAllQrcodes', function() {
+                const isChecked = $(this).is(':checked');
+                modal.find('.qr-select-checkbox').prop('checked', isChecked);
+                updateSelections();
+            });
+
+            modal.off('click', '.print-selected-btn').on('click', '.print-selected-btn', function() {
+                if (!pdfUrl || pdfUrl === '#') {
+                    return;
+                }
+
+                const selectedIds = getSelectedIds();
+
+                if (!selectedIds.length) {
+                    return;
+                }
+
+                if (pdfForm && pdfForm.length) {
+                    pdfForm.attr('action', pdfUrl);
+                    pdfForm.find('input[name="equipment_ids"]').val(selectedIds.join(','));
+                    pdfForm.trigger('submit');
+                } else {
+                    const queryString = $.param({ equipment_ids: selectedIds.join(',') });
+                    window.open(`${pdfUrl}?${queryString}`, '_blank');
+                }
+            });
+
+            modal.off('click', '.reset-print-filters').on('click', '.reset-print-filters', function(e) {
+                e.preventDefault();
+                const targetUrl = $(this).data('url') || $('#printQrFilterForm').attr('action');
+                loadPrintQrcodesModal({
+                    url: targetUrl,
+                    data: { office_id: 'all' }
+                });
+            });
+
+            updateSelections();
+        }
+
+        if (printQrcodesModal.length) {
+            printQrcodesModal.on('hidden.bs.modal', function() {
+                const url = new URL(window.location);
+
+                if (url.searchParams.has('print_qrcodes')) {
+                    url.searchParams.delete('print_qrcodes');
+                    url.searchParams.delete('office_id');
+                    window.history.replaceState({}, document.title, url.toString());
+                }
+            });
+        }
+
+        $('.print-qrcodes-btn').on('click', function() {
+            const buttonUrl = $(this).data('url');
+            const officeId = $('#office_id').val() || 'all';
+            loadPrintQrcodesModal({ url: buttonUrl, officeId: officeId });
+        });
+
+        const initialUrlParams = new URLSearchParams(window.location.search);
+        if ($('.print-qrcodes-btn').length && initialUrlParams.has('print_qrcodes')) {
+            loadPrintQrcodesModal({
+                url: $('.print-qrcodes-btn').data('url'),
+                params: initialUrlParams
+            });
+        }
+
         // Handle EDIT button clicks (both in table and in modal)
         $('.add-equipment-btn').on('click', function() {
             var equipmentId = $(this).data('equipment-id');
@@ -282,7 +454,17 @@
                 <span>Add Equipment</span>
             </button>
             @endif
-            </div>
+
+            @if($currentUser && $currentUser->hasPermissionTo('equipment.view') && Route::has($prefix . '.equipment.print-qrcodes'))
+            <button type="button"
+                    class="btn btn-outline-primary print-qrcodes-btn"
+                    data-url="{{ route($prefix . '.equipment.print-qrcodes') }}"
+                    title="Print QR Codes">
+                <i class='bx bx-barcode me-1'></i>
+                <span>Print QR Codes</span>
+            </button>
+            @endif
+        </div>
         <div class="card-body">
             <form action="{{ route($prefix . '.equipment.index') }}" method="GET" class="filter-form">
                 <!-- Search Field -->
@@ -530,6 +712,21 @@
             <div class="modal-body" id="historyEquipmentContent">
                 <!-- Content will be loaded via AJAX -->
                 <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print QR Codes Modal -->
+<div class="modal fade" id="printQrcodesModal" tabindex="-1" aria-labelledby="printQrcodesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-body" id="printQrcodesContent">
+                <div class="text-center py-5">
                     <div class="spinner-border" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>

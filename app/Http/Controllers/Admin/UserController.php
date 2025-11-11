@@ -372,10 +372,13 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
             
-        $userPermissions = $user->permissions()
-            ->wherePivot('is_active', true)
-            ->pluck('permissions.id')
-            ->toArray();
+        // Get effective permissions (what the user can actually do)
+        $userPermissions = [];
+        foreach ($allPermissions as $permission) {
+            if ($user->hasPermissionTo($permission->name)) {
+                $userPermissions[] = $permission->id;
+            }
+        }
 
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
         $userRoles = $user->roles->pluck('id')->toArray();

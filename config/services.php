@@ -28,11 +28,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'slack' => [
-        'notifications' => [
-            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
-        ],
+    'google' => [
+        'client_id' => env('144575550371-nmv1ebgaal9barka5tqbbmstbqej86p4.apps.googleusercontent.com'),
+        'client_secret' => env('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'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/google/callback'),
     ],
 
 ];
