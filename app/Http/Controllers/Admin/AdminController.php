@@ -218,8 +218,8 @@ class AdminController extends Controller
             if ($request->hasFile('profile_photo')) {
                 $file = $request->file('profile_photo');
                 $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('profile-photos', $filename, 'public');
-                $updateData['profile_photo'] = 'profile-photos/' . $filename;
+                $file->storeAs('public/profile_photos', $filename);
+                $updateData['profile_photo'] = 'profile_photos/' . $filename;
             }
 
             $user->update($updateData);

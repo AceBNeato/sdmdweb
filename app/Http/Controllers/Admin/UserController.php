@@ -39,6 +39,12 @@ class UserController extends Controller
         $statusFilter = $request->get('status');
 
         $usersQuery = User::with(['roles', 'campus', 'office'])
+            ->when(!auth()->user()->is_admin, function($query) {
+                // Non-admin users can only see non-admin users
+                return $query->whereDoesntHave('roles', function($q) {
+                    $q->where('name', 'admin');
+                });
+            })
             ->whereDoesntHave('roles', function($q) {
                 $q->where('name', 'super-admin');
             });
@@ -85,7 +91,10 @@ class UserController extends Controller
         // Get filter options
         $campuses = \App\Models\Campus::where('is_active', true)->orderBy('name')->get();
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
-        $roles = Role::where('name', '!=', 'super-admin')
+        $roles = Role::when(!auth()->user()->is_admin, function($query) {
+                // Non-admin users can only filter by non-admin roles
+                return $query->where('name', '!=', 'admin');
+            })
             ->orderBy('name')
             ->get();
 
@@ -97,8 +106,12 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::where('name', '!=', 'super-admin')
-            ->orderBy('name')->get();
+        $roles = Role::when(!auth()->user()->is_admin, function($query) {
+            // Non-admin users can only assign non-admin roles
+            return $query->where('name', '!=', 'admin');
+        })
+        ->where('name', '!=', 'super-admin')
+        ->orderBy('name')->get();
 
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
@@ -123,7 +136,7 @@ class UserController extends Controller
         ]);
 
         // Prevent non-admins from assigning admin role
-        if (!auth()->user()->hasRole('super-admin')) {
+        if (!auth()->user()->is_admin) {
             $adminRole = Role::where('name', 'admin')->first();
             if ($adminRole && $validated['roles'] == $adminRole->id) {
                 return redirect()->back()
@@ -159,7 +172,7 @@ class UserController extends Controller
                 ->withInput();
         }
 
-        \Illuminate\Support\Facades\Log::info('User created with ID: ' . $userId . ', requested role ID: ' . $validated['roles']);
+        \Illuminate\Support\Facades\Log::info('User created with ID: ' . $userId);
 
         // Get the created user
         $user = User::find($userId);
@@ -171,32 +184,7 @@ class UserController extends Controller
                 ->withInput();
         }
 
-        \Illuminate\Support\Facades\Log::info('User created successfully', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'assigned_roles' => $user->roles->pluck('name')->toArray()
-        ]);
-
-        // Ensure technician role is properly assigned if that's what was requested
-        $requestedRole = Role::find($validated['roles']);
-        if ($requestedRole && $requestedRole->name === 'technician') {
-            if (!$user->hasRole('technician')) {
-                \Illuminate\Support\Facades\Log::warning('User creation: Technician role not assigned, fixing...', [
-                    'user_id' => $user->id,
-                    'requested_role' => $validated['roles'],
-                    'current_roles' => $user->roles->pluck('name')->toArray()
-                ]);
-                
-                // Force assign technician role
-                $user->roles()->sync([$requestedRole->id]);
-                $user->load('roles');
-                
-                \Illuminate\Support\Facades\Log::info('User creation: Technician role fixed', [
-                    'user_id' => $user->id,
-                    'final_roles' => $user->roles->pluck('name')->toArray()
-                ]);
-            }
-        }
+        \Illuminate\Support\Facades\Log::info('User found: ' . $user->id . ' - ' . $user->email);
 
         // Generate email verification token
         $verificationToken = Str::random(64);
@@ -240,7 +228,7 @@ class UserController extends Controller
 
         \Illuminate\Support\Facades\Log::info('User creation completed: ' . $message);
 
-        return redirect()->route('admin.accounts.index')
+        return redirect()->route('accounts.index')
             ->with('success', $message);
     }
 
@@ -362,10 +350,20 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        // Prevent non-admins from editing admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to edit admin users.');
+        }
+
         // Load relationships
         $user->load(['campus', 'office']);
 
-        $roles = Role::where('name', '!=', 'super-admin')
+        $roles = Role::when(!auth()->user()->is_admin, function($query) {
+                // Non-admin users can only assign non-admin roles
+                return $query->where('name', '!=', 'admin');
+            })
+            ->where('name', '!=', 'super-admin')
             ->with('permissions')
             ->orderBy('name')
             ->get();
@@ -491,127 +489,5 @@ class UserController extends Controller
 
         return redirect()->route('accounts.index')
             ->with('success', 'User updated successfully.');
-    }
-
-    public function grantTempAdmin(Request $request, User $user)
-    {
-        try {
-            // Check authentication first
-            $authUser = auth()->user();
-            if (!$authUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Not authenticated.'
-                ], 401);
-            }
-
-            // Only super-admin can perform this action
-            if (!$authUser->is_super_admin) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have permission to perform this action.'
-                ], 403);
-            }
-
-            // Only technicians can be granted temp admin
-            // If they don't have technician role for some reason, add it
-            $technicianRole = Role::where('name', 'technician')->first();
-            if (!$technicianRole) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Technician role not found.'
-                ], 500);
-            }
-
-            if (!$user->hasRole('technician')) {
-                \Illuminate\Support\Facades\Log::info('grantTempAdmin: User missing technician role, adding it', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'current_roles' => $user->roles->pluck('name')->toArray()
-                ]);
-                
-                // Add technician role if missing
-                $user->roles()->attach($technicianRole->id, ['expires_at' => null]);
-                $user->load('roles'); // Refresh roles
-                
-                \Illuminate\Support\Facades\Log::info('grantTempAdmin: Technician role added', [
-                    'user_id' => $user->id,
-                    'updated_roles' => $user->roles->pluck('name')->toArray()
-                ]);
-            }
-
-            \Illuminate\Support\Facades\Log::info('grantTempAdmin: Granting temp admin to technician', [
-                'user_id' => $user->id,
-                'user_email' => $user->email,
-                'current_roles' => $user->roles->pluck('name')->toArray()
-            ]);
-
-            // Validate expires_at (must be in the future)
-            $validated = $request->validate([
-                'expires_at' => 'required|date|after:now',
-            ]);
-
-            $expiresAt = \Carbon\Carbon::parse($validated['expires_at']);
-
-            // Get admin role
-            $adminRole = Role::where('name', 'admin')->first();
-            if (!$adminRole) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin role not found.'
-                ], 500);
-            }
-
-            // Check if user already has ACTIVE admin role (not expired)
-            $hasActiveAdminRole = $user->roles()
-                ->where('role_id', $adminRole->id)
-                ->where(function($query) {
-                    $query->whereNull('expires_at')
-                          ->orWhere('expires_at', '>', now());
-                })
-                ->exists();
-            
-            if ($hasActiveAdminRole) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User already has active admin role'
-                ], 400);
-            }
-
-            // Clean up any expired admin roles before granting new access
-            $user->roles()
-                ->where('role_id', $adminRole->id)
-                ->where('expires_at', '<=', now())
-                ->detach();
-
-            // Assign admin role with expiry
-            $user->roles()->attach($adminRole->id, ['expires_at' => $expiresAt]);
-
-            // Refresh the user's roles to ensure they're properly loaded
-            $user->load('roles');
-
-            \Illuminate\Support\Facades\Log::info('grantTempAdmin: Temp admin granted successfully', [
-                'user_id' => $user->id,
-                'user_email' => $user->email,
-                'final_roles' => $user->roles->pluck('name')->toArray(),
-                'expires_at' => $expiresAt->toISOString()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Temporary admin access granted to {$user->name}. Expires at: {$expiresAt->format('M j, Y g:i A')}"
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Exception caught: ' . $e->getMessage()
-            ], 500);
-        } catch (\Throwable $t) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Throwable caught: ' . $t->getMessage()
-            ], 500);
-        }
     }
 }

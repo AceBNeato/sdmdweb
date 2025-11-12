@@ -391,70 +391,18 @@
             // Auto-open view modal
             if (urlParams.has('view_equipment')) {
                 const equipmentId = urlParams.get('view_equipment');
-                
-                // Instead of looking for a button, load the modal directly via AJAX
-                const modal = $('#viewEquipmentModal');
-                const content = $('#viewEquipmentContent');
-                
-                if (modal.length && content.length) {
-                    // Show loading spinner
-                    content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-                    
-                    // Load content via AJAX using the equipment show route
-                    const showUrl = '{{ route($prefix . ".equipment.show", ":id") }}'.replace(':id', equipmentId);
-                    
-                    $.ajax({
-                        url: showUrl,
-                        type: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        success: function(response) {
-                            content.html(response);
-                        },
-                        error: function(xhr, status, error) {
-                            console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                            content.html('<div class="alert alert-danger">Failed to load equipment details. Error: ' + xhr.status + ' - ' + error + '</div>');
-                        }
-                    });
-                    
-                    // Show modal
-                    modal.modal('show');
+                const viewBtn = $(`.view-equipment-btn[data-equipment-id="${equipmentId}"]`);
+                if (viewBtn.length > 0) {
+                    viewBtn.trigger('click');
                 }
             }
 
             // Auto-open history modal
             if (urlParams.has('history_equipment')) {
                 const equipmentId = urlParams.get('history_equipment');
-                
-                // Instead of looking for a button, load the modal directly via AJAX
-                const modal = $('#historyEquipmentModal');
-                const content = $('#historyEquipmentContent');
-                
-                if (modal.length && content.length) {
-                    // Show loading spinner
-                    content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-                    
-                    // Load content via AJAX using the equipment history create route
-                    const historyUrl = '{{ route($prefix . ".equipment.history.create", ":id") }}'.replace(':id', equipmentId);
-                    
-                    $.ajax({
-                        url: historyUrl,
-                        type: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        success: function(response) {
-                            content.html(response);
-                        },
-                        error: function(xhr, status, error) {
-                            console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                            content.html('<div class="alert alert-danger">Failed to load history form. Error: ' + xhr.status + ' - ' + error + '</div>');
-                        }
-                    });
-                    
-                    // Show modal
-                    modal.modal('show');
+                const historyBtn = $(`.history-equipment-btn[data-equipment-id="${equipmentId}"]`);
+                if (historyBtn.length > 0) {
+                    historyBtn.trigger('click');
                 }
             }
         });

@@ -253,7 +253,6 @@ class RbacSeeder extends Seeder
 
         // Assign permissions to staff role
         $staffPermissions = Permission::whereIn('name', [
-            'qr.scan',
             'equipment.view', 'equipment.edit', 'equipment.create',
             'reports.view', 'reports.generate',
             'profile.view', 'profile.update',

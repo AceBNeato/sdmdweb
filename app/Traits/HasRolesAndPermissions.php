@@ -34,21 +34,15 @@ trait HasRolesAndPermissions
      */
     public function hasRole($role): bool
     {
-        // Get only active (non-expired) roles
-        $activeRoles = $this->roles->filter(function($userRole) {
-            $expiresAt = $userRole->pivot->expires_at;
-            return is_null($expiresAt) || $expiresAt > now();
-        });
-
         if (is_string($role)) {
-            return $activeRoles->contains('name', $role);
+            return $this->roles->contains('name', $role);
         }
 
         if ($role instanceof Role) {
-            return $activeRoles->contains('id', $role->id);
+            return $this->roles->contains('id', $role->id);
         }
 
-        return (bool) $role->intersect($activeRoles)->count();
+        return (bool) $role->intersect($this->roles)->count();
     }
 
     /**
@@ -103,40 +97,31 @@ trait HasRolesAndPermissions
 
         $directPermission = $directPermissionQuery->first();
 
-        // Check if user has active admin role (super-admin or admin)
-        $hasActiveAdminRole = $this->hasRole(['admin', 'super-admin']);
-
         // If direct permission exists
         if ($directPermission) {
             // Check the pivot is_active status
             $pivot = $directPermission->pivot;
             if ($pivot && $pivot->is_active) {
                 return true; // Direct permission is active, grant access
-            } elseif ($hasActiveAdminRole) {
-                // User has active admin role, allow role permissions to override inactive direct permissions
-                // Continue to role checking below
             } else {
-                return false; // Direct permission is inactive and no admin role, deny access
+                return false; // Direct permission is inactive, deny access
             }
         }
 
-        // No direct permission set, or direct permission is inactive but user has admin role
-        // Check permissions through roles
-        // Filter out expired roles
-        $activeRoles = $this->roles->filter(function($role) {
-            $expiresAt = $role->pivot->expires_at;
-            return is_null($expiresAt) || $expiresAt > now();
-        });
+        // No direct permission set, check permissions through roles
+        if (is_string($permission)) {
+            return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+                $query->where('name', $permission);
+            })->exists();
+        }
 
-        return $activeRoles->contains(function($role) use ($permission) {
-            // Check if role has the permission
-            if (is_string($permission)) {
-                return $role->permissions->contains('name', $permission);
-            } elseif ($permission instanceof Permission) {
-                return $role->permissions->contains('id', $permission->id);
-            }
-            return false;
-        });
+        if ($permission instanceof Permission) {
+            return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+                $query->where('id', $permission->id);
+            })->exists();
+        }
+
+        return false;
     }
 
 

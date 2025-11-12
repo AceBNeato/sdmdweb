@@ -1,21 +1,7 @@
 @extends('layouts.app')
 
 @php
-// Check all authentication guards to determine user type
-$currentUser = null;
-$prefix = 'admin'; // default
-
-if (auth('staff')->check()) {
-    $currentUser = auth('staff')->user();
-    $prefix = 'staff';
-} elseif (auth('technician')->check()) {
-    $currentUser = auth('technician')->user();
-    $prefix = 'technician';
-} elseif (auth()->check()) {
-    $currentUser = auth()->user();
-    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
-}
-
+$prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 $scanRoute = route($prefix . '.equipment.scan');
 $viewUrl = '/' . $prefix . '/equipment';
 $historyUrl = '/' . $prefix . '/equipment';

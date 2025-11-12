@@ -40,7 +40,7 @@
                         <div class="mb-3">
                             <label for="date" class="form-label">Date & Time <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control @error('date') is-invalid @enderror"
-                                   id="date" name="date" value="{{ old('date', now()->setTimezone('Asia/Manila')->format('Y-m-d\TH:i')) }}" required>
+                                   id="date" name="date" value="{{ old('date', now()->format('Y-m-d\TH:i')) }}" required>
                             @error('date')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -156,9 +156,6 @@
 </style>
 
 <script>
-    // Pass server-side Asia/Manila time to JavaScript
-    const serverCurrentTime = "{{ now()->setTimezone('Asia/Manila')->format('Y-m-d\TH:i:s') }}";
-
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.getElementById('date');
     const joPrefixInput = document.getElementById('jo_prefix');
@@ -286,18 +283,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const selectedDateTime = new Date(this.value);
-        const now = new Date(serverCurrentTime);
+        const now = new Date();
 
         if (selectedDateTime > now) {
             alert('Cannot set future dates. Please select current date/time.');
-            this.value = serverCurrentTime.slice(0, 16);
+            this.value = now.toISOString().slice(0, 16);
             updateJOPrefix(); // Re-update prefix after date correction
             return;
         }
 
         if (selectedDateTime < now) {
             alert('Cannot backdate repair records. Please select current date/time.');
-            this.value = serverCurrentTime.slice(0, 16);
+            this.value = now.toISOString().slice(0, 16);
             updateJOPrefix(); // Re-update prefix after date correction
             return;
         }

@@ -431,11 +431,9 @@ class EquipmentController extends Controller
             $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
             $successMessage .= ' Equipment status updated to ' . $statusText . '.';
 
-            // Add condition update message based on status
+            // Add condition update message if status was set to serviceable
             if ($validated['equipment_status'] === 'serviceable') {
                 $successMessage .= ' Equipment condition set to Good.';
-            } elseif (in_array($validated['equipment_status'], ['for_repair', 'defective'])) {
-                $successMessage .= ' Equipment condition set to Not Working.';
             }
 
             return redirect()
@@ -493,69 +491,6 @@ class EquipmentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error checking latest repair: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Check existing sequences for a date to validate consecutive numbering.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Equipment  $equipment
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function checkSequences(Request $request, Equipment $equipment)
-    {
-        $request->validate([
-            'date' => 'required|date',
-        ]);
-
-        try {
-            $date = $request->date;
-
-            // Find all JO numbers for this date across all equipment
-            $joQuery = 'JO-' . $date . '-%';
-
-            $existingJO = EquipmentHistory::where('jo_number', 'like', $joQuery)
-                ->orderBy('jo_number')
-                ->pluck('jo_number')
-                ->toArray();
-
-            // Extract sequences from JO numbers
-            $existingSequences = [];
-            foreach ($existingJO as $joNumber) {
-                $parts = explode('-', $joNumber);
-                if (count($parts) >= 4) {
-                    $sequence = (int) end($parts); // JO-YYYY-MM-DD-XX -> XX
-                    $existingSequences[] = $sequence;
-                }
-            }
-
-            // Sort sequences
-            sort($existingSequences);
-
-            // For strict consecutive numbering, find the next required sequence
-            $nextSequence = 1;
-            foreach ($existingSequences as $seq) {
-                if ($seq === $nextSequence) {
-                    $nextSequence++;
-                } else {
-                    // Gap found - this shouldn't happen with strict validation
-                    // But if it does, nextSequence remains at the gap position
-                    break;
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'existing_sequences' => $existingSequences,
-                'next_sequence' => $nextSequence
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error checking sequences: ' . $e->getMessage()
             ], 500);
         }
     }

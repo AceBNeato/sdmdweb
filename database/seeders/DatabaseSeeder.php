@@ -27,10 +27,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('');
         $this->command->info('🔐 Super Admin Credentials:');
         $this->command->info('   Email: superadmin@sdmd.ph');
-        $this->command->info('   Password: superadmin1234');
+        $this->command->info('   Password: superadmin123');
         $this->command->info('');
         $this->command->info('   Email: superadmin2@sdmd.ph');
-        $this->command->info('   Password: superadmin1234');
+        $this->command->info('   Password: superadmin123');
         $this->command->info('');
         $this->command->info('👤 Admin Credentials:');
         $this->command->info('   Email: arthurdalemicaroz@gmail.com');

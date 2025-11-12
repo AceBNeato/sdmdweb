@@ -16,23 +16,6 @@
 @if(!auth()->user()->hasPermissionTo('users.view'))
     @php abort(403) @endphp
 @else
-    <!-- Flash Messages -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class='bx bx-check-circle me-2'></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class='bx bx-error-circle me-2'></i>
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <div class="action-buttons">
         @if(auth()->user()->hasPermissionTo('users.create'))
         <a href="{{ route('accounts.form') }}" class="btn btn-primary btn-sm">
@@ -144,15 +127,8 @@
                             <div class="fw-semibold">{{ $user->email }}</div>
                         </td>
                         <td>
-                            @php
-                                $activeRoles = $user->roles->filter(function($role) {
-                                    $expiresAt = $role->pivot->expires_at;
-                                    return is_null($expiresAt) || $expiresAt > now();
-                                });
-                                $primaryRole = $activeRoles->first();
-                            @endphp
-                            <div class="text-truncate" style="max-width: 150px;" title="{{ $primaryRole?->display_name ?? 'No role' }}">
-                                {{ $primaryRole?->display_name ?? 'No role' }}
+                            <div class="text-truncate" style="max-width: 150px;" title="{{ $user->roles->first()?->display_name ?? 'No role' }}">
+                                {{ $user->roles->first()?->display_name ?? 'No role' }}
                             </div>
                         </td>
                         <td>
@@ -180,13 +156,6 @@
                                    title="edit">
                                     <i class='bx bx-edit'></i>
                                 </a>
-                                @endif
-                                @if(auth()->user()->is_super_admin && $activeRoles->contains('name', 'technician'))
-                                <button type="button" class="btn btn-primary btn-sm"
-                                        onclick="grantTempAdmin({{ $user->id }}, '{{ $user->name }}')"
-                                        title="Grant Temporary Admin Access">
-                                    <i class='bx bx-time-five'></i>
-                                </button>
                                 @endif
                             </div>
                         </td>
@@ -220,100 +189,4 @@
 @endif
 
 @endsection
-@push('scripts')
-<script>
-function grantTempAdmin(userId, userName) {
-    // Create modal HTML
-    const modalHtml = `
-        <div class="modal fade" id="tempAdminModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Grant Temporary Admin Access</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Grant temporary admin access to <strong>${userName}</strong>?</p>
-                        <form id="tempAdminForm">
-                            <div class="mb-3">
-                                <label for="expires_at" class="form-label">Expires At</label>
-                                <input type="datetime-local" class="form-control" id="expires_at" name="expires_at"
-                                       min="{{ now()->addHour()->format('Y-m-d\TH:i') }}" required>
-                                <small class="form-text text-muted">Select when the temporary admin access should expire</small>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-warning" onclick="submitTempAdmin(${userId})">
-                            <i class='bx bx-time-five me-1'></i> Grant Access
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Remove existing modal if present
-    const existingModal = document.getElementById('tempAdminModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-
-    // Add modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('tempAdminModal'));
-    modal.show();
-}
-
-function submitTempAdmin(userId) {
-    const expiresAt = document.getElementById('expires_at').value;
-    const formData = new FormData();
-    formData.append('expires_at', expiresAt);
-    formData.append('_token', '{{ csrf_token() }}');
-
-    fetch(`/admin/accounts/${userId}/grant-temp-admin`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('tempAdminModal'));
-            modal.hide();
-
-            // Show success message
-            showAlert('success', data.message);
-
-            // Reload page after short delay
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
-        } else {
-            showAlert('danger', data.message || 'An error occurred');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('danger', 'An error occurred while granting temporary admin access');
-    });
-}
-
-function showAlert(type, message) {
-    const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-
-    // Add to top of content
-    const content = document.querySelector('.content');
-    content.insertAdjacentHTML('afterbegin', alertHtml);
-}
-</script>
-@endpush
 

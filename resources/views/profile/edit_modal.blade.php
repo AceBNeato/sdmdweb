@@ -1,28 +1,16 @@
 @php
     $user = $user ?? auth('staff')->user() ?? auth('technician')->user() ?? auth()->user();
     $routePrefix = auth('technician')->check() ? 'technician' : (auth('staff')->check() ? 'staff' : 'admin');
-    $updateRoute = match($routePrefix) {
-        'staff' => route('staff.profile.update'),
-        'technician' => route('technician.profile.update'),
-        'admin' => route('admin.profile.update'),
-        default => '#'
-    };
-
-    // Helper function to get profile photo URL
-    function getProfilePhotoUrl($photoPath) {
-        if (!$photoPath) return asset('images/SDMDlogo.png');
-
-        // Construct URL manually to avoid storage link dependency
-        return url('storage/' . $photoPath);
-    }
+    $updateRoute = $routePrefix === 'staff' ? route('staff.profile.update') : ($routePrefix === 'technician' && Route::has('technician.profile.update') ? route('technician.profile.update') : ($routePrefix === 'admin' ? route('admin.profile.update') : '#'));
 @endphp
 
 <form action="{{ $updateRoute }}" method="POST" enctype="multipart/form-data" id="profileEditForm" class="profile-edit-form">
     @csrf
+    @method('PUT')
 
     <div class="mb-3 text-center">
         <div class="profile-avatar-wrapper">
-            <img src="{{ getProfilePhotoUrl($user->profile_photo ?? $user->profile_photo_path) }}"
+            <img src="{{ ($user->profile_photo ?? $user->profile_photo_path) ? asset('storage/' . ($user->profile_photo ?? $user->profile_photo_path)) : asset('images/SDMDlogo.png') }}"
                  class="profile-avatar profile-avatar-md"
                  id="profileImagePreview"
                  onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">

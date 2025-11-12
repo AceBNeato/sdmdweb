@@ -346,12 +346,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 Route::get('{equipment}/print-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQRCode'])
                     ->name('print-qrcode');
                     
-                // Bulk QR Code printing
-                Route::get('print-qrcodes', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQrcodes'])
-                    ->name('print-qrcodes');
-                Route::get('print-qrcodes/pdf', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQrcodesPdf'])
-                    ->name('print-qrcodes.pdf');
-                    
                 // QR Scanner
                 Route::get('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanView'])
                     ->name('scan');
