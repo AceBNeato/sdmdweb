@@ -3,17 +3,28 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use App\Traits\HasRolesAndPermissions;
 
-class Technician extends Model
+class Technician extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable, HasRolesAndPermissions;
+
+    /**
+     * The authentication guard for the model.
+     *
+     * @var string
+     */
+    protected $guard = 'technician';
 
     protected $fillable = [
         'user_id',
         'first_name',
         'last_name',
         'email',
+        'password',
         'phone',
         'specialization',
         'staff_id',
@@ -27,6 +38,11 @@ class Technician extends Model
         'hourly_rate',
         'shift',
         'profile_photo_path',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
@@ -46,6 +62,27 @@ class Technician extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Override hasPermissionTo to delegate to the associated User.
+     */
+    public function hasPermissionTo($permission): bool
+    {
+        if ($this->user) {
+            return $this->user->hasPermissionTo($permission);
+        }
+        return false;
+    }
+
+    /**
+     * Get the guard name for the technician.
+     *
+     * @return string
+     */
+    public function guardName()
+    {
+        return 'technician';
     }
 
     /**

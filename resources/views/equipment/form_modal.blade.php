@@ -1,13 +1,19 @@
 
 @php
-    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+    if (auth()->guard('technician')->check()) {
+        $prefix = 'technician';
+    } elseif (auth()->guard('staff')->check()) {
+        $prefix = 'staff';
+    } else {
+        $prefix = 'admin';
+    }
 @endphp
 
 <div class="text-center mb-4">
     <p class="text-muted">Fill in the details below to {{ $equipment->exists ? 'update' : 'create' }} equipment for your office</p>
 </div>
 
-<form action="{{ $equipment->exists ? route((auth()->guard('technician')->check() ? 'technician.' : 'admin.') . 'equipment.update', $equipment) : route((auth()->guard('technician')->check() ? 'technician.' : 'admin.') . 'equipment.store') }}" method="POST" class="needs-validation" novalidate>
+<form action="{{ $equipment->exists ? route($prefix . '.equipment.update', $equipment) : route($prefix . '.equipment.store') }}" method="POST" class="needs-validation" novalidate>
     @csrf
     @if($equipment->exists)
         @method('PUT')

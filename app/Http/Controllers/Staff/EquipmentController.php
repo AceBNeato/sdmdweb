@@ -202,9 +202,9 @@ class EquipmentController extends Controller
         $user = Auth::guard('staff')->user();
 
         // Ensure staff can only view equipment from their office
-        if ($equipment->office_id !== $user->office_id) {
-            abort(403, 'You can only view equipment from your office.');
-        }
+        // if ($equipment->office_id !== $user->office_id) {
+        //     abort(403, 'You can only view equipment from your office.');
+        // }
 
         $equipment->load('office', 'equipmentType');
 
@@ -257,9 +257,9 @@ class EquipmentController extends Controller
         $user = Auth::guard('staff')->user();
 
         // Ensure staff can only edit equipment from their office
-        if ($equipment->office_id !== $user->office_id) {
-            abort(403, 'You can only edit equipment from your office.');
-        }
+        // if ($equipment->office_id !== $user->office_id) {
+        //     abort(403, 'You can only edit equipment from your office.');
+        // }
 
         $categories = $this->getEquipmentCategories();
         $equipmentTypes = $this->getEquipmentTypes();
@@ -285,9 +285,9 @@ class EquipmentController extends Controller
         $user = Auth::guard('staff')->user();
 
         // Ensure staff can only update equipment from their office
-        if ($equipment->office_id !== $user->office_id) {
-            abort(403, 'You can only update equipment from your office.');
-        }
+        // if ($equipment->office_id !== $user->office_id) {
+        //     abort(403, 'You can only update equipment from your office.');
+        // }
 
         $validated = $request->validate([
             'model_number' => 'required|string|max:100',
@@ -671,5 +671,90 @@ class EquipmentController extends Controller
 
         // Fallback: return a simple text response
         return response('QR Code generation failed')->header('Content-Type', 'text/plain');
+    }
+
+    public function printQrcodes(Request $request)
+    {
+        $selectedOfficeId = $request->get('office_id', 'all');
+
+        $query = Equipment::with(['office', 'equipmentType']);
+
+        if ($selectedOfficeId !== 'all' && $selectedOfficeId !== null) {
+            $query->where('office_id', $selectedOfficeId);
+        }
+
+        $equipment = $query
+            ->orderBy('office_id')
+            ->orderBy('model_number')
+            ->get();
+
+        $campuses = Campus::with(['offices' => function ($query) {
+            $query->where('is_active', true)->orderBy('name');
+        }])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $viewData = [
+            'campuses' => $campuses,
+            'equipment' => $equipment,
+            'selectedOfficeId' => $selectedOfficeId,
+            'routePrefix' => 'staff',
+            'printPdfRoute' => route('staff.equipment.print-qrcodes.pdf'),
+        ];
+
+        if ($request->ajax()) {
+            return view('equipment.print-qrcodes_modal', $viewData);
+        }
+
+        $redirectParams = array_filter([
+            'print_qrcodes' => 1,
+            'office_id' => $selectedOfficeId !== 'all' ? $selectedOfficeId : null,
+        ], static function ($value) {
+            return $value !== null;
+        });
+
+        return redirect()->route('staff.equipment.index', $redirectParams);
+    }
+
+    public function printQrcodesPdf(Request $request)
+    {
+        $equipmentIdsParam = $request->input('equipment_ids', []);
+
+        if (is_string($equipmentIdsParam)) {
+            $equipmentIds = array_filter(array_map('trim', explode(',', $equipmentIdsParam)));
+        } elseif (is_array($equipmentIdsParam)) {
+            $equipmentIds = array_filter($equipmentIdsParam);
+        } else {
+            $equipmentIds = [];
+        }
+
+        if (empty($equipmentIds)) {
+            return redirect()
+                ->route('staff.equipment.index')
+                ->with('error', 'Please select at least one equipment to print.');
+        }
+
+        $equipments = Equipment::with(['office', 'equipmentType'])
+            ->whereIn('id', $equipmentIds)
+            ->orderBy('office_id')
+            ->orderBy('model_number')
+            ->get();
+
+        if ($equipments->isEmpty()) {
+            return redirect()
+                ->route('staff.equipment.index')
+                ->with('error', 'Selected equipment could not be found.');
+        }
+
+        $generatedAt = now();
+        $generatedBy = optional(auth('staff')->user())->name ?? 'SDMD System';
+
+        return view('equipment.qr-code-pdf', [
+            'equipments' => $equipments,
+            'generatedAt' => $generatedAt,
+            'generatedBy' => $generatedBy,
+            'routePrefix' => 'staff',
+        ]);
     }
 }

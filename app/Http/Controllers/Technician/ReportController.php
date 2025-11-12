@@ -23,22 +23,16 @@ class ReportController extends Controller
     {
         $technician = auth('technician')->user();
         
-        $equipmentCount = Equipment::where('office_id', $technician->office_id)
-            ->count();
+        // Technicians have access to all equipment across all offices (like admin)
+        $equipmentCount = Equipment::count();
             
-        // Get paginated equipment history
-        $equipmentHistory = EquipmentHistory::whereHas('equipment', function($q) use ($technician) {
-                $q->where('office_id', $technician->office_id);
-            })
-            ->with(['equipment', 'user'])
+        // Get paginated equipment history - technicians see all history like admin
+        $equipmentHistory = EquipmentHistory::with(['equipment', 'user'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
             
-        // Get recent history (first page of paginated results)
-        $recentHistory = EquipmentHistory::whereHas('equipment', function($q) use ($technician) {
-                $q->where('office_id', $technician->office_id);
-            })
-            ->with(['equipment', 'user'])
+        // Get recent history (first page of paginated results) - technicians see all history like admin
+        $recentHistory = EquipmentHistory::with(['equipment', 'user'])
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
@@ -57,6 +51,7 @@ class ReportController extends Controller
     {
         $technician = auth('technician')->user();
         
+        // Technicians have access to all equipment across all offices (like admin)
         $query = Equipment::with(['history' => function($q) {
                 $q->orderBy('created_at', 'desc');
             }]);

@@ -5,7 +5,6 @@
 @endpush
 
 @push('scripts')
-    <script src="{{ asset('js/equipment.js') }}"></script>
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 
     <script>
@@ -398,7 +397,7 @@
             }
 
             // Auto-open history modal
-            if (urlParams.has('history_equipment')) {
+            if (urlParams.has('history_equipment')) {   
                 const equipmentId = urlParams.get('history_equipment');
                 const historyBtn = $(`.history-equipment-btn[data-equipment-id="${equipmentId}"]`);
                 if (historyBtn.length > 0) {

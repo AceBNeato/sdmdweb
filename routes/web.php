@@ -186,7 +186,14 @@ Route::middleware(['auth:technician'])
                 ->name('equipment.create');
             Route::post('/', [\App\Http\Controllers\Technician\EquipmentController::class, 'store'])
                 ->name('equipment.store');
-            
+
+            // Print QR Codes (moved before parameter routes)
+            Route::get('/print-qrcodes', [\App\Http\Controllers\Technician\EquipmentController::class, 'printQrcodes'])
+                ->name('equipment.print-qrcodes');
+            Route::get('/print-qrcodes/pdf', [\App\Http\Controllers\Technician\EquipmentController::class, 'printQrcodesPdf'])
+                ->name('equipment.print-qrcodes.pdf');
+
+            // Parameter routes (must come after specific routes)
             Route::get('/{equipment}', [\App\Http\Controllers\Technician\EquipmentController::class, 'show'])
                 ->name('equipment.show');
             Route::put('/{equipment}/status', [\App\Http\Controllers\Technician\EquipmentController::class, 'updateStatus'])
@@ -329,6 +336,20 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                     ->name('create');
                 Route::post('/', [\App\Http\Controllers\Staff\EquipmentController::class, 'store'])
                     ->name('store');
+
+                // Print QR Codes (moved before parameter routes)
+                Route::get('print-qrcodes', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQrcodes'])
+                    ->name('print-qrcodes');
+                Route::get('print-qrcodes/pdf', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQrcodesPdf'])
+                    ->name('print-qrcodes.pdf');
+
+                // QR Scanner
+                Route::get('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanView'])
+                    ->name('scan');
+                Route::post('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanQrCode'])
+                    ->name('scan');
+
+                // Parameter routes (must come after specific routes)
                 Route::get('{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'show'])
                     ->name('show');
                 Route::get('{equipment}/edit', [\App\Http\Controllers\Staff\EquipmentController::class, 'edit'])
@@ -345,12 +366,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                     ->name('download-qrcode');
                 Route::get('{equipment}/print-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQRCode'])
                     ->name('print-qrcode');
-                    
-                // QR Scanner
-                Route::get('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanView'])
-                    ->name('scan');
-                Route::post('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanQrCode'])
-                    ->name('scan');
             });
 
         // Reports
