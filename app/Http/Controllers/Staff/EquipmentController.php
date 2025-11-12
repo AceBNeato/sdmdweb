@@ -569,57 +569,6 @@ class EquipmentController extends Controller
         return response('QR Code not available')->header('Content-Type', 'text/plain');
     }
 
-    /**
-     * Download the QR code for the specified equipment.
-     *
-     * @param  \App\Models\Equipment  $equipment
-     * @return \Illuminate\Http\Response
-     */
-    public function downloadQrCode(Equipment $equipment)
-    {
-        $user = Auth::guard('staff')->user();
-
-        // Ensure staff can only download QR code for equipment from their office
-        if ($equipment->office_id !== $user->office_id) {
-            abort(403, 'You can only download QR codes for equipment from your office.');
-        }
-
-        // Generate QR code if it doesn't exist
-        if (!$equipment->qr_code) {
-            $equipment->qr_code = 'EQP-' . Str::upper(Str::random(8));
-            $equipment->save();
-        }
-
-        // Prepare QR data for download
-        $qrData = [
-            'id' => $equipment->id,
-            'type' => 'equipment',
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
-            'office' => $equipment->office ? $equipment->office->name : 'N/A',
-            'status' => $equipment->status,
-            'url' => route('staff.equipment.show', $equipment),
-            'qr_code' => $equipment->qr_code,
-            'created_at' => $equipment->created_at->toISOString(),
-        ];
-
-        // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
-
-        if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';
-
-            return response()->download(
-                storage_path('app/public/' . $qrPath),
-                $filename,
-                ['Content-Type' => 'image/png']
-            );
-        }
-
-        // Fallback: return a simple text response
-        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
-    }
 
     /**
      * Print the QR code for the specified equipment.

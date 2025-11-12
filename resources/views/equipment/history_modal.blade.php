@@ -120,7 +120,8 @@
             <div class="mb-3">
                 <label for="date" class="form-label">Date & Time <span class="text-danger">*</span></label>
                 <input type="datetime-local" class="form-control @error('date') is-invalid @enderror"
-                       id="date" name="date" value="{{ old('date', now()->format('Y-m-d\TH:i')) }}" required>
+                       id="date" name="date" value="{{ now()->format('Y-m-d\TH:i') }}" readonly required>
+                <div class="form-text">Date and time are automatically set when the history entry is created</div>
                 @error('date')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -130,14 +131,13 @@
             <div class="mb-3">
                 <label for="jo_number" class="form-label">Job Order Number <span class="text-danger">*</span></label>
                 <div class="input-group">
-                    <input type="text" class="form-control" id="jo_prefix" readonly style="max-width: 150px;">
                     <input type="text" class="form-control @error('jo_number') is-invalid @enderror"
-                           id="jo_sequence" name="jo_sequence"
-                           value="{{ old('jo_sequence') }}"
-                           placeholder="01" maxlength="2" pattern="[0-9]{1,2}" required>
+                           id="jo_number_display" name="jo_number_display"
+                           value="{{ old('jo_number_display') }}"
+                           placeholder="JO-YY-MM-XXX" readonly>
+                    <input type="hidden" id="jo_number" name="jo_number" value="{{ old('jo_number') }}">
                 </div>
-                <div class="form-text">Date prefix is auto-generated, enter sequence number (01, 02, etc.)</div>
-                <input type="hidden" id="jo_number" name="jo_number" value="{{ old('jo_number') }}">
+                <div class="form-text">Job Order Number is auto-generated based on the selected date</div>
                 @error('jo_number')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -159,7 +159,8 @@
         <label for="remarks" class="form-label">Remarks</label>
         <textarea class="form-control @error('remarks') is-invalid @enderror"
                   id="remarks" name="remarks" rows="3"
-                  placeholder="Additional notes or observations...">{{ old('remarks') }}</textarea>
+                  placeholder="Remarks will be auto-generated based on equipment status" readonly>{{ old('remarks') }}</textarea>
+        <div class="form-text">Remarks are automatically generated based on the selected equipment status</div>
         @error('remarks')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -196,172 +197,92 @@
 // Initialize immediately since this is loaded via AJAX into modal
 (function() {
     const dateInput = document.getElementById('date');
-    const joPrefixInput = document.getElementById('jo_prefix');
-    const joSequenceInput = document.getElementById('jo_sequence');
-    const joNumberInput = document.getElementById('jo_number');
+    const joNumberDisplay = document.getElementById('jo_number_display');
+    const joNumberHidden = document.getElementById('jo_number');
+    const statusSelect = document.getElementById('equipment_status');
+    const remarksTextarea = document.getElementById('remarks');
 
-    let justAlerted = false;
-    let justAlertedDate = false;
+    // Function to update remarks based on status
+    function updateRemarks() {
+        const selectedStatus = statusSelect.value;
+        let remarksText = '';
 
-    // Update JO prefix when date changes
-    function updateJOPrefix() {
+        switch(selectedStatus) {
+            case 'serviceable':
+                remarksText = 'Serviceable';
+                break;
+            case 'for_repair':
+                remarksText = 'For Repair';
+                break;
+            case 'defective':
+                remarksText = 'Defective';
+                break;
+            default:
+                remarksText = '';
+        }
+
+        remarksTextarea.value = remarksText;
+    }
+
+    // Auto-generate JO number when page loads (date is fixed to current time)
+    function generateJONumber() {
         const selectedDate = dateInput.value;
-        if (selectedDate) {
-            const datePart = selectedDate.split('T')[0]; // Get YYYY-MM-DD
-            const formattedDate = datePart.replace(/-/g, '-'); // Keep YYYY-MM-DD format
-            joPrefixInput.value = `JO-${formattedDate}-`;
-            updateFullJONumber();
+        if (!selectedDate) {
+            joNumberDisplay.value = '';
+            joNumberHidden.value = '';
+            return;
         }
-    }
 
-    // Update the full JO number when sequence changes
-    function updateFullJONumber() {
-        const prefix = joPrefixInput.value;
-        const sequence = joSequenceInput.value.padStart(2, '0'); // Ensure 2 digits
-        if (prefix && sequence) {
-            joNumberInput.value = `${prefix}${sequence}`;
-        }
-    }
+        console.log('Generating JO number for date:', selectedDate.split('T')[0]);
 
-    // Auto-update prefix when date changes
-    dateInput.addEventListener('change', updateJOPrefix);
-
-    // Update full JO number when sequence changes
-    joSequenceInput.addEventListener('input', function() {
-        // Only allow numbers
-        this.value = this.value.replace(/[^0-9]/g, '');
-        updateFullJONumber();
-        // Reset alert flag when user starts typing
-        justAlerted = false;
-    });
-
-    // Validate consecutive sequence when sequence loses focus (real-time like date validation)
-    joSequenceInput.addEventListener('blur', function() {
-        // Skip validation if we just showed an alert
-        if (justAlerted) return;
-
-        const sequence = joSequenceInput.value.trim();
-        const date = dateInput.value;
-
-        // Only validate if we have both date and sequence
-        if (!date || !sequence) return;
-
-        // Convert to number and check if it's valid
-        const sequenceNum = parseInt(sequence);
-        if (isNaN(sequenceNum) || sequenceNum < 1) return;
-
-        // Skip validation for sequence 1 (always allowed)
-        if (sequenceNum === 1) return;
-
-        console.log('Validating sequence in real-time:', sequenceNum, 'for date:', date);
-
-        // Check if this sequence is valid for the selected date
-        console.log('Checking sequences for date:', date.split('T')[0], 'equipment ID:', {{ $equipment->id }});
-        fetch('{{ route($prefix . ".equipment.check-sequences", $equipment) }}', {
+        fetch('{{ route($prefix . ".equipment.generate-jo", $equipment) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ date: date.split('T')[0] })
+            body: JSON.stringify({ date: selectedDate.split('T')[0] })
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Real-time sequence check response:', data);
-
+            console.log('JO generation response:', data);
             if (data.success) {
-                const nextSequence = data.next_sequence;
-
-                console.log('Next expected sequence:', nextSequence, 'Entered:', sequenceNum);
-
-                // Strict consecutive validation - alert immediately like date validation
-                if (sequenceNum !== nextSequence) {
-                    let message = '';
-                    if (nextSequence === 1) {
-                        message = `This is the first entry for ${date.split('T')[0]}. Sequence number must be 01.`;
-                    } else {
-                        message = `Sequence number must be ${String(nextSequence).padStart(2, '0')} (next consecutive number after ${String(nextSequence - 1).padStart(2, '0')}).`;
-                    }
-
-                    alert(message);
-                    justAlerted = true;
-                    // Allow time for user to edit before next check
-                    setTimeout(() => {
-                        justAlerted = false;
-                        joSequenceInput.focus();
-                        joSequenceInput.select();
-                    }, 100);
-                }
+                joNumberDisplay.value = data.jo_number;
+                joNumberHidden.value = data.jo_number;
+            } else {
+                console.error('Failed to generate JO number:', data.message);
+                joNumberDisplay.value = 'Error generating JO number';
+                joNumberHidden.value = '';
             }
         })
         .catch(error => {
-            console.error('Error checking sequence in real-time:', error);
-        });
-    });
-
-    // Initialize prefix on page load
-    updateJOPrefix();
-
-    // Handle old input for sequence field
-    const oldSequence = "{{ old('jo_sequence') }}";
-    if (oldSequence) {
-        joSequenceInput.value = oldSequence;
-        updateFullJONumber();
-    }
-
-    // Prevent backdating
-    dateInput.addEventListener('change', function() {
-        if (justAlertedDate) {
-            justAlertedDate = false;
-            return;
-        }
-
-        const selectedDateTime = new Date(this.value);
-        const now = new Date();
-
-        if (selectedDateTime > now) {
-            alert('Cannot set future dates. Please select current date/time.');
-            this.value = now.toISOString().slice(0, 16);
-            updateJOPrefix(); // Re-update prefix after date correction
-            return;
-        }
-
-        if (selectedDateTime < now) {
-            alert('Cannot backdate repair records. Please select current date/time.');
-            this.value = now.toISOString().slice(0, 16);
-            updateJOPrefix(); // Re-update prefix after date correction
-            return;
-        }
-
-        // Check if trying to backdate beyond last repair record
-        console.log('Checking backdating for date:', this.value);
-        checkBackdating(this.value);
-    });
-
-    function checkBackdating(selectedDateTime) {
-        console.log('Calling checkBackdating API with date:', selectedDateTime);
-        fetch('{{ route($prefix . ".equipment.check-latest-repair", $equipment) }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ date: selectedDateTime })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('checkBackdating response:', data);
-            if (!data.can_backdate) {
-                console.log('Backdating not allowed, showing alert');
-                alert(`The earliest allowed repair date is ${data.latest_date}. Please select that date or later.`);
-                justAlertedDate = true;
-                dateInput.value = data.latest_date;
-                updateJOPrefix(); // Re-update prefix after date correction
-            }
-        })
-        .catch(error => {
-            console.error('Error checking backdating:', error);
+            console.error('Error generating JO number:', error);
+            joNumberDisplay.value = 'Error generating JO number';
+            joNumberHidden.value = '';
         });
     }
+
+    // Generate JO number immediately since date is fixed
+    generateJONumber();
+
+    // Update remarks when status changes
+    statusSelect.addEventListener('change', updateRemarks);
+
+    // Initialize remarks based on current status
+    updateRemarks();
+
+    // Handle old input for JO number field
+    const oldJONumber = "{{ old('jo_number') }}";
+    if (oldJONumber) {
+        joNumberDisplay.value = oldJONumber;
+        joNumberHidden.value = oldJONumber;
+    }
+
+    // Handle old input for remarks
+    const oldRemarks = "{{ old('remarks') }}";
+    if (oldRemarks) {
+        remarksTextarea.value = oldRemarks;
+    }
+
 })();
 </script>

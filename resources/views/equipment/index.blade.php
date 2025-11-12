@@ -456,7 +456,7 @@
 
             @if($currentUser && $currentUser->hasPermissionTo('equipment.view') && Route::has($prefix . '.equipment.print-qrcodes'))
             <button type="button"
-                    class="btn btn-outline-primary print-qrcodes-btn"
+                    class="btn btn-outline-secondary print-qrcodes-btn"
                     data-url="{{ route($prefix . '.equipment.print-qrcodes') }}"
                     title="Print QR Codes">
                 <i class='bx bx-barcode me-1'></i>

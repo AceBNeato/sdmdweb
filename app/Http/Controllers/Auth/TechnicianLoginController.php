@@ -101,26 +101,17 @@ class TechnicianLoginController extends Controller
      */
     public function logout(Request $request)
     {
-        $user = Auth::guard('technician')->user();
-
+        // Fast logout - just log out the technician guard
         Auth::guard('technician')->logout();
 
-        // Completely destroy session
+        // Minimal session cleanup for speed
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Generate logout token
-        $logoutToken = bin2hex(random_bytes(32));
-        session(['logout_token' => $logoutToken]);
-
+        // Fast redirect with minimal headers
         return redirect('/login?logout=' . time())->withHeaders([
-            'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0, no-transform, private, proxy-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-            'X-Frame-Options' => 'DENY',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Back-Button-Prevention' => 'ultra-aggressive',
-            'X-Logout-Token' => $logoutToken
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache'
         ]);
     }
 

@@ -369,37 +369,20 @@ class EquipmentController extends Controller
         }
 
         $validated = $request->validate([
-            'date' => 'required|date|before_or_equal:now',
-            'jo_sequence' => 'required|string|max:2|regex:/^[0-9]{1,2}$/',
+            'date' => 'required|date',
+            'jo_number' => 'required|string|max:20|unique:equipment_history,jo_number',
             'action_taken' => 'required|string|max:1000',
             'remarks' => 'nullable|string|max:1000',
             'equipment_status' => 'required|in:serviceable,for_repair,defective',
         ]);
 
-        // Build the full JO number from date and sequence
-        $date = \Carbon\Carbon::parse($validated['date']);
-        $joNumber = 'JO-' . $date->format('Y-m-d') . '-' . str_pad($validated['jo_sequence'], 2, '0', STR_PAD_LEFT);
+        // JO number is now auto-generated and validated
+        $joNumber = $validated['jo_number'];
 
-        // Check if JO number already exists
+        // Check if JO number already exists (additional check)
         if (\App\Models\EquipmentHistory::where('jo_number', $joNumber)->exists()) {
-            return back()->withErrors(['jo_sequence' => 'This Job Order number already exists. Please choose a different sequence.'])
+            return back()->withErrors(['jo_number' => 'This Job Order number already exists. Please try again.'])
                          ->withInput();
-        }
-
-        // Additional validation: prevent backdating beyond latest repair
-        $selectedDateTime = new \DateTime($validated['date']);
-        $latestRepair = \App\Models\EquipmentHistory::where('equipment_id', $equipment->id)
-            ->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        if ($latestRepair) {
-            $latestDateTime = new \DateTime($latestRepair->date);
-            if ($selectedDateTime < $latestDateTime) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'Cannot backdate beyond the latest repair record for this equipment.');
-            }
         }
 
         try {
@@ -454,12 +437,53 @@ class EquipmentController extends Controller
         ]);
 
         try {
-            $joNumber = $this->storedProcedureService->generateJONumber($request->date);
+            $date = $request->date;
+            $yearMonth = date('y-m', strtotime($date)); // YY-MM format
+
+            // Retry logic for handling concurrent requests
+            $maxRetries = 5;
+            $retryCount = 0;
+            $joNumber = null;
+
+            while ($retryCount < $maxRetries && !$joNumber) {
+                // Find the next sequence number for this month (resets monthly)
+                $latestJO = \App\Models\EquipmentHistory::where('jo_number', 'like', 'JO-' . $yearMonth . '-%')
+                    ->orderBy('jo_number', 'desc')
+                    ->first();
+
+                $sequence = 1;
+                if ($latestJO) {
+                    // Extract sequence from latest JO number (format: JO-YY-MM-XXX)
+                    $parts = explode('-', $latestJO->jo_number);
+                    if (count($parts) >= 3) {
+                        $sequence = (int) end($parts) + 1;
+                    }
+                }
+
+                // Try to find the next available sequence
+                for ($i = $sequence; $i <= 999; $i++) {
+                    $sequenceFormatted = str_pad($i, 3, '0', STR_PAD_LEFT);
+                    $candidateJONumber = 'JO-' . $yearMonth . '-' . $sequenceFormatted;
+
+                    // Check if this number is available
+                    if (!\App\Models\EquipmentHistory::where('jo_number', $candidateJONumber)->exists()) {
+                        $joNumber = $candidateJONumber;
+                        break;
+                    }
+                }
+
+                if (!$joNumber) {
+                    // No available numbers found, this shouldn't happen
+                    break;
+                }
+
+                $retryCount++;
+            }
 
             if (!$joNumber) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unable to generate unique JO number'
+                    'message' => 'Unable to generate unique JO number - all numbers for this month are taken'
                 ], 500);
             }
 
@@ -500,43 +524,6 @@ class EquipmentController extends Controller
         return view('qr-scanner');
     }
 
-    public function downloadQrCode(Equipment $equipment)
-    {
-        // Generate QR code if it doesn't exist
-        if (!$equipment->qr_code) {
-            $equipment->qr_code = 'EQP-' . Str::upper(Str::random(8));
-            $equipment->save();
-        }
-
-        // Prepare QR data for download (Admin uses URL-based QR codes for public scanner)
-        $qrData = [
-            'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
-            'equipment_id' => $equipment->id,
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
-            'office' => $equipment->office ? $equipment->office->name : 'N/A',
-            'status' => $equipment->status,
-            'generated_at' => now()->toISOString(),
-        ];
-
-        // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
-
-        if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
-
-            return response()->download(
-                storage_path('app/public/' . $qrPath),
-                $filename,
-                ['Content-Type' => 'image/svg+xml']
-            );
-        }
-
-        // Fallback: return a simple text response
-        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
-    }
 
     public function getOfficesByCampus(Request $request)
     {

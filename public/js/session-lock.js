@@ -42,7 +42,19 @@
         if (isLocked) return;
 
         isLocked = true;
+
+        // Ensure the input is accessible before showing modal
+        unlockPassword.disabled = false;
+        unlockPassword.style.pointerEvents = 'auto';
+        unlockPassword.style.zIndex = '1000001'; // Ensure it's above modal
+
         lockModal.style.display = 'flex';
+
+        // Force reflow to ensure proper rendering
+        lockModal.offsetHeight;
+
+        // Persist lock state across page reloads
+        sessionStorage.setItem('session_locked', 'true');
 
         // Focus on password field
         setTimeout(() => {
@@ -59,6 +71,9 @@
         lockModal.style.display = 'none';
         unlockPassword.value = '';
         unlockError.classList.add('d-none');
+
+        // Clear persistent lock state
+        sessionStorage.removeItem('session_locked');
     }
 
     function unlockSession() {
@@ -90,7 +105,11 @@
             if (data.success) {
                 hideLockModal();
                 resetLockoutTimer();
-                showToast('Session unlocked successfully!', 'success');
+                try {
+                    showToast('Session unlocked successfully!', 'success');
+                } catch (e) {
+                    console.error('Toast error:', e);
+                }
             } else {
                 showUnlockError(data.message || 'Invalid password. Please try again.');
             }
@@ -160,6 +179,12 @@
 
     // Initialize lockout timer on page load
     document.addEventListener('DOMContentLoaded', function() {
+        // Check if session was locked before page reload
+        if (sessionStorage.getItem('session_locked') === 'true') {
+            showLockModal();
+            return; // Don't start the timer if we're already locked
+        }
+
         resetLockoutTimer();
     });
 

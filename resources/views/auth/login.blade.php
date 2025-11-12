@@ -90,7 +90,7 @@
                             <strong class="font-bold text-red-900 text-lg">ACCOUNT LOCKED!</strong>
                             <span class="text-2xl ml-2">🚨</span>
                         </div>
-                        <span class="block text-red-700 font-semibold">Too many failed login attempts. Please wait <span id="countdown" class="font-bold text-red-900 text-xl">5</span> seconds before trying again.</span>
+                        <span class="block text-red-700 font-semibold">Too many failed login attempts. Please wait <span id="countdown" class="font-bold text-red-900 text-xl">{{ session('remaining_seconds', 60) }}</span> seconds before trying again.</span>
                     </div>
                 </div>
                 @endif

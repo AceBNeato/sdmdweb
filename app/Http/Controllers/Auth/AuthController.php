@@ -58,7 +58,8 @@ class AuthController extends Controller
 
         event(new Lockout($request));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+        // Use 60 seconds (1 minute) lockout for regular login
+        $seconds = 60;
 
         // Store lockout data in session
         session([
@@ -258,7 +259,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Logout only from authenticated guards to speed up the process
+        // Fast logout - only logout authenticated guards
         $guards = ['web', 'staff', 'technician'];
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
@@ -266,13 +267,13 @@ class AuthController extends Controller
             }
         }
 
-        // Invalidate and regenerate session
+        // Quick session cleanup for speed
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Simple redirect with basic cache control for speed
+        // Ultra-fast redirect with minimal headers
         return redirect('/login?logout=' . time())->withHeaders([
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Cache-Control' => 'no-cache, no-store',
             'Pragma' => 'no-cache'
         ]);
     }

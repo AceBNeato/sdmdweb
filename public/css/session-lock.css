@@ -5,7 +5,6 @@
     width: 100vw !important;
     height: 100vh !important;
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(30, 30, 60, 0.9)) !important;
-    display: flex;
     justify-content: center;
     align-items: center;
     z-index: 999999 !important;
@@ -26,7 +25,6 @@
 body #session-lock-modal.session-lock-overlay {
     position: fixed !important;
     z-index: 999999 !important;
-    display: flex !important;
 }
 
 body #session-lock-modal.session-lock-overlay[style*="display: none"] {
@@ -105,6 +103,7 @@ body #session-lock-modal.session-lock-overlay[style*="display: none"] {
     padding: 12px 16px;
     font-size: 15px;
     transition: all 0.2s ease;
+    pointer-events: auto !important;
 }
 
 .session-lock-modal .form-control:focus {

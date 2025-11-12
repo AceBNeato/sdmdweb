@@ -710,77 +710,33 @@ class EquipmentController extends BaseController
             $equipment->save();
         }
 
-        // Create QR code with equipment information in JSON format
-        $equipmentData = [
-            'id' => $equipment->id,
+        // Prepare QR data for technician view (URL-based for compatibility)
+        $qrData = [
+            'type' => 'equipment_url',
+            'url' => route('technician.equipment.show', $equipment->id),
+            'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
-            'status' => $equipment->status,
-            'condition' => $equipment->condition,
-            'location' => $equipment->location,
+            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
-            'qr_code' => $equipment->qr_code,
-            'created_at' => $equipment->created_at->format('Y-m-d H:i:s'),
+            'status' => $equipment->status,
+            'generated_at' => now()->toISOString(),
         ];
 
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode(json_encode($equipmentData)) . "&size=300x300&format=png";
+        // Use the cached QR code service instead of external API
+        $qrCodeService = app(\App\Services\QrCodeService::class);
+        $qrPath = $qrCodeService->generateQrCode($qrData, '300x300', 'png');
 
-        $response = Http::get($apiUrl);
-
-        if ($response->successful()) {
-            return response($response->body())->header('Content-Type', 'image/png');
+        if ($qrPath && Storage::disk('public')->exists($qrPath)) {
+            // Save path to equipment for future use
+            $equipment->update(['qr_code_image_path' => $qrPath]);
+            return response()->file(public_path('storage/' . $qrPath));
         }
 
         // Fallback: return a simple text response
-        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
+        return response('QR Code not available')->header('Content-Type', 'text/plain');
     }
 
-    /**
-     * Download the QR code for the specified equipment.
-     *
-     * @param  \App\Models\Equipment  $equipment
-     * @return \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\StreamedResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function downloadQrCode(Equipment $equipment)
-    {
-        if ($equipment->qr_code_image_path && Storage::disk('public')->exists($equipment->qr_code_image_path)) {
-            return response()->download(public_path('storage/' . $equipment->qr_code_image_path));
-        }
-
-        // Fallback to generating on-the-fly
-        if (!$equipment->qr_code) {
-            $equipment->qr_code = 'EQP-' . Str::upper(Str::random(8));
-            $equipment->save();
-        }
-
-        // Create QR code with equipment information in JSON format
-        $equipmentData = [
-            'id' => $equipment->id,
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
-            'status' => $equipment->status,
-            'condition' => $equipment->condition,
-            'location' => $equipment->location,
-            'office' => $equipment->office ? $equipment->office->name : 'N/A',
-            'qr_code' => $equipment->qr_code,
-            'created_at' => $equipment->created_at->format('Y-m-d H:i:s'),
-        ];
-
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode(json_encode($equipmentData)) . "&size=300x300&format=png";
-
-        $response = Http::get($apiUrl);
-
-        if ($response->successful()) {
-            return response($response->body())
-                ->header('Content-Type', 'image/png')
-                ->header('Content-Disposition', 'attachment; filename="qrcode-' . $equipment->id . '.png"');
-        }
-
-        // Fallback: return a simple text response
-        return response('QR Code generation failed')->header('Content-Type', 'text/plain');
-    }
 
     protected function getEquipmentTypes()
     {
@@ -878,8 +834,8 @@ class EquipmentController extends BaseController
         // }
 
         $validated = $request->validate([
-            'date' => 'required|date|before_or_equal:now',
-            'jo_sequence' => 'required|string|max:2|regex:/^[0-9]{1,2}$/',
+            'date' => 'required|date',
+            'jo_number' => 'required|string|max:20|unique:equipment_history,jo_number',
             'action_taken' => 'required|string|max:1000',
             'remarks' => 'nullable|string|max:1000',
             'equipment_status' => 'required|in:serviceable,for_repair,defective',
@@ -896,30 +852,13 @@ class EquipmentController extends BaseController
             'equipment_status_type' => gettype($validated['equipment_status'])
         ]);
 
-        // Build the full JO number from date and sequence
-        $date = \Carbon\Carbon::parse($validated['date']);
-        $joNumber = 'JO-' . $date->format('Y-m-d') . '-' . str_pad($validated['jo_sequence'], 2, '0', STR_PAD_LEFT);
+        // JO number is now auto-generated and validated
+        $joNumber = $validated['jo_number'];
 
-        // Check if JO number already exists
+        // Check if JO number already exists (additional check)
         if (EquipmentHistory::where('jo_number', $joNumber)->exists()) {
-            return back()->withErrors(['jo_sequence' => 'This Job Order number already exists. Please choose a different sequence.'])
+            return back()->withErrors(['jo_number' => 'This Job Order number already exists. Please try again.'])
                          ->withInput();
-        }
-
-        // Additional validation: prevent backdating beyond latest repair
-        $selectedDateTime = new \DateTime($validated['date']);
-        $latestRepair = EquipmentHistory::where('equipment_id', $equipment->id)
-            ->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        if ($latestRepair) {
-            $latestDateTime = new \DateTime($latestRepair->date);
-            if ($selectedDateTime < $latestDateTime) {
-                return back()
-                    ->withInput()
-                    ->with('error', 'Cannot backdate beyond the latest repair record for this equipment.');
-            }
         }
 
         try {
@@ -1036,37 +975,53 @@ class EquipmentController extends BaseController
 
         try {
             $date = $request->date;
+            $yearMonth = date('y-m', strtotime($date)); // YY-MM format
 
-            // Find the next sequence number for this date
-            $latestJO = EquipmentHistory::where('jo_number', 'like', 'JO-' . $date . '-%')
-                ->orderBy('jo_number', 'desc')
-                ->first();
+            // Retry logic for handling concurrent requests
+            $maxRetries = 5;
+            $retryCount = 0;
+            $joNumber = null;
 
-            $sequence = 1;
-            if ($latestJO) {
-                // Extract sequence from latest JO number (format: JO-YYYY-MM-DD-XX)
-                $parts = explode('-', $latestJO->jo_number);
-                if (count($parts) >= 4) {
-                    $sequence = (int) end($parts) + 1;
+            while ($retryCount < $maxRetries && !$joNumber) {
+                // Find the next sequence number for this month (resets monthly)
+                $latestJO = EquipmentHistory::where('jo_number', 'like', 'JO-' . $yearMonth . '-%')
+                    ->orderBy('jo_number', 'desc')
+                    ->first();
+
+                $sequence = 1;
+                if ($latestJO) {
+                    // Extract sequence from latest JO number (format: JO-YY-MM-XXX)
+                    $parts = explode('-', $latestJO->jo_number);
+                    if (count($parts) >= 3) {
+                        $sequence = (int) end($parts) + 1;
+                    }
                 }
-            }
 
-            // Format sequence with leading zero if needed
-            $sequenceFormatted = str_pad($sequence, 2, '0', STR_PAD_LEFT);
+                // Try to find the next available sequence
+                for ($i = $sequence; $i <= 999; $i++) {
+                    $sequenceFormatted = str_pad($i, 3, '0', STR_PAD_LEFT);
+                    $candidateJONumber = 'JO-' . $yearMonth . '-' . $sequenceFormatted;
 
-            $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
-
-            // Double-check uniqueness (in case of concurrent requests)
-            $exists = EquipmentHistory::where('jo_number', $joNumber)->exists();
-            if ($exists) {
-                // Find next available sequence
-                for ($i = $sequence + 1; $i <= 99; $i++) {
-                    $sequenceFormatted = str_pad($i, 2, '0', STR_PAD_LEFT);
-                    $joNumber = 'JO-' . $date . '-' . $sequenceFormatted;
-                    if (!EquipmentHistory::where('jo_number', $joNumber)->exists()) {
+                    // Check if this number is available
+                    if (!EquipmentHistory::where('jo_number', $candidateJONumber)->exists()) {
+                        $joNumber = $candidateJONumber;
                         break;
                     }
                 }
+
+                if (!$joNumber) {
+                    // No available numbers found, this shouldn't happen
+                    break;
+                }
+
+                $retryCount++;
+            }
+
+            if (!$joNumber) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to generate unique JO number - all numbers for this month are taken'
+                ], 500);
             }
 
             return response()->json([
@@ -1151,8 +1106,9 @@ class EquipmentController extends BaseController
                 'request_all' => $request->all()
             ]);
 
-            // Find all JO numbers for this date across all equipment
-            $joQuery = 'JO-' . $date . '-%';
+            // Find all JO numbers for this month (resets monthly)
+            $yearMonth = date('y-m', strtotime($date)); // YY-MM format
+            $joQuery = 'JO-' . $yearMonth . '-%';
             \Log::info('JO query pattern:', ['pattern' => $joQuery]);
 
             $existingJO = EquipmentHistory::where('jo_number', 'like', $joQuery)
@@ -1173,8 +1129,8 @@ class EquipmentController extends BaseController
                 $parts = explode('-', $joNumber);
                 \Log::info('JO parts:', ['parts' => $parts, 'count' => count($parts)]);
 
-                if (count($parts) >= 4) {
-                    $sequence = (int) end($parts); // JO-YYYY-MM-DD-XX -> XX
+                if (count($parts) >= 3) {
+                    $sequence = (int) end($parts); // JO-YY-MM-XXX -> XXX
                     $existingSequences[] = $sequence;
                     \Log::info('Extracted sequence:', ['sequence' => $sequence]);
                 } else {

@@ -74,7 +74,7 @@
                             <strong class="font-bold text-red-100 text-lg" style="color: #fca5a5 !important;">ACCOUNT LOCKED!</strong>
                             <span class="text-2xl ml-2">🚨</span>
                         </div>
-                        <span class="block text-red-300 font-semibold" style="color: #fca5a5 !important;">Too many failed login attempts. Please wait <span id="countdown" class="font-bold text-red-100 text-xl" style="color: #fecaca !important;">{{ session('remaining_seconds') }}</span> seconds before trying again.</span>
+                        <span class="block text-red-300 font-semibold" style="color: #fca5a5 !important;">Too many failed login attempts. Please wait <span id="countdown" class="font-bold text-red-100 text-xl" style="color: #fecaca !important;">{{ session('remaining_seconds', 60) }}</span> seconds before trying again.</span>
                     </div>
                 </div>
                 @endif

@@ -52,6 +52,7 @@ class AdminLoginController extends Controller
 
     /**
      * Ensure the login request is not rate limited.
+     * Admin login uses 1-minute lockout period
      *
      * @param  \Illuminate\Http\Request  $request
      * @return void
@@ -64,7 +65,8 @@ class AdminLoginController extends Controller
 
         event(new Lockout($request));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+        // Use 60 seconds (1 minute) lockout for admin login
+        $seconds = 60;
 
         // Store lockout data in session
         session([

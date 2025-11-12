@@ -211,8 +211,6 @@ Route::middleware(['auth:technician'])
             // QR Code routes
             Route::get('/{equipment}/qrcode', [\App\Http\Controllers\Technician\EquipmentController::class, 'qrCode'])
                 ->name('equipment.qrcode');
-            Route::get('/{equipment}/download-qrcode', [\App\Http\Controllers\Technician\EquipmentController::class, 'downloadQrCode'])
-                ->name('equipment.download-qrcode');
             Route::get('/{equipment}/print-qrcode', [\App\Http\Controllers\Technician\EquipmentController::class, 'qrCode'])
                 ->name('equipment.print-qrcode');
 
@@ -226,9 +224,6 @@ Route::middleware(['auth:technician'])
             
             // QR Code routes
             Route::prefix('{equipment}')->group(function () {
-                Route::get('/download-qrcode', [\App\Http\Controllers\Technician\EquipmentController::class, 'downloadQrCode'])
-                    ->name('equipment.download-qrcode');
-                
                 Route::get('/print-qrcode', [\App\Http\Controllers\Technician\EquipmentController::class, 'qrCode'])
                     ->name('equipment.print-qrcode');
             });
@@ -363,8 +358,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 // QR Code routes
                 Route::get('{equipment}/qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'qrCode'])
                     ->name('qrcode');
-                Route::get('{equipment}/download-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'downloadQrCode'])
-                    ->name('download-qrcode');
                 Route::get('{equipment}/print-qrcode', [\App\Http\Controllers\Staff\EquipmentController::class, 'printQRCode'])
                     ->name('print-qrcode');
             });
@@ -530,7 +523,6 @@ Route::middleware(['auth'])
 
                 // Equipment Actions
                 Route::get('{equipment}/qrcode', [EquipmentController::class, 'qrCode'])->name('qrcode');
-                Route::get('{equipment}/download-qrcode', [EquipmentController::class, 'downloadQrCode'])->name('download-qrcode');
                 Route::get('{equipment}/print-qrcode', [EquipmentController::class, 'qrCode'])->name('print-qrcode');
 
                 // QR Scanner
