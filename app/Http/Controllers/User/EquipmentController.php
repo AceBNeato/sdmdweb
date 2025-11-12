@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
@@ -161,7 +161,7 @@ class EquipmentController extends Controller
         ];
 
         try {
-            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png');
+            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg');
             if ($qrPath) {
                 $equipment->update(['qr_code_image_path' => $qrPath]);
                 Log::info('QR code generated and saved for new equipment', [
@@ -206,7 +206,7 @@ class EquipmentController extends Controller
                     'status' => $equipment->status,
                 ];
 
-                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png');
+                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg');
 
                 if ($qrPath) {
                     $equipment->update(['qr_code_image_path' => $qrPath]);
@@ -522,15 +522,15 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';
+            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
 
             return response()->download(
                 storage_path('app/public/' . $qrPath),
                 $filename,
-                ['Content-Type' => 'image/png']
+                ['Content-Type' => 'image/svg+xml']
             );
         }
 
@@ -754,7 +754,7 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use

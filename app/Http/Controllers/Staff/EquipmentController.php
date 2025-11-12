@@ -40,7 +40,7 @@ class EquipmentController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::guard('staff')->user();
+        $user = Auth::guard('staff')->user();   
 
         // Start with equipment from the staff's office
         $query = Equipment::where('office_id', $user->office_id);

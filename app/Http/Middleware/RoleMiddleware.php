@@ -19,11 +19,18 @@ class RoleMiddleware
      */
     public function handle($request, Closure $next, ...$roles)
     {
-        if (!Auth::check()) {
+        // Get user from the appropriate guard
+        $user = Auth::user(); // web guard for admin
+        if (!$user) {
+            $user = Auth::guard('technician')->user();
+        }
+        if (!$user) {
+            $user = Auth::guard('staff')->user();
+        }
+        
+        if (!$user) {
             return redirect()->route('login');
         }
-
-        $user = Auth::user();
         
         // If no specific role is required, just check if user is authenticated
         if (empty($roles)) {

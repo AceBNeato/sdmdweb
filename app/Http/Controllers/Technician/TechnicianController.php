@@ -94,20 +94,16 @@ class TechnicianController extends Controller
         $user = Auth::guard('technician')->user();
 
         if (!$user) {
-            return redirect()->route('login')
-                ->with('error', 'Please log in to edit your profile.');
+            return redirect()->route('technician.login')->with('error', 'Please log in to edit your profile.');
         }
-
-        // For technicians, the user record contains the technician data directly
-        $technician = $user;
 
         if (request()->ajax() || request()->boolean('modal')) {
             return view('profile.edit_modal', [
-                'user' => $technician, // Pass user model to view
+                'user' => $user,
             ]);
         }
 
-        return redirect()->route('technician.qr-scanner');
+        return redirect()->route('technician.dashboard');
     }
 
     public function updateProfile(Request $request)
@@ -115,127 +111,81 @@ class TechnicianController extends Controller
         $user = Auth::guard('technician')->user();
 
         if (!$user) {
-            return redirect()->route('login')->with('error', 'Please log in to update your profile.');
+            return redirect()->route('technician.login')->with('error', 'Please log in to update your profile.');
         }
 
-        // For technicians, the user record contains the technician data directly
-        $technician = $user;
-
-        // First validate the basic fields
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($technician->id)
-            ],
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
-            'current_password' => 'nullable|required_with:new_password|current_password:technician',
-            'new_password' => 'nullable|min:8|confirmed',
+            'employee_id' => 'nullable|string|max:255',
             'specialization' => 'nullable|string|max:255',
-            'employee_id' => 'nullable|string|max:50',
             'skills' => 'nullable|string',
-            'is_active' => 'nullable|boolean',
+            'current_password' => 'nullable|string',
+            'new_password' => 'nullable|string|min:8',
+            'new_password_confirmation' => 'nullable|string|min:8|same:new_password',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Manually check if email is already used by another technician
-        $existingTechnician = \App\Models\User::where('email', $validated['email'])
-            ->where('id', '!=', $user->id)
-            ->whereHas('roles', function($q) {
-                $q->where('name', 'technician');
-            })
-            ->exists();
-
-        if ($existingTechnician) {
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['email' => 'The email has already been taken by another technician.']);
-        }
-
-        DB::beginTransaction();
-
         try {
-            // Log the incoming request data for debugging
-            Log::info('Technician profile update request data:', [
-                'user_id' => $user->id,
-                'has_file' => $request->hasFile('profile_photo'),
-                'validated_data' => $validated
-            ]);
-
-            // Handle profile image upload
-            if ($request->hasFile('profile_photo')) {
-                Log::info('Profile photo file detected', [
-                    'file_name' => $request->file('profile_photo')->getClientOriginalName(),
-                    'file_size' => $request->file('profile_photo')->getSize(),
-                    'mime_type' => $request->file('profile_photo')->getMimeType()
-                ]);
-
-                // Delete old profile image if exists
-                if ($user->profile_photo) {
-                    $oldImagePath = 'public/' . $user->profile_photo;
-                    if (Storage::exists($oldImagePath)) {
-                        Storage::delete($oldImagePath);
-                        Log::info('Deleted old profile photo', ['path' => $oldImagePath]);
-                    } else {
-                        Log::warning('Old profile photo not found', ['path' => $oldImagePath]);
-                    }
+            // Verify current password if changing password
+            if (!empty($validated['new_password'])) {
+                if (empty($validated['current_password'])) {
+                    return back()->with('error', 'Current password is required when changing password.');
                 }
-
-                // Store new profile image
-                $imagePath = $request->file('profile_photo')->store('profile-photos', 'public');
-                $validated['profile_photo'] = str_replace('public/', '', $imagePath);
-                Log::info('New profile photo stored', ['path' => $imagePath]);
-            } else {
-                Log::info('No profile photo file in request');
+                if (!\Hash::check($validated['current_password'], $user->password)) {
+                    return back()->with('error', 'Current password is incorrect.');
+                }
             }
 
-            // Update all user fields including employee_id in a single update
             $updateData = [
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'password' => !empty($validated['new_password']) ? Hash::make($validated['new_password']) : $user->password,
+                'employee_id' => $validated['employee_id'] ?? null,
                 'specialization' => $validated['specialization'] ?? null,
                 'skills' => $validated['skills'] ?? null,
-                'is_active' => $validated['is_active'] ?? $user->is_active,
-                'employee_id' => $validated['employee_id'] ?? null,
-                'profile_photo' => $validated['profile_photo'] ?? $user->profile_photo,
             ];
 
-            // Filter out null values but keep explicit keys (employee_id, profile_photo) even if empty string
-            $updateData = array_filter($updateData, function($value, $key) {
-                return $key === 'employee_id' || $key === 'profile_photo' ? true : $value !== null;
-            }, ARRAY_FILTER_USE_BOTH);
+            // Handle profile photo upload
+            if ($request->hasFile('profile_photo')) {
+                try {
+                    $file = $request->file('profile_photo');
+                    $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                    
+                    // Save directly to public/storage/profile-photos to bypass symlink issues
+                    $destination = public_path('storage/profile-photos');
+                    if (!file_exists($destination)) {
+                        mkdir($destination, 0755, true);
+                    }
+                    
+                    $file->move($destination, $filename);
+                    $updateData['profile_photo'] = 'profile-photos/' . $filename;
+                } catch (\Exception $e) {
+                    \Log::error('Profile photo upload error: ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                    ]);
+                    return back()->with('error', 'Failed to upload profile photo. Please try again.');
+                }
+            }
 
-            // Log the data that will be updated
-            Log::info('Updating technician with data:', $updateData);
-
-            // Perform a single update
             $user->update($updateData);
-            Log::info('Technician updated successfully', ['user_id' => $user->id]);
+
+            // Update password if provided
+            if (!empty($validated['new_password'])) {
+                $user->update(['password' => \Hash::make($validated['new_password'])]);
+            }
 
             // Log the activity
             Activity::create([
                 'user_id' => $user->id,
                 'action' => 'Profile Updated',
-                'description' => 'Updated personal information and contact details',
+                'description' => 'Technician profile updated',
             ]);
-
-            DB::commit();
-            Log::info('Transaction committed successfully');
-
-            // Refresh the user model to get updated relationships
-            $user->refresh();
-
-            // Update the user in the session
-            Auth::guard('technician')->setUser($user);
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -256,13 +206,11 @@ class TechnicianController extends Controller
                 ]);
             }
 
-            return redirect()->route('technician.profile')
-                ->with('success', 'Profile updated successfully!');
-
+            return back()->with('success', 'Profile updated successfully.');
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error updating technician profile: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Technician profile update error: ' . $e->getMessage(), [
+                'technician_id' => $user->id,
+            ]);
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -272,8 +220,7 @@ class TechnicianController extends Controller
                 ], 500);
             }
 
-            return back()->withInput()
-                ->with('error', 'An error occurred while updating your profile. Please try again.');
+            return back()->with('error', 'Failed to update profile. Please try again.');
         }
     }
 }

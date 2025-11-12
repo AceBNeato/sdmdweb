@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
@@ -83,6 +83,24 @@ class UserController extends Controller
                 $usersQuery->where('is_active', true);
             } elseif ($statusFilter === 'inactive') {
                 $usersQuery->where('is_active', false);
+            }
+        }
+
+        // Apply route-based role filtering
+        $routeName = request()->route()->getName();
+        if (str_contains($routeName, 'staff.')) {
+            $staffRole = Role::where('name', 'staff')->first();
+            if ($staffRole) {
+                $usersQuery->whereHas('roles', function($query) use ($staffRole) {
+                    $query->where('role_id', $staffRole->id);
+                });
+            }
+        } elseif (str_contains($routeName, 'technicians.')) {
+            $technicianRole = Role::where('name', 'technician')->first();
+            if ($technicianRole) {
+                $usersQuery->whereHas('roles', function($query) use ($technicianRole) {
+                    $query->where('role_id', $technicianRole->id);
+                });
             }
         }
 
@@ -487,7 +505,38 @@ class UserController extends Controller
             $user->forgetCachedPermissions();
         }
 
-        return redirect()->route('accounts.index')
-            ->with('success', 'User updated successfully.');
     }
-}
+    /**
+     * Toggle the active status of a user.
+     */
+    public function toggleStatus(User $user)
+    {
+        // Prevent non-admins from editing admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to edit admin users.');
+        }
+
+        $user->update(['is_active' => !$user->is_active]);
+
+        $status = $user->is_active ? 'activated' : 'deactivated';
+        return redirect()->back()->with('success', "User {$status} successfully.");
+    }
+
+    /**
+     * Toggle the admin status of a user.
+     */
+    public function toggleAdmin(User $user)
+    {
+        // Prevent non-admins from editing admin users
+        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'You do not have permission to edit admin users.');
+        }
+
+        $user->update(['is_admin' => !$user->is_admin]);
+
+        $status = $user->is_admin ? 'granted admin privileges' : 'revoked admin privileges';
+        return redirect()->back()->with('success', "User {$status} successfully.");
+    }
+    }

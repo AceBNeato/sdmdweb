@@ -15,17 +15,17 @@ use Illuminate\Support\Facades\Auth;
 */
 
 // Controller Imports
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\StaffController;
-use App\Http\Controllers\Admin\TechnicianController;
-use App\Http\Controllers\Admin\EquipmentController;
-use App\Http\Controllers\Admin\RepairController;
-use App\Http\Controllers\Admin\MaintenanceController;
-use App\Http\Controllers\Admin\ReportController;
-use App\Http\Controllers\Admin\OfficeController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\User\AdminController;
+use App\Http\Controllers\User\EquipmentController;
+use App\Http\Controllers\User\RepairController;
+use App\Http\Controllers\User\MaintenanceController;
+use App\Http\Controllers\User\ReportController;
+use App\Http\Controllers\User\OfficeController;
+use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\User\PermissionController;
+use App\Http\Controllers\User\RoleController;
+use App\Http\Controllers\User\TechnicianController;
+use App\Http\Controllers\User\StaffController;
 use App\Http\Controllers\PublicEquipmentController;
 use App\Http\Controllers\Auth\TechnicianLoginController;
 use App\Http\Controllers\Auth\StaffLoginController;
@@ -259,8 +259,9 @@ Route::middleware(['auth:technician'])
         Route::resource('maintenance-logs', \App\Http\Controllers\Technician\MaintenanceLogController::class);
         
         // Profile
-        Route::get('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'profile'])->name('profile.show');
-        Route::post('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'profile'])->name('profile');
+        Route::get('/profile/edit', [\App\Http\Controllers\Technician\TechnicianController::class, 'editProfile'])->name('profile.edit');
+        Route::match(['put', 'post'], '/profile/update', [\App\Http\Controllers\Technician\TechnicianController::class, 'updateProfile'])->name('profile.update');
         
         // Reports
         Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
@@ -317,7 +318,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                 ->name('profile.edit');
 
             // Update profile
-            Route::post('/update', [\App\Http\Controllers\Staff\StaffController::class, 'updateProfile'])
+            Route::match(['put', 'post'], '/', [\App\Http\Controllers\Staff\StaffController::class, 'updateProfile'])
                 ->name('profile.update');
         });
 
@@ -459,7 +460,7 @@ Route::middleware(['auth'])
             // Admin Profile (modal only)
             Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
             Route::get('/profile/edit', [AdminController::class, 'editProfile'])->name('profile.edit');
-            Route::post('/profile/update', [AdminController::class, 'updateProfile'])->name('profile.update');
+            Route::match(['put', 'post'], '/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 
             // ============================================================================
             // USER & ACCOUNT MANAGEMENT
@@ -486,30 +487,30 @@ Route::middleware(['auth'])
 
             // Staff Management
             Route::prefix('staff')->name('staff.')->middleware('permission:users.view')->group(function () {
-                Route::get('/', [StaffController::class, 'index'])->name('index');
-                Route::get('create', [StaffController::class, 'create'])->name('create')->middleware('permission:users.create');
-                Route::post('/', [StaffController::class, 'store'])->name('store')->middleware('permission:users.create');
-                Route::get('{staff}', [StaffController::class, 'show'])->name('show');
-                Route::get('{staff}/edit', [StaffController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
-                Route::put('{staff}', [StaffController::class, 'update'])->name('update')->middleware('permission:users.edit');
-                Route::delete('{staff}', [StaffController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
+                Route::get('/', [UserController::class, 'index'])->name('index');
+                Route::get('create', [UserController::class, 'create'])->name('create')->middleware('permission:users.create');
+                Route::post('/', [UserController::class, 'store'])->name('store')->middleware('permission:users.create');
+                Route::get('{user}', [UserController::class, 'show'])->name('show');
+                Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
+                Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
+                Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
 
                 // Staff Actions
-                Route::post('{staff}/toggle-status', [StaffController::class, 'toggleStatus'])
+                Route::post('{user}/toggle-status', [UserController::class, 'toggleStatus'])
                     ->name('toggle-status')->middleware('permission:users.edit');
-                Route::post('{staff}/toggle-admin', [StaffController::class, 'toggleAdmin'])
+                Route::post('{user}/toggle-admin', [UserController::class, 'toggleAdmin'])
                     ->name('toggle-admin')->middleware('permission:users.edit');
             });
 
             // Technician Management
             Route::prefix('technicians')->name('technicians.')->middleware('permission:users.view')->group(function () {
-                Route::get('/', [TechnicianController::class, 'index'])->name('index');
-                Route::get('create', [TechnicianController::class, 'create'])->name('create')->middleware('permission:users.create');
-                Route::post('/', [TechnicianController::class, 'store'])->name('store')->middleware('permission:users.create');
-                Route::get('{technician}', [TechnicianController::class, 'show'])->name('show');
-                Route::get('{technician}/edit', [TechnicianController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
-                Route::put('{technician}', [TechnicianController::class, 'update'])->name('update')->middleware('permission:users.edit');
-                Route::delete('{technician}', [TechnicianController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
+                Route::get('/', [UserController::class, 'index'])->name('index');
+                Route::get('create', [UserController::class, 'create'])->name('create')->middleware('permission:users.create');
+                Route::post('/', [UserController::class, 'store'])->name('store')->middleware('permission:users.create');
+                Route::get('{user}', [UserController::class, 'show'])->name('show');
+                Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
+                Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
+                Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
             });
 
             // ============================================================================
@@ -615,13 +616,13 @@ Route::middleware(['auth'])
 
             // System Logs
             Route::prefix('system-logs')->name('system-logs.')->group(function () {
-                Route::get('/', [\App\Http\Controllers\Admin\SystemLogController::class, 'index'])->name('index');
-                Route::get('accounts', [\App\Http\Controllers\Admin\SystemLogController::class, 'accountsLogs'])->name('accounts');
-                Route::get('equipment', [\App\Http\Controllers\Admin\SystemLogController::class, 'equipmentLogs'])->name('equipment');
-                Route::get('user-logins', [\App\Http\Controllers\Admin\SystemLogController::class, 'userLoginLogs'])->name('user-logins');
-                Route::get('downloads', [\App\Http\Controllers\Admin\SystemLogController::class, 'downloadLogs'])->name('downloads');
-                Route::get('export', [\App\Http\Controllers\Admin\SystemLogController::class, 'export'])->name('export');
-                Route::delete('clear', [\App\Http\Controllers\Admin\SystemLogController::class, 'clear'])->name('clear');
+                Route::get('/', [\App\Http\Controllers\User\SystemLogController::class, 'index'])->name('index');
+                Route::get('accounts', [\App\Http\Controllers\User\SystemLogController::class, 'accountsLogs'])->name('accounts');
+                Route::get('equipment', [\App\Http\Controllers\User\SystemLogController::class, 'equipmentLogs'])->name('equipment');
+                Route::get('user-logins', [\App\Http\Controllers\User\SystemLogController::class, 'userLoginLogs'])->name('user-logins');
+                Route::get('downloads', [\App\Http\Controllers\User\SystemLogController::class, 'downloadLogs'])->name('downloads');
+                Route::get('export', [\App\Http\Controllers\User\SystemLogController::class, 'export'])->name('export');
+                Route::delete('clear', [\App\Http\Controllers\User\SystemLogController::class, 'clear'])->name('clear');
             });
 
             // Settings
@@ -632,7 +633,7 @@ Route::middleware(['auth'])
                     ];
                     return view('settings.index', compact('settings'));
                 })->name('index');
-                Route::post('/', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('update');
+                Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'update'])->name('update');
             });
 
             // QR Scanner (Global)
@@ -640,9 +641,3 @@ Route::middleware(['auth'])
                 ->name('qr-scanner')->middleware('permission:qr.scan');
 
         });
-
-    // ============================================================================
-    // STAFF ROUTES
-    // ============================================================================
-
-    // Duplicate staff routes removed - see consolidated routes above

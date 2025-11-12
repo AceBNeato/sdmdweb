@@ -216,10 +216,18 @@ class StaffController extends Controller
                     }
                 }
 
-                // Store new profile image
-                $imagePath = $request->file('profile_photo')->store('profile-photos', 'public');
-                $validated['profile_photo'] = str_replace('public/', '', $imagePath);
-                Log::info('New profile photo stored', ['path' => $imagePath]);
+                // Store new profile image directly to public/storage/profile-photos
+                $file = $request->file('profile_photo');
+                $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                
+                $destination = public_path('storage/profile-photos');
+                if (!file_exists($destination)) {
+                    mkdir($destination, 0755, true);
+                }
+                
+                $file->move($destination, $filename);
+                $validated['profile_photo'] = 'profile-photos/' . $filename;
+                Log::info('New profile photo stored', ['path' => $filename]);
             } else {
                 Log::info('No profile photo file in request');
             }
@@ -315,10 +323,15 @@ class StaffController extends Controller
     public function editProfile()
     {
         $user = Auth::guard('staff')->user();
-        // If requested via AJAX or modal query, return the modal partial
+
+        if (!$user) {
+            return redirect()->route('staff.login')->with('error', 'Please log in to edit your profile.');
+        }
+
         if (request()->ajax() || request()->boolean('modal')) {
             return view('profile.edit_modal', compact('user'));
         }
-        return view('staff.profile.edit', compact('user'));
+
+        return redirect()->route('staff.dashboard');
     }
 }

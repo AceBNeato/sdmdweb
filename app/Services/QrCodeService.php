@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -12,14 +14,14 @@ class QrCodeService
     const CACHE_TTL = 86400; // 24 hours
 
     /**
-     * Generate QR code with caching
+     * Generate QR code with caching using local library
      *
      * @param array $data QR code data payload
      * @param string $size QR code dimensions (e.g., '200x200')
      * @param string $format Output format ('png' or 'svg')
      * @return string|null Path to cached QR code file or null on failure
      */
-    public function generateQrCode(array $data, string $size = '200x200', string $format = 'png'): ?string
+    public function generateQrCode(array $data, string $size = '200x200', string $format = 'svg'): ?string
     {
         $cacheKey = $this->getCacheKey($data, $size, $format);
 
@@ -36,42 +38,51 @@ class QrCodeService
             }
         }
 
-        // Generate via optimized HTTP client
+        // Generate locally using endroid/qr-code v6
         try {
-            $response = Http::qrServer()->get('/create-qr-code', [
-                'data' => json_encode($data),
+            // Parse size
+            [$width, $height] = explode('x', $size);
+            $width = (int) $width;
+
+            // Encode data as JSON
+            $qrContent = json_encode($data);
+
+            // Create QR code with v6 constructor (data as first param)
+            $qrCode = new QrCode(
+                data: $qrContent,
+                size: $width,
+                margin: 4
+            );
+
+            // Choose writer based on format
+            $writer = $format === 'svg' ? new SvgWriter() : new PngWriter();
+
+            // Write the QR code and get string result
+            $result = $writer->write($qrCode)->getString();
+
+            // Create unique filename based on data hash
+            $fileName = 'qr_' . md5($qrContent . $size . $format) . '.' . $format;
+            $path = 'qrcodes/cache/' . $fileName;
+
+            // Store the QR code image
+            Storage::disk('public')->put($path, $result);
+
+            // Cache the path for future requests
+            Cache::put($cacheKey, $path, self::CACHE_TTL);
+
+            Log::info('QR Code generated locally and cached', [
+                'cache_key' => $cacheKey,
+                'path' => $path,
                 'size' => $size,
                 'format' => $format
             ]);
 
-            if ($response->successful()) {
-                // Create unique filename based on data hash
-                $fileName = 'qr_' . md5(json_encode($data) . $size . $format) . '.' . $format;
-                $path = 'qrcodes/cache/' . $fileName;
+            return $path;
 
-                // Store the QR code image
-                Storage::disk('public')->put($path, $response->body());
-
-                // Cache the path for future requests
-                Cache::put($cacheKey, $path, self::CACHE_TTL);
-
-                Log::info('QR Code generated and cached', [
-                    'cache_key' => $cacheKey,
-                    'path' => $path,
-                    'size' => $size,
-                    'format' => $format
-                ]);
-
-                return $path;
-            } else {
-                Log::error('QR Server API returned unsuccessful response', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
-            }
         } catch (\Exception $e) {
             Log::error('QR Code generation failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'data' => $data,
                 'size' => $size,
                 'format' => $format

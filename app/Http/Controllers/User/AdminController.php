@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -173,6 +173,8 @@ class AdminController extends Controller
 
         return redirect()->route('admin.dashboard');
     }
+
+    
     public function updateProfile(Request $request)
     {
         $user = Auth::user();
@@ -185,19 +187,23 @@ class AdminController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
+            'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:255',
             'specialization' => 'nullable|string|max:255',
             'skills' => 'nullable|string',
             'current_password' => 'nullable|string',
-            'new_password' => 'nullable|string|min:8|confirmed',
+            'new_password' => 'nullable|string|min:8',
+            'new_password_confirmation' => 'nullable|string|min:8|same:new_password',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
             // Verify current password if changing password
             if (!empty($validated['new_password'])) {
+                if (empty($validated['current_password'])) {
+                    return back()->with('error', 'Current password is required when changing password.');
+                }
                 if (!\Hash::check($validated['current_password'], $user->password)) {
                     return back()->with('error', 'Current password is incorrect.');
                 }
@@ -216,10 +222,24 @@ class AdminController extends Controller
 
             // Handle profile photo upload
             if ($request->hasFile('profile_photo')) {
-                $file = $request->file('profile_photo');
-                $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/profile_photos', $filename);
-                $updateData['profile_photo'] = 'profile_photos/' . $filename;
+                try {
+                    $file = $request->file('profile_photo');
+                    $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                    
+                    // Save directly to public/storage/profile-photos to bypass symlink issues
+                    $destination = public_path('storage/profile-photos');
+                    if (!file_exists($destination)) {
+                        mkdir($destination, 0755, true);
+                    }
+                    
+                    $file->move($destination, $filename);
+                    $updateData['profile_photo'] = 'profile-photos/' . $filename;
+                } catch (\Exception $e) {
+                    \Log::error('Profile photo upload error: ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                    ]);
+                    return back()->with('error', 'Failed to upload profile photo. Please try again.');
+                }
             }
 
             $user->update($updateData);
