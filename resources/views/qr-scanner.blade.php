@@ -1,10 +1,25 @@
 @extends('layouts.app')
 
 @php
-$prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+// Check all authentication guards to determine user type
+$currentUser = null;
+$prefix = 'admin'; // default
+
+if (auth('staff')->check()) {
+    $currentUser = auth('staff')->user();
+    $prefix = 'staff';
+} elseif (auth('technician')->check()) {
+    $currentUser = auth('technician')->user();
+    $prefix = 'technician';
+} elseif (auth()->check()) {
+    $currentUser = auth()->user();
+    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+}
+
 $scanRoute = route($prefix . '.equipment.scan');
 $viewUrl = '/' . $prefix . '/equipment';
 $historyUrl = '/' . $prefix . '/equipment';
+$isStaff = $prefix === 'staff';
 @endphp
 
 @section('title', 'QR Scanner')
@@ -31,6 +46,7 @@ $historyUrl = '/' . $prefix . '/equipment';
             'scan' => $scanRoute,
             'view' => $viewUrl,
             'history' => $historyUrl,
+            'isStaff' => $isStaff,
         ]) !!};
 
         function domReady(fn) {
@@ -96,9 +112,9 @@ $historyUrl = '/' . $prefix . '/equipment';
                             <a href="${routes.view}?view_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-show me-1"></i>View Details
                                 </a>
-                                <a href="${routes.view}?history_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
+                                ${!routes.isStaff ? `<a href="${routes.view}?history_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-plus me-1"></i>Add History Sheet
-                                </a>
+                                </a>` : ''}
                                 <button onclick="resetScanner()" class="scan-another-btn">
                                     <i class="bx bx-qr-scan me-1"></i>Scan Another
                                 </button>

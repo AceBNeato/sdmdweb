@@ -580,14 +580,20 @@ class EquipmentController extends BaseController
     }
 
     /**
-     * Process decoded QR data (extracted from decodeQrCode method)
+     * Process QR code scan result
      *
-     * @param  string  $qrData
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    private function processQrData($qrData)
+    public function scanQrCode(Request $request)
     {
+        $request->validate([
+            'qr_data' => 'required|string',
+        ]);
+
         try {
+            $qrData = $request->qr_data;
+
             // Check if it's a JSON format (new format)
             if (strpos($qrData, '{') === 0 || strpos($qrData, '"id"') !== false) {
                 $parsedData = json_decode($qrData, true);
@@ -607,6 +613,15 @@ class EquipmentController extends BaseController
                         'success' => false,
                         'message' => 'Equipment not found'
                     ], 404);
+                }
+
+                // Check if technician has access to this equipment (must be from their office)
+                $user = Auth::guard('technician')->user();
+                if (!$equipment->office_id || $equipment->office_id !== $user->office_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have access to this equipment'
+                    ], 403);
                 }
 
                 return response()->json([
@@ -640,6 +655,15 @@ class EquipmentController extends BaseController
                     ], 404);
                 }
 
+                // Check if technician has access to this equipment (must be from their office)
+                $user = Auth::guard('technician')->user();
+                if (!$equipment->office_id || $equipment->office_id !== $user->office_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have access to this equipment'
+                    ], 403);
+                }
+
                 return response()->json([
                     'success' => true,
                     'equipment' => [
@@ -668,21 +692,6 @@ class EquipmentController extends BaseController
                 'message' => 'Error processing QR code: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Process QR code scan result
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function scanQrCode(Request $request)
-    {
-        $request->validate([
-            'qr_data' => 'required|string',
-        ]);
-
-        return $this->processQrData($request->qr_data);
     }
 
     /**

@@ -672,4 +672,78 @@ class EquipmentController extends Controller
         // Fallback: return a simple text response
         return response('QR Code generation failed')->header('Content-Type', 'text/plain');
     }
+
+    /**
+     * Show the bulk QR code printing modal for staff (only their office equipment).
+     */
+    public function printQrcodes(Request $request)
+    {
+        $user = Auth::guard('staff')->user();
+
+        // Only show equipment from the staff's office
+        $equipment = Equipment::where('office_id', $user->office_id)
+            ->with(['office', 'equipmentType'])
+            ->orderBy('model_number')
+            ->get();
+
+        $viewData = [
+            'equipment' => $equipment,
+            'routePrefix' => 'staff',
+            'printPdfRoute' => route('staff.equipment.print-qrcodes.pdf'),
+        ];
+
+        if ($request->ajax()) {
+            return view('equipment.print-qrcodes_modal', $viewData);
+        }
+
+        $redirectParams = ['print_qrcodes' => 1];
+
+        return redirect()->route('staff.equipment.index', $redirectParams);
+    }
+
+    /**
+     * Generate PDF for bulk QR code printing (staff restricted to their office).
+     */
+    public function printQrcodesPdf(Request $request)
+    {
+        $user = Auth::guard('staff')->user();
+        $equipmentIdsParam = $request->input('equipment_ids', []);
+
+        if (is_string($equipmentIdsParam)) {
+            $equipmentIds = array_filter(array_map('trim', explode(',', $equipmentIdsParam)));
+        } elseif (is_array($equipmentIdsParam)) {
+            $equipmentIds = array_filter($equipmentIdsParam);
+        } else {
+            $equipmentIds = [];
+        }
+
+        if (empty($equipmentIds)) {
+            return redirect()
+                ->route('staff.equipment.index')
+                ->with('error', 'Please select at least one equipment to print.');
+        }
+
+        // Only allow printing equipment from the staff's office
+        $equipments = Equipment::whereIn('id', $equipmentIds)
+            ->where('office_id', $user->office_id)
+            ->with(['office', 'equipmentType'])
+            ->orderBy('model_number')
+            ->get();
+
+        if ($equipments->isEmpty()) {
+            return redirect()
+                ->route('staff.equipment.index')
+                ->with('error', 'Selected equipment could not be found or you do not have access to them.');
+        }
+
+        $generatedAt = now();
+        $generatedBy = $user->name ?? 'Staff User';
+
+        return view('equipment.qr-code-pdf', [
+            'equipments' => $equipments,
+            'generatedAt' => $generatedAt,
+            'generatedBy' => $generatedBy,
+            'routePrefix' => 'staff',
+        ]);
+    }
 }

@@ -11,6 +11,7 @@
     <div class="modal-body">
         <form id="printQrFilterForm" action="{{ route($prefix . '.equipment.print-qrcodes') }}" method="GET" class="print-filter-form mb-4">
             <div class="row g-3 align-items-end">
+                @if($prefix !== 'staff')
                 <div class="col-md-6">
                     <label for="print-office-id" class="form-label">Office</label>
                     <select name="office_id" id="print-office-id" class="form-select">
@@ -26,8 +27,11 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-6 d-flex gap-2">
+                @endif
+                <div class="col{{ $prefix !== 'staff' ? '-md-6' : '' }} d-flex gap-2">
+                    @if($prefix !== 'staff')
                     <button type="submit" class="btn btn-primary flex-shrink-0"><i class='bx bx-filter-alt me-1'></i> Apply</button>
+                    @endif
                     <button type="button" class="btn btn-outline-secondary reset-print-filters" data-url="{{ route($prefix . '.equipment.print-qrcodes') }}">
                         <i class='bx bx-reset me-1'></i> Reset
                     </button>
