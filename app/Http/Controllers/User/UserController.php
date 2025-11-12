@@ -505,6 +505,8 @@ class UserController extends Controller
             $user->forgetCachedPermissions();
         }
 
+        return redirect()->route('accounts.index')
+            ->with('success', 'User updated successfully.');
     }
     /**
      * Toggle the active status of a user.
