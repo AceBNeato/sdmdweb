@@ -129,7 +129,8 @@ class User extends Authenticatable
      */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class)->withTimestamps();
+        return $this->belongsToMany(Role::class)->withTimestamps()
+            ->withPivot('expires_at');
     }
 
     /**
@@ -179,16 +180,22 @@ class User extends Authenticatable
      */
     public function hasRole($roles): bool
     {
+        // Get active roles (filter out expired ones)
+        $activeRoles = $this->roles->filter(function($role) {
+            $expiresAt = $role->pivot->expires_at;
+            return is_null($expiresAt) || $expiresAt > now();
+        });
+
         if (is_string($roles)) {
-            return $this->roles->contains('name', $roles);
+            return $activeRoles->contains('name', $roles);
         }
 
         if ($roles instanceof Role) {
-            return $this->roles->contains('id', $roles->id);
+            return $activeRoles->contains('id', $roles->id);
         }
 
         if (is_array($roles)) {
-            return $this->roles->whereIn('name', $roles)->isNotEmpty();
+            return $activeRoles->whereIn('name', $roles)->isNotEmpty();
         }
 
         return false;
@@ -203,11 +210,17 @@ class User extends Authenticatable
             return $this->hasRole($roles);
         }
 
+        // Get active roles (filter out expired ones)
+        $activeRoles = $this->roles->filter(function($role) {
+            $expiresAt = $role->pivot->expires_at;
+            return is_null($expiresAt) || $expiresAt > now();
+        });
+
         $roleNames = $roles instanceof Collection
             ? $roles->pluck('name')->toArray()
             : $roles;
 
-        return $this->roles->whereIn('name', $roleNames)->count() === count($roleNames);
+        return $activeRoles->whereIn('name', $roleNames)->count() === count($roleNames);
     }
 
     /**
@@ -256,11 +269,17 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all role names as a collection.
+     * Get all active role names as a collection.
      */
     public function getRoleNamesAttribute()
     {
-        return $this->roles->pluck('name');
+        // Only return active (non-expired) roles
+        $activeRoles = $this->roles->filter(function($role) {
+            $expiresAt = $role->pivot->expires_at;
+            return is_null($expiresAt) || $expiresAt > now();
+        });
+
+        return $activeRoles->pluck('name');
     }
 
     /**

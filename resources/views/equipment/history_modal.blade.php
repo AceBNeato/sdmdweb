@@ -1,5 +1,6 @@
 @php
-    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+    $user = auth()->user();
+    $prefix = $user->is_admin ? 'admin' : ($user->hasRole('technician') ? 'technician' : 'admin'); // Default to admin for staff/other roles
 @endphp
 
 @push('styles')
@@ -120,7 +121,7 @@
             <div class="mb-3">
                 <label for="date" class="form-label">Date & Time <span class="text-danger">*</span></label>
                 <input type="datetime-local" class="form-control @error('date') is-invalid @enderror"
-                       id="date" name="date" value="{{ old('date', now()->format('Y-m-d\TH:i')) }}" required>
+                       id="date" name="date" required>
                 @error('date')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -176,6 +177,7 @@
                 <option value="defective" {{ old('equipment_status', $equipment->status ?? '') == 'defective' ? 'selected' : '' }}>Defective</option>
             </select>
             <div class="form-text">Setting status to Serviceable will also set condition to Good</div>
+            <div class="form-text">Setting status to For repair or Defective will also set condition to Not Working</div>
             @error('equipment_status')
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
@@ -193,175 +195,226 @@
 </form>
 
 <script>
-// Initialize immediately since this is loaded via AJAX into modal
-(function() {
-    const dateInput = document.getElementById('date');
-    const joPrefixInput = document.getElementById('jo_prefix');
-    const joSequenceInput = document.getElementById('jo_sequence');
-    const joNumberInput = document.getElementById('jo_number');
-
-    let justAlerted = false;
-    let justAlertedDate = false;
-
-    // Update JO prefix when date changes
-    function updateJOPrefix() {
-        const selectedDate = dateInput.value;
-        if (selectedDate) {
-            const datePart = selectedDate.split('T')[0]; // Get YYYY-MM-DD
-            const formattedDate = datePart.replace(/-/g, '-'); // Keep YYYY-MM-DD format
-            joPrefixInput.value = `JO-${formattedDate}-`;
-            updateFullJONumber();
-        }
+    // Pass server-side Asia/Manila time to JavaScript
+    if (typeof serverCurrentTime === 'undefined') {
+        window.serverCurrentTime = "{{ now()->setTimezone('Asia/Manila')->format('Y-m-d\TH:i:s') }}";
     }
 
-    // Update the full JO number when sequence changes
-    function updateFullJONumber() {
-        const prefix = joPrefixInput.value;
-        const sequence = joSequenceInput.value.padStart(2, '0'); // Ensure 2 digits
-        if (prefix && sequence) {
-            joNumberInput.value = `${prefix}${sequence}`;
-        }
-    }
+    // Initialize when modal is shown or immediately if already loaded
+    if (typeof window.initializeHistoryModal === 'undefined') {
+        window.initializeHistoryModal = function() {
+            const dateInput = document.getElementById('date');
+            const joPrefixInput = document.getElementById('jo_prefix');
+            const joSequenceInput = document.getElementById('jo_sequence');
+            const joNumberInput = document.getElementById('jo_number');
 
-    // Auto-update prefix when date changes
-    dateInput.addEventListener('change', updateJOPrefix);
+            if (!dateInput || !joPrefixInput || !joSequenceInput || !joNumberInput) {
+                // Elements not found, try again later
+                setTimeout(window.initializeHistoryModal, 100);
+                return;
+            }
 
-    // Update full JO number when sequence changes
-    joSequenceInput.addEventListener('input', function() {
-        // Only allow numbers
-        this.value = this.value.replace(/[^0-9]/g, '');
-        updateFullJONumber();
-        // Reset alert flag when user starts typing
-        justAlerted = false;
-    });
+            let justAlerted = false;
+            let justAlertedDate = false;
 
-    // Validate consecutive sequence when sequence loses focus (real-time like date validation)
-    joSequenceInput.addEventListener('blur', function() {
-        // Skip validation if we just showed an alert
-        if (justAlerted) return;
+            // Function to reset date/time to current
+            function resetDateTime() {
+                // Get current time in Manila timezone (UTC+8)
+                const now = new Date();
+                const manilaOffset = 8 * 60; // Manila is UTC+8 in minutes
+                const localOffset = now.getTimezoneOffset(); // Local timezone offset in minutes
+                const manilaTime = new Date(now.getTime() + (manilaOffset + localOffset) * 60000);
 
-        const sequence = joSequenceInput.value.trim();
-        const date = dateInput.value;
+                // Format as YYYY-MM-DDTHH:mm for datetime-local input
+                const year = manilaTime.getFullYear();
+                const month = String(manilaTime.getMonth() + 1).padStart(2, '0');
+                const day = String(manilaTime.getDate()).padStart(2, '0');
+                const hours = String(manilaTime.getHours()).padStart(2, '0');
+                const minutes = String(manilaTime.getMinutes()).padStart(2, '0');
 
-        // Only validate if we have both date and sequence
-        if (!date || !sequence) return;
+                const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+                dateInput.value = formatted;
+                updateJOPrefix();
+            }
 
-        // Convert to number and check if it's valid
-        const sequenceNum = parseInt(sequence);
-        if (isNaN(sequenceNum) || sequenceNum < 1) return;
-
-        // Skip validation for sequence 1 (always allowed)
-        if (sequenceNum === 1) return;
-
-        console.log('Validating sequence in real-time:', sequenceNum, 'for date:', date);
-
-        // Check if this sequence is valid for the selected date
-        console.log('Checking sequences for date:', date.split('T')[0], 'equipment ID:', {{ $equipment->id }});
-        fetch('{{ route($prefix . ".equipment.check-sequences", $equipment) }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ date: date.split('T')[0] })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Real-time sequence check response:', data);
-
-            if (data.success) {
-                const nextSequence = data.next_sequence;
-
-                console.log('Next expected sequence:', nextSequence, 'Entered:', sequenceNum);
-
-                // Strict consecutive validation - alert immediately like date validation
-                if (sequenceNum !== nextSequence) {
-                    let message = '';
-                    if (nextSequence === 1) {
-                        message = `This is the first entry for ${date.split('T')[0]}. Sequence number must be 01.`;
-                    } else {
-                        message = `Sequence number must be ${String(nextSequence).padStart(2, '0')} (next consecutive number after ${String(nextSequence - 1).padStart(2, '0')}).`;
-                    }
-
-                    alert(message);
-                    justAlerted = true;
-                    // Allow time for user to edit before next check
-                    setTimeout(() => {
-                        justAlerted = false;
-                        joSequenceInput.focus();
-                        joSequenceInput.select();
-                    }, 100);
+            // Update JO prefix when date changes
+            function updateJOPrefix() {
+                const selectedDate = dateInput.value;
+                if (selectedDate) {
+                    const datePart = selectedDate.split('T')[0]; // Get YYYY-MM-DD
+                    const formattedDate = datePart.replace(/-/g, '-'); // Keep YYYY-MM-DD format
+                    joPrefixInput.value = `JO-${formattedDate}-`;
+                    updateFullJONumber();
                 }
             }
-        })
-        .catch(error => {
-            console.error('Error checking sequence in real-time:', error);
-        });
-    });
 
-    // Initialize prefix on page load
-    updateJOPrefix();
-
-    // Handle old input for sequence field
-    const oldSequence = "{{ old('jo_sequence') }}";
-    if (oldSequence) {
-        joSequenceInput.value = oldSequence;
-        updateFullJONumber();
-    }
-
-    // Prevent backdating
-    dateInput.addEventListener('change', function() {
-        if (justAlertedDate) {
-            justAlertedDate = false;
-            return;
-        }
-
-        const selectedDateTime = new Date(this.value);
-        const now = new Date();
-
-        if (selectedDateTime > now) {
-            alert('Cannot set future dates. Please select current date/time.');
-            this.value = now.toISOString().slice(0, 16);
-            updateJOPrefix(); // Re-update prefix after date correction
-            return;
-        }
-
-        if (selectedDateTime < now) {
-            alert('Cannot backdate repair records. Please select current date/time.');
-            this.value = now.toISOString().slice(0, 16);
-            updateJOPrefix(); // Re-update prefix after date correction
-            return;
-        }
-
-        // Check if trying to backdate beyond last repair record
-        console.log('Checking backdating for date:', this.value);
-        checkBackdating(this.value);
-    });
-
-    function checkBackdating(selectedDateTime) {
-        console.log('Calling checkBackdating API with date:', selectedDateTime);
-        fetch('{{ route($prefix . ".equipment.check-latest-repair", $equipment) }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ date: selectedDateTime })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('checkBackdating response:', data);
-            if (!data.can_backdate) {
-                console.log('Backdating not allowed, showing alert');
-                alert(`The earliest allowed repair date is ${data.latest_date}. Please select that date or later.`);
-                justAlertedDate = true;
-                dateInput.value = data.latest_date;
-                updateJOPrefix(); // Re-update prefix after date correction
+            // Update the full JO number when sequence changes
+            function updateFullJONumber() {
+                const prefix = joPrefixInput.value;
+                const sequence = joSequenceInput.value.padStart(2, '0'); // Ensure 2 digits
+                if (prefix && sequence) {
+                    joNumberInput.value = `${prefix}${sequence}`;
+                }
             }
-        })
-        .catch(error => {
-            console.error('Error checking backdating:', error);
-        });
+
+            // Auto-update prefix when date changes
+            dateInput.addEventListener('change', updateJOPrefix);
+
+            // Update full JO number when sequence changes
+            joSequenceInput.addEventListener('input', function() {
+                // Only allow numbers
+                this.value = this.value.replace(/[^0-9]/g, '');
+                updateFullJONumber();
+                // Reset alert flag when user starts typing
+                justAlerted = false;
+            });
+
+            // Validate consecutive sequence when sequence loses focus (real-time like date validation)
+            joSequenceInput.addEventListener('blur', function() {
+                // Skip validation if we just showed an alert
+                if (justAlerted) return;
+
+                const sequence = joSequenceInput.value.trim();
+                const date = dateInput.value;
+
+                // Only validate if we have both date and sequence
+                if (!date || !sequence) return;
+
+                // Convert to number and check if it's valid
+                const sequenceNum = parseInt(sequence);
+                if (isNaN(sequenceNum) || sequenceNum < 1) return;
+
+                console.log('Validating sequence in real-time:', sequenceNum, 'for date:', date);
+
+                // Check if this sequence is valid for the selected date
+                console.log('Checking sequences for date:', date.split('T')[0], 'equipment ID:', {{ $equipment->id }});
+                fetch('{{ route($prefix . ".equipment.check-sequences", $equipment) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ date: date.split('T')[0] })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Real-time sequence check response:', data);
+
+                    if (data.success) {
+                        const nextSequence = data.next_sequence;
+
+                        console.log('Next expected sequence:', nextSequence, 'Entered:', sequenceNum);
+
+                        // Strict consecutive validation - alert immediately like date validation
+                        if (sequenceNum !== nextSequence) {
+                            let message = '';
+                            if (nextSequence === 1) {
+                                message = `This is the first entry for ${date.split('T')[0]}. Sequence number must be 01.`;
+                            } else {
+                                message = `Sequence number must be ${String(nextSequence).padStart(2, '0')} (next consecutive number after ${String(nextSequence - 1).padStart(2, '0')}).`;
+                            }
+
+                            alert(message);
+                            justAlerted = true;
+                            // Allow time for user to edit before next check
+                            setTimeout(() => {
+                                justAlerted = false;
+                                joSequenceInput.focus();
+                                joSequenceInput.select();
+                            }, 100);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking sequence in real-time:', error);
+                });
+            });
+
+            // Prevent backdating
+            dateInput.addEventListener('change', function() {
+                if (justAlertedDate) {
+                    justAlertedDate = false;
+                    return;
+                }
+
+                const selectedDateTime = new Date(this.value);
+                const now = new Date(window.serverCurrentTime);
+
+                if (selectedDateTime > now) {
+                    alert('Cannot set future dates. Please select current date/time.');
+                    resetDateTime();
+                    return;
+                }
+
+                if (selectedDateTime < now) {
+                    alert('Cannot backdate repair records. Please select current date/time.');
+                    resetDateTime();
+                    return;
+                }
+
+                // Check if trying to backdate beyond last repair record
+                console.log('Checking backdating for date:', this.value);
+                checkBackdating(this.value);
+            });
+
+            function checkBackdating(selectedDateTime) {
+                console.log('Calling checkBackdating API with date:', selectedDateTime);
+                fetch('{{ route($prefix . ".equipment.check-latest-repair", $equipment) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ date: selectedDateTime })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('checkBackdating response:', data);
+                    if (!data.can_backdate) {
+                        console.log('Backdating not allowed, showing alert');
+                        alert(`The earliest allowed repair date is ${data.latest_date}. Please select that date or later.`);
+                        justAlertedDate = true;
+                        dateInput.value = data.latest_date;
+                        updateJOPrefix(); // Re-update prefix after date correction
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking backdating:', error);
+                });
+            }
+
+            // Initialize/reset the form when modal is shown
+            function initializeForm() {
+                resetDateTime();
+                joSequenceInput.value = '';
+                updateFullJONumber();
+
+                // Handle old input for sequence field
+                const oldSequence = "{{ old('jo_sequence') }}";
+                if (oldSequence) {
+                    joSequenceInput.value = oldSequence;
+                    updateFullJONumber();
+                }
+            }
+
+            // Listen for modal show events (Bootstrap modal events)
+            const modal = dateInput.closest('.modal');
+            if (modal) {
+                modal.addEventListener('show.bs.modal', initializeForm);
+                modal.addEventListener('shown.bs.modal', function() {
+                    // Focus on date input when modal is fully shown
+                    dateInput.focus();
+                });
+            } else {
+                // If no modal found, initialize immediately
+                initializeForm();
+            }
+
+            // Also initialize immediately in case modal is already shown
+            initializeForm();
+        };
     }
-})();
+
+    // Start initialization
+    window.initializeHistoryModal();
 </script>

@@ -77,7 +77,7 @@
                             <h2 class="h5 mb-1">Equipment QR Codes</h2>
                             <p class="mb-0">
                                 {{ $selectedOfficeId !== 'all' ? ($campuses->flatMap->offices->firstWhere('id', $selectedOfficeId)->name ?? 'All Offices') : 'All Offices' }}
-                                • Generated on {{ now()->format('M d, Y H:i') }}
+                                • Generated on {{ now()->setTimezone('Asia/Manila')->format('M d, Y H:i') }}
                             </p>
                         </div>
 

@@ -10,6 +10,7 @@
     align-items: center;
     z-index: 999999 !important;
     backdrop-filter: blur(8px);
+    pointer-events: none !important;
     animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -43,6 +44,7 @@ body #session-lock-modal.session-lock-overlay[style*="display: none"] {
     position: relative;
     animation: slideUp 0.4s ease-out;
     overflow: hidden;
+    pointer-events: auto !important;
 }
 
 @keyframes slideUp {

@@ -403,7 +403,7 @@
                         <div class="form-group">
                             <label for="password">New Password</label>
                             <input type="password" class="form-control @error('password') is-invalid @enderror"
-                                   id="password" name="password"
+                                   id="password" name="password" autocomplete="off"
                                    placeholder="Enter new password (leave blank to keep current)">
                             @error('password')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -423,7 +423,7 @@
                             <label for="password_confirmation">Confirm New Password</label>
                             <input type="password" class="form-control"
                                    id="password_confirmation" name="password_confirmation"
-                                   placeholder="Confirm new password">
+                                   autocomplete="off" placeholder="Confirm new password">
                         </div>
                     </div>
                 </div>
@@ -491,8 +491,8 @@
                     </div>
                 </div>
 
-                <!-- Roles Section (Only visible to superadmin) -->
-                @if(auth()->user()->is_super_admin)
+                <!-- Roles Section (Hidden from admins) -->
+                @if(!auth()->user()->hasRole('admin') && !auth()->user()->hasRole('super-admin'))
                 <div class="form-section">
                     <h6 class="form-section-title">
                         <i class='bx bx-shield'></i>
@@ -557,6 +557,10 @@
 <script>
 // Password strength checker
 if (document.getElementById('password')) {
+    // Clear password fields on page load to prevent autofill
+    document.getElementById('password').value = '';
+    document.getElementById('password_confirmation').value = '';
+
     document.getElementById('password').addEventListener('input', function() {
         const password = this.value;
         const strengthDiv = document.getElementById('password-strength');

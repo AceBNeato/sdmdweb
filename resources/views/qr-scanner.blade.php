@@ -99,7 +99,7 @@ $historyUrl = '/' . $prefix . '/equipment';
                                 <a href="${routes.view}?history_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
                                     <i class="bx bx-plus me-1"></i>Add History Sheet
                                 </a>
-                                <button onclick="resetScanner()" class="btn btn-outline-secondary btn-sm qr-btn">
+                                <button onclick="resetScanner()" class="scan-another-btn">
                                     <i class="bx bx-qr-scan me-1"></i>Scan Another
                                 </button>
                             </div>

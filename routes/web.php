@@ -253,7 +253,7 @@ Route::middleware(['auth:technician'])
         
         // Profile
         Route::get('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'profile'])->name('profile.show');
-        Route::put('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'updateProfile'])->name('profile.update');
+        Route::post('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'updateProfile'])->name('profile.update');
         
         // Reports
         Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
@@ -303,14 +303,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::prefix('profile')->group(function () {
             // Show profile
             Route::get('/', [\App\Http\Controllers\Staff\StaffController::class, 'profile'])
-                ->name('profile');
+                ->name('profile.show');
 
             // Edit profile form
             Route::get('/edit', [\App\Http\Controllers\Staff\StaffController::class, 'editProfile'])
                 ->name('profile.edit');
 
             // Update profile
-            Route::put('/update', [\App\Http\Controllers\Staff\StaffController::class, 'updateProfile'])
+            Route::post('/update', [\App\Http\Controllers\Staff\StaffController::class, 'updateProfile'])
                 ->name('profile.update');
         });
 
@@ -351,14 +351,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
                     ->name('scan');
                 Route::post('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanQrCode'])
                     ->name('scan');
-                    
-                // History routes
-                Route::prefix('{equipment}')->group(function () {
-                    Route::get('history/create', [\App\Http\Controllers\Staff\EquipmentController::class, 'createHistory'])
-                        ->name('history.create');
-                    Route::post('history', [\App\Http\Controllers\Staff\EquipmentController::class, 'storeHistory'])
-                        ->name('history.store');
-                });
             });
 
         // Reports
@@ -452,7 +444,7 @@ Route::middleware(['auth'])
             // Admin Profile (modal only)
             Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
             Route::get('/profile/edit', [AdminController::class, 'editProfile'])->name('profile.edit');
-            Route::put('/profile/update', [AdminController::class, 'updateProfile'])->name('profile.update');
+            Route::post('/profile/update', [AdminController::class, 'updateProfile'])->name('profile.update');
 
             // ============================================================================
             // USER & ACCOUNT MANAGEMENT
@@ -467,6 +459,10 @@ Route::middleware(['auth'])
                 Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
                 Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
                 Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
+
+                // Grant temporary admin access (super-admin only)
+                Route::post('{user}/grant-temp-admin', [UserController::class, 'grantTempAdmin'])
+                    ->name('grant-temp-admin')->middleware('auth');
 
                 // Email verification management
                 Route::post('{user}/resend-verification', [EmailVerificationController::class, 'sendVerificationEmail'])

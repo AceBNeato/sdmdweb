@@ -1,6 +1,6 @@
 @php
     use Illuminate\Support\Facades\Storage;
-    $generatedAt = $generatedAt ?? now();
+    $generatedAt = $generatedAt ?? now()->setTimezone('Asia/Manila');
     $generatedBy = $generatedBy ?? 'SDMD System';
 @endphp
 
@@ -287,7 +287,7 @@
             @endforeach
         </section>
 
-        <p class="footer-note">Printed via SDMD Equipment Management • {{ now()->format('M d, Y g:i A') }}</p>
+        <p class="footer-note">Printed via SDMD Equipment Management • {{ now()->setTimezone('Asia/Manila')->format('M d, Y g:i A') }}</p>
     </div>
 </body>
 </html>

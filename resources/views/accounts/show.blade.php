@@ -43,9 +43,15 @@
                     <i class='bx bx-shield'></i>
                     Assigned Roles
                 </h6>
-                @if($user->roles->count() > 0)
+                @php
+                    $activeRoles = $user->roles->filter(function($role) {
+                        $expiresAt = $role->pivot->expires_at;
+                        return is_null($expiresAt) || $expiresAt > now();
+                    });
+                @endphp
+                @if($activeRoles->count() > 0)
                     <div class="info-value">
-                        @foreach($user->roles as $role)
+                        @foreach($activeRoles as $role)
                             <span class="role-badge">
                                 <i class='bx bx-shield-check'></i> {{ $role->display_name ?? $role->name }}
                             </span>
@@ -55,6 +61,63 @@
                     <div class="info-value text-muted">No roles assigned</div>
                 @endif
             </div>
+
+            <!-- Temporary Admin Countdown -->
+            @php
+                $adminRole = $activeRoles->where('name', 'admin')->first();
+                $hasTempAdmin = $adminRole && $adminRole->pivot && $adminRole->pivot->expires_at;
+                $expiresAt = $hasTempAdmin ? $adminRole->pivot->expires_at : null;
+                $timeRemaining = $expiresAt ? now()->diffInSeconds($expiresAt, false) : 0;
+                $isExpiringSoon = $timeRemaining > 0 && $timeRemaining <= 3600; // Less than 1 hour
+                $isExpired = $timeRemaining <= 0;
+            @endphp
+
+            @if($hasTempAdmin)
+            <div class="temp-admin-countdown {{ $isExpired ? 'expired' : ($isExpiringSoon ? 'expiring-soon' : 'active') }}">
+                <div class="countdown-header">
+                    <i class='bx bx-time-five'></i>
+                    <span class="countdown-title">
+                        @if($isExpired)
+                            Temporary Admin Access Expired
+                        @else
+                            Temporary Admin Access
+                        @endif
+                    </span>
+                </div>
+                <div class="countdown-body">
+                    @if($isExpired)
+                        <div class="expired-message">
+                            <i class='bx bx-x-circle'></i>
+                            Admin privileges have expired
+                        </div>
+                    @else
+                        <div class="countdown-timer" id="temp-admin-countdown" data-expires-at="{{ $expiresAt->toISOString() }}">
+                            <div class="time-units">
+                                <div class="time-unit">
+                                    <span class="time-value" id="days">--</span>
+                                    <span class="time-label">Days</span>
+                                </div>
+                                <div class="time-unit">
+                                    <span class="time-value" id="hours">--</span>
+                                    <span class="time-label">Hours</span>
+                                </div>
+                                <div class="time-unit">
+                                    <span class="time-value" id="minutes">--</span>
+                                    <span class="time-label">Minutes</span>
+                                </div>
+                                <div class="time-unit">
+                                    <span class="time-value" id="seconds">--</span>
+                                    <span class="time-label">Seconds</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="countdown-footer">
+                            Expires on: <strong>{{ $expiresAt->format('M j, Y g:i A') }}</strong>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            @endif
 
         <div class="card-body">
             <div class="info-grid">
@@ -159,3 +222,85 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+// Temporary Admin Countdown Timer
+function initializeCountdown() {
+    const countdownElement = document.getElementById('temp-admin-countdown');
+    if (!countdownElement) return;
+
+    const expiresAt = new Date(countdownElement.dataset.expiresAt);
+    const daysElement = document.getElementById('days');
+    const hoursElement = document.getElementById('hours');
+    const minutesElement = document.getElementById('minutes');
+    const secondsElement = document.getElementById('seconds');
+
+    function updateCountdown() {
+        const now = new Date();
+        const timeRemaining = expiresAt - now;
+
+        if (timeRemaining <= 0) {
+            // Expired
+            daysElement.textContent = '00';
+            hoursElement.textContent = '00';
+            minutesElement.textContent = '00';
+            secondsElement.textContent = '00';
+
+            // Update styling to show expired state
+            const countdownContainer = countdownElement.closest('.temp-admin-countdown');
+            countdownContainer.classList.remove('active', 'expiring-soon');
+            countdownContainer.classList.add('expired');
+
+            // Update title
+            const titleElement = countdownContainer.querySelector('.countdown-title');
+            titleElement.textContent = 'Temporary Admin Access Expired';
+
+            // Update message
+            const bodyElement = countdownContainer.querySelector('.countdown-body');
+            bodyElement.innerHTML = `
+                <div class="expired-message">
+                    <i class='bx bx-x-circle'></i>
+                    Admin privileges have expired
+                </div>
+            `;
+
+            return;
+        }
+
+        // Calculate time units
+        const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+        // Update display
+        daysElement.textContent = days.toString().padStart(2, '0');
+        hoursElement.textContent = hours.toString().padStart(2, '0');
+        minutesElement.textContent = minutes.toString().padStart(2, '0');
+        secondsElement.textContent = seconds.toString().padStart(2, '0');
+
+        // Update styling based on time remaining
+        const countdownContainer = countdownElement.closest('.temp-admin-countdown');
+        if (timeRemaining <= 3600000) { // Less than 1 hour
+            countdownContainer.classList.remove('active');
+            countdownContainer.classList.add('expiring-soon');
+        } else {
+            countdownContainer.classList.remove('expiring-soon');
+            countdownContainer.classList.add('active');
+        }
+    }
+
+    // Initial update
+    updateCountdown();
+
+    // Update every second
+    setInterval(updateCountdown, 1000);
+}
+
+// Initialize countdown when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCountdown();
+});
+</script>
+@endpush

@@ -54,8 +54,25 @@
     transition: 0.3s background-color;
 }
 
-.qr-btn:hover {
-    background-color: #008000;
+.scan-another-btn {
+    padding: 12px 24px;
+    border: 2px solid #50ae54;
+    outline: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    transition: all 0.3s ease;
+}
+
+.scan-another-btn:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    color: #fff;
+    transform: translateY(-2px);
 }
 
 #my-qr-reader .alert-success .btn {
@@ -63,14 +80,12 @@
     font-weight: 500;
     padding: 0.5rem 1rem;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border: none;
 }
 
 #my-qr-reader .alert-success .btn:hover {
     transform: translateY(-1px);
-    color: #fff;
-    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.15);
+    color: #777777;
 }
 
 #my-qr-reader .alert-success .btn-primary:hover {

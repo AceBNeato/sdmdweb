@@ -955,10 +955,13 @@ class EquipmentController extends BaseController
                 'assigned_by_id' => $userId,
             ];
 
-            // If setting status to serviceable, also set condition to good
+            // Set condition based on status
             if ($validated['equipment_status'] === 'serviceable') {
                 $updateData['condition'] = 'good';
                 \Log::info('Setting condition to good for serviceable status');
+            } elseif (in_array($validated['equipment_status'], ['for_repair', 'defective'])) {
+                $updateData['condition'] = 'not_working';
+                \Log::info('Setting condition to not_working for ' . $validated['equipment_status'] . ' status');
             }
 
             $result = $equipment->update($updateData);
@@ -975,7 +978,7 @@ class EquipmentController extends BaseController
                 'equipment_id' => $equipment->id,
                 'history_created' => true,
                 'equipment_status_updated' => $validated['equipment_status'],
-                'equipment_condition_updated' => $validated['equipment_status'] === 'serviceable' ? 'good' : 'unchanged'
+                'equipment_condition_updated' => isset($updateData['condition']) ? $updateData['condition'] : 'unchanged'
             ]);
 
             DB::commit();
@@ -990,9 +993,10 @@ class EquipmentController extends BaseController
             $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
             $successMessage .= ' Equipment status updated to ' . $statusText . '.';
 
-            // Add condition update message if status was set to serviceable
-            if ($validated['equipment_status'] === 'serviceable') {
-                $successMessage .= ' Equipment condition set to Good.';
+            // Add condition update message
+            if (isset($updateData['condition'])) {
+                $conditionText = $updateData['condition'] === 'good' ? 'Good' : 'Not Working';
+                $successMessage .= ' Equipment condition set to ' . $conditionText . '.';
             }
 
             return redirect()
