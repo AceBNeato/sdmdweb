@@ -94,9 +94,9 @@ Route::middleware(['guest'])->group(function () {
 
     // Password Reset
     Route::prefix('password')->group(function () {
-        Route::get('forgot', [\App\Http\Controllers\Auth\AuthController::class, 'showForgotPasswordForm'])
+        Route::get('forgot', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showLinkRequestForm'])
             ->name('password.request');
-        Route::post('email', [\App\Http\Controllers\Auth\AuthController::class, 'sendResetLinkEmail'])
+        Route::post('email', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])
             ->name('password.email');
         Route::get('reset/{token}', [\App\Http\Controllers\Auth\AuthController::class, 'showResetPasswordForm'])
             ->name('password.reset');
