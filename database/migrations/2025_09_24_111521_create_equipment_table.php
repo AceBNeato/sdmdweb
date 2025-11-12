@@ -11,7 +11,8 @@ return new class extends Migration
         if (!Schema::hasTable('equipment')) {
             Schema::create('equipment', function (Blueprint $table) {
                 $table->id();
-                $table->string('model_number');
+                $table->string('brand'); // Equipment brand (e.g., Epson)
+                $table->string('model_number'); // Equipment model (e.g., L3110)
                 $table->string('serial_number')->unique();
                 $table->string('equipment_type');
                 $table->date('purchase_date')->nullable();

@@ -2,9 +2,9 @@
 
 @section('title', 'View User Information')
 @section('breadcrumbs')
-    <a href="{{ route('accounts.index') }}">Accounts</a>
+    <a href="{{ route('admin.accounts.index') }}">Accounts</a>
     <span class="separator">/</span>
-    <a href="{{ route('accounts.show', $user) }}" class="current">{{ $user->name }}</a>
+    <a href="{{ route('admin.accounts.show', $user) }}" class="current">{{ $user->name }}</a>
 @endsection
 
 @push('styles')
@@ -14,12 +14,12 @@
 @section('content')
 <div class="content">
     <div class="action-buttons">
-        <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('admin.accounts.index') }}" class="btn btn-outline-secondary">
             <i class='bx bx-arrow-back me-1'></i> Back to Accounts
         </a>
 
         @if(auth()->user()->hasPermissionTo('users.edit'))
-        <a href="{{ route('accounts.edit', $user) }}"
+        <a href="{{ route('admin.accounts.edit', $user) }}"
            class="btn btn-sm btn-outline-secondary"
            title="edit">
             <i class='bx bx-edit'></i>Edit Account

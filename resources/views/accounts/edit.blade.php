@@ -313,7 +313,7 @@
 @section('content')
 <div class="content">
     <div class="action-buttons">
-        <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('admin.accounts.index') }}" class="btn btn-outline-secondary">
             <i class='bx bx-arrow-back me-1'></i> Back to Accounts
         </a>
     </div>
@@ -324,7 +324,7 @@
             <p class="text-sm text-gray-600 mb-0">Update user details, password, and roles</p>
         </div>
 
-        <form action="{{ route('accounts.update', $user) }}" method="POST" class="needs-validation" novalidate>
+        <form action="{{ route('admin.accounts.update', $user) }}" method="POST" class="needs-validation" novalidate>
             @csrf
             @method('PUT')
 
@@ -542,7 +542,7 @@
 
             <!-- Form Actions -->
             <div class="form-actions">
-                <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('admin.accounts.index') }}" class="btn btn-outline-secondary">
                     <i class='bx bx-x'></i> Cancel
                 </a>
                 <button type="submit" class="btn btn-primary">
@@ -604,13 +604,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const permissions = rolePermissions[roleId] || [];
         const permissionIds = permissions.map(p => p.id);
 
-        // Check permissions that belong to the selected role
+        // Check permissions that belong to the selected role, uncheck others
         document.querySelectorAll('input[name="direct_permissions[]"]').forEach(function(checkbox) {
             if (permissionIds.includes(parseInt(checkbox.value))) {
                 checkbox.checked = true;
             } else {
-                // Optionally uncheck if not in role, but keep user's existing selections
-                // For now, only check role permissions, don't uncheck others
+                checkbox.checked = false;
             }
         });
     }

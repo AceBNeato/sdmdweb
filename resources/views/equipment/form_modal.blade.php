@@ -26,18 +26,48 @@
         </h5>
 
         <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="field-container">
-                    <label for="model_number" class="form-label required">Equipment Model</label>
+                    <label for="brand" class="form-label required">Brand</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-tag'></i></span>
+                        <input type="text" class="form-control @error('brand') is-invalid @enderror"
+                               id="brand" name="brand"
+                               value="{{ old('brand', $equipment->brand ?? '') }}" required
+                               placeholder="e.g., Epson">
+                        @error('brand')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="field-container">
+                    <label for="model_number" class="form-label required">Model</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class='bx bx-chip'></i></span>
                         <input type="text" class="form-control @error('model_number') is-invalid @enderror"
                                id="model_number" name="model_number"
-                               value="{{ old('model_number', $equipment->model_number ?? '') }}" required>
+                               value="{{ old('model_number', $equipment->model_number ?? '') }}" required
+                               placeholder="e.g., L3110">
                         @error('model_number')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="field-container">
+                    <label for="equipment_model_display" class="form-label">Equipment Model</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class='bx bx-show'></i></span>
+                        <input type="text" class="form-control" id="equipment_model_display"
+                               value="{{ old('brand', $equipment->brand ?? '') . old('model_number', $equipment->model_number ?? '') }}"
+                               readonly placeholder="Auto-generated">
+                    </div>
+                    <small class="text-muted">Brand + Model (auto-generated)</small>
                 </div>
             </div>
 
@@ -196,4 +226,27 @@
     </div>
 </form>
 
+@push('scripts')
+<script>
+// Update equipment model display when brand or model changes
+document.addEventListener('DOMContentLoaded', function() {
+    const brandInput = document.getElementById('brand');
+    const modelInput = document.getElementById('model_number');
+    const equipmentModelDisplay = document.getElementById('equipment_model_display');
 
+    function updateEquipmentModelDisplay() {
+        const brand = brandInput.value.trim();
+        const model = modelInput.value.trim();
+        const concatenated = brand + model;
+        equipmentModelDisplay.value = concatenated;
+    }
+
+    // Update on input change
+    brandInput.addEventListener('input', updateEquipmentModelDisplay);
+    modelInput.addEventListener('input', updateEquipmentModelDisplay);
+
+    // Initial update
+    updateEquipmentModelDisplay();
+});
+</script>
+@endpush

@@ -246,7 +246,7 @@ class UserController extends Controller
 
         \Illuminate\Support\Facades\Log::info('User creation completed: ' . $message);
 
-        return redirect()->route('accounts.index')
+        return redirect()->route('admin.accounts.index')
             ->with('success', $message);
     }
 
@@ -258,7 +258,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
@@ -313,7 +313,7 @@ class UserController extends Controller
             $user->forgetCachedPermissions();
         }
 
-        return redirect()->route('accounts.index')
+        return redirect()->route('admin.accounts.index')
             ->with('success', 'User roles and permissions updated successfully.');
     }
 
@@ -324,13 +324,13 @@ class UserController extends Controller
     {
         // Prevent non-admins from deleting admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to delete admin users.');
         }
 
         // Prevent users from deleting themselves
         if ($user->id === auth()->user()->id) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You cannot delete your own account.');
         }
 
@@ -338,11 +338,11 @@ class UserController extends Controller
             // Delete the user
             $user->delete();
 
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('success', 'User deleted successfully.');
 
         } catch (\Exception $e) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'An error occurred while deleting the user.');
         }
     }
@@ -370,7 +370,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
@@ -412,7 +412,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
@@ -505,7 +505,7 @@ class UserController extends Controller
             $user->forgetCachedPermissions();
         }
 
-        return redirect()->route('accounts.index')
+        return redirect()->route('admin.accounts.index')
             ->with('success', 'User updated successfully.');
     }
     /**
@@ -515,7 +515,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
@@ -532,7 +532,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('accounts.index')
+            return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 

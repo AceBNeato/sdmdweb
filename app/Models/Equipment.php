@@ -19,6 +19,7 @@ class Equipment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'brand',
         'model_number',
         'serial_number',
         'equipment_type_id',
@@ -141,7 +142,7 @@ class Equipment extends Model
     {
         $data = [
             'id' => $this->id,
-            'model' => $this->model_number,
+            'model' => $this->equipment_model, // Use concatenated brand + model_number
             'serial' => $this->serial_number,
             'type' => $this->equipmentType?->name ?? 'Unknown',
             'office' => $this->office?->name ?? 'N/A',
@@ -192,5 +193,21 @@ class Equipment extends Model
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * Get the concatenated equipment model (brand + model_number)
+     */
+    public function getEquipmentModelAttribute()
+    {
+        return $this->brand . $this->model_number;
+    }
+
+    /**
+     * Get the full model display name
+     */
+    public function getFullModelAttribute()
+    {
+        return trim($this->brand . ' ' . $this->model_number);
     }
 }

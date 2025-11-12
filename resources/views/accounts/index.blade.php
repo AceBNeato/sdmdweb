@@ -18,7 +18,7 @@
 @else
     <div class="action-buttons">
         @if(auth()->user()->hasPermissionTo('users.create'))
-        <a href="{{ route('accounts.form') }}" class="btn btn-primary btn-sm">
+        <a href="{{ route('admin.accounts.form') }}" class="btn btn-primary btn-sm">
             <i class='bx bx-plus me-1'></i> Add User
         </a>
         @endif
@@ -27,7 +27,7 @@
     <!-- Search and Filter Card -->
     <div class="card mb-6">
         <div class="card-body">
-            <form action="{{ route('accounts.index') }}" method="GET" class="filter-form">
+            <form action="{{ route('admin.accounts.index') }}" method="GET" class="filter-form">
                 <div class="filter-group">
                     <label for="search">Search</label>
                     <div class="input-group">
@@ -70,7 +70,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class='bx bx-filter-alt me-1'></i> Apply Filters
                     </button>
-                    <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('admin.accounts.index') }}" class="btn btn-outline-secondary">
                         <i class='bx bx-reset me-1'></i> Reset
                     </a>
                 </div>
@@ -144,14 +144,14 @@
                         <td>
                             <div class="btn-group" role="group">
                                 @if(auth()->user()->hasPermissionTo('users.view'))
-                                <a href="{{ route('accounts.show', $user) }}"
+                                <a href="{{ route('admin.accounts.show', $user) }}"
                                    class="btn btn-sm btn-primary"
                                    title="view">
                                     <i class='bx bx-show-alt'></i>
                                 </a>
                                 @endif
                                 @if(auth()->user()->hasPermissionTo('users.edit'))
-                                <a href="{{ route('accounts.edit', $user) }}"
+                                <a href="{{ route('admin.accounts.edit', $user) }}"
                                    class="btn btn-sm btn-outline-secondary"
                                    title="edit">
                                     <i class='bx bx-edit'></i>

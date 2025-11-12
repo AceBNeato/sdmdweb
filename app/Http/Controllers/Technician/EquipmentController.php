@@ -205,6 +205,7 @@ class EquipmentController extends BaseController
         // }
         
         $validated = $request->validate([
+            'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',
             'serial_number' => 'required|string|max:100|unique:equipment',
             'equipment_type_id' => 'required|exists:equipment_types,id',
@@ -240,16 +241,16 @@ class EquipmentController extends BaseController
         Activity::create([
             'user_id' => auth()->id(),
             'action' => 'equipment.store',
-            'description' => "Created new equipment: {$equipment->model_number} ({$equipment->serial_number})"
+            'description' => "Created new equipment: {$equipment->equipment_model} ({$equipment->serial_number})"
         ]);
 
         // Generate and save QR code using QRServer API with comprehensive structured data
         $qrData = json_encode([
             'id' => $equipment->id,
             'type' => 'equipment',
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
+            'model' => $equipment->equipment_model, // Use concatenated brand + model_number
+            'serial' => $equipment->serial_number,
+            'type_name' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
         ]);
@@ -334,6 +335,7 @@ class EquipmentController extends BaseController
         // }
 
         $validated = $request->validate([
+            'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',
             'serial_number' => 'required|string|max:100|unique:equipment,serial_number,' . $equipment->id,
             'equipment_type_id' => 'required|exists:equipment_types,id',
@@ -376,7 +378,7 @@ class EquipmentController extends BaseController
         Activity::create([
             'user_id' => auth()->id(),
             'action' => 'equipment.update',
-            'description' => "Updated equipment: {$equipment->model_number} ({$equipment->serial_number})"
+            'description' => "Updated equipment: {$equipment->equipment_model} ({$equipment->serial_number})"
         ]);
 
         // If relevant fields were changed, set session flag to show history confirmation

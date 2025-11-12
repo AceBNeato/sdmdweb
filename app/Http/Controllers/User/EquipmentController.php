@@ -196,12 +196,11 @@ class EquipmentController extends Controller
             try {
                 // Generate QR code with URL that opens public scanner
                 $qrData = [
-                    'type' => 'equipment_url',
                     'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
                     'equipment_id' => $equipment->id,
-                    'model_number' => $equipment->model_number,
-                    'serial_number' => $equipment->serial_number,
-                    'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+                    'model' => $equipment->equipment_model, // Use concatenated brand + model_number
+                    'serial' => $equipment->serial_number,
+                    'type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
                     'office' => $equipment->office ? $equipment->office->name : 'N/A',
                     'status' => $equipment->status,
                 ];
@@ -248,6 +247,7 @@ class EquipmentController extends Controller
     public function update(Request $request, Equipment $equipment)
     {
         $validated = $request->validate([
+            'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',
             'serial_number' => 'required|string|max:100|unique:equipment,serial_number,' . $equipment->id,
             'equipment_type_id' => 'required|exists:equipment_types,id',
@@ -272,7 +272,7 @@ class EquipmentController extends Controller
         Activity::create([
             'user_id' => auth()->id(),
             'action' => 'equipment.update',
-            'description' => "Updated equipment: {$equipment->model_number} ({$equipment->serial_number})"
+            'description' => "Updated equipment: {$equipment->equipment_model} ({$equipment->serial_number})"
         ]);
 
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
@@ -287,7 +287,7 @@ class EquipmentController extends Controller
         Activity::create([
             'user_id' => auth()->id(),
             'action' => 'equipment.destroy',
-            'description' => "Deleted equipment: {$equipment->model_number} ({$equipment->serial_number})"
+            'description' => "Deleted equipment: {$equipment->equipment_model} ({$equipment->serial_number})"
         ]);
 
         $equipment->forceDelete();
@@ -316,7 +316,7 @@ class EquipmentController extends Controller
         Activity::create([
             'user_id' => auth()->id(),
             'action' => 'status.update',
-            'description' => "Updated equipment status to {$request->status}: {$equipment->model_number} ({$equipment->serial_number})"
+            'description' => "Updated equipment status to {$request->status}: {$equipment->equipment_model} ({$equipment->serial_number})"
         ]);
 
         return response()->json([
@@ -651,7 +651,7 @@ class EquipmentController extends Controller
                     Activity::create([
                         'user_id' => auth()->id(),
                         'action' => 'scanned_qr',
-                        'description' => "Scanned QR code for equipment: {$equipment->model_number}",
+                        'description' => "Scanned QR code for equipment: {$equipment->equipment_model}",
                         'metadata' => ['equipment_id' => $equipment->id]
                     ]);
 
@@ -659,7 +659,7 @@ class EquipmentController extends Controller
                         'success' => true,
                         'equipment' => [
                             'id' => $equipment->id,
-                            'model_number' => $equipment->model_number,
+                            'model_number' => $equipment->equipment_model, // Use concatenated brand + model_number
                             'serial_number' => $equipment->serial_number,
                             'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
                             'location' => $equipment->location,
@@ -695,7 +695,7 @@ class EquipmentController extends Controller
         Activity::create([
             'user_id' => auth()->id(),
             'action' => 'scanned_qr',
-            'description' => "Scanned QR code for equipment: {$equipment->model_number}",
+            'description' => "Scanned QR code for equipment: {$equipment->equipment_model}",
             'metadata' => ['equipment_id' => $equipment->id]
         ]);
 
@@ -703,7 +703,7 @@ class EquipmentController extends Controller
             'success' => true,
             'equipment' => [
                 'id' => $equipment->id,
-                'model_number' => $equipment->model_number,
+                'model_number' => $equipment->equipment_model, // Use concatenated brand + model_number
                 'serial_number' => $equipment->serial_number,
                 'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
                 'location' => $equipment->location,
@@ -732,9 +732,9 @@ class EquipmentController extends Controller
             'type' => 'equipment_url',
             'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
             'equipment_id' => $equipment->id,
-            'model_number' => $equipment->model_number,
-            'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+            'model' => $equipment->equipment_model, // Use concatenated brand + model_number
+            'serial' => $equipment->serial_number,
+            'type_name' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
             'generated_at' => now()->toISOString(),
