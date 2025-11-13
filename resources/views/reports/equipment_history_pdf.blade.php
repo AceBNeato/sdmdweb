@@ -187,9 +187,6 @@
 </head>
 <body>
     <div class="action-buttons">
-        <a href="{{ route('admin.reports.equipment.history.export.pdf', $equipment) }}" class="btn" target="_blank">
-            <i class='bx bx-file-pdf'></i> Export PDF
-        </a>
         <button onclick="window.print()" class="btn">
             <i class='bx bx-printer'></i> Print
         </button>

@@ -65,39 +65,55 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technic
         </div>
     </div>
     @if($equipmentHistory->count() > 0)
-        @foreach($equipmentHistory->groupBy('equipment_id') as $equipmentId => $historyItems)
-            @php
-                $equipment = $historyItems->first()->equipment;
-                $latestEntry = $historyItems->sortByDesc('created_at')->first();
-            @endphp
-            
-            <div class="equipment-card">
-                <div class="equipment-info">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="d-flex align-items-center">
-                                <h5 class="equipment-title mb-0">
-                                    {{ $equipment->model_number }}
-                                    <small class="text-muted">({{ $equipment->serial_number }})</small>
-                                </h5>
-                            </div>
-                            <div class="action-buttons-reports">
-                                    <a href="{{ route($prefix . '.reports.history', $equipment->id) }}" class="btn btn-primary" title="View History">
+        <!-- Equipment History Table -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Equipment</th>
+                        <th scope="col">Office</th>
+                        <th scope="col">Last Updated</th>
+                        <th scope="col">Entries</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($equipmentHistory->groupBy('equipment_id') as $equipmentId => $historyItems)
+                        @php
+                            $equipment = $historyItems->first()->equipment;
+                            $latestEntry = $historyItems->sortByDesc('created_at')->first();
+                        @endphp
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-primary">{{ $equipment->model_number }}</div>
+                                <small class="text-muted">{{ $equipment->serial_number }}</small>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 150px;" title="{{ $equipment->office->name ?? 'N/A' }}">
+                                    {{ $equipment->office->name ?? 'N/A' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-nowrap">{{ $latestEntry->created_at->format('M d, Y') }}</div>
+                                <small class="text-muted">{{ $latestEntry->created_at->format('H:i') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ $historyItems->count() }} entries</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ route($prefix . '.reports.history', $equipment->id) }}"
+                                       class="btn btn-sm btn-primary"
+                                       title="View History">
                                         <i class='bx bx-history'></i> View History
                                     </a>
-                            </div>
-                            <div class="equipment-meta">
-                                <span class="me-3"><i class='bx bx-building-house me-1'></i> {{ $equipment->office->name ?? 'N/A' }}</span>
-                                <span><i class='bx bx-calendar me-1'></i> Last updated: {{ $latestEntry->created_at->format('M d, Y') }}</span>
-                            </div>
-                            
-                        </div>
-                        <span class="badge bg-primary">{{ $historyItems->count() }} entries</span>
-                    </div>
-                </div>
-            </div>
-
-        @endforeach
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
         <div class="d-flex justify-content-center mt-4">
             {{ $equipmentHistory->links() }}

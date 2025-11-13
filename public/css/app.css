@@ -547,7 +547,7 @@ hr{
 
 .btn-outline-secondary {
     color: #4a5568;
-    border: 1px solid #bbc6d5;
+    border: 1px solid #bbc6d5 !important; 
     background-color: white;
 }
 
@@ -803,7 +803,9 @@ tr:hover td {
   }
 
   .hamburger {
-    display: inline-flex;
+    display: block;
+    margin: 0 20px;
+    text-align: center;
   }
 
   .app.menu-open {
@@ -1122,7 +1124,8 @@ tr:hover td {
 }
 
 .text-muted {
-    color: #64748b !important;
+    color: #888b90 !important;
+    font-size: 15px;
 }
 
 
