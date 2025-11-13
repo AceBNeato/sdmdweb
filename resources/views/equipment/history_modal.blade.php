@@ -155,16 +155,7 @@
         @enderror
     </div>
 
-    <div class="mb-3">
-        <label for="remarks" class="form-label">Remarks</label>
-        <textarea class="form-control @error('remarks') is-invalid @enderror"
-                  id="remarks" name="remarks" rows="3"
-                  placeholder="Remarks will be auto-generated based on equipment status" readonly>{{ old('remarks') }}</textarea>
-        <div class="form-text">Remarks are automatically generated based on the selected equipment status</div>
-        @error('remarks')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
+
 
     <div class="mb-3">
         <div class="field-container">
@@ -181,6 +172,17 @@
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
         </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="remarks" class="form-label">Remarks</label>
+        <textarea class="form-control @error('remarks') is-invalid @enderror"
+                  id="remarks" name="remarks" rows="3"
+                  placeholder="Remarks will be auto-generated based on equipment status" readonly>{{ old('remarks') }}</textarea>
+        <div class="form-text">Remarks are automatically generated based on the selected equipment status</div>
+        @error('remarks')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
     </div>
 
     <div class="d-flex gap-3">

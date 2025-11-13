@@ -43,23 +43,27 @@
 
         isLocked = true;
 
-        // Ensure the input is accessible before showing modal
-        unlockPassword.disabled = false;
-        unlockPassword.style.pointerEvents = 'auto';
-        unlockPassword.style.zIndex = '1000001'; // Ensure it's above modal
-
         lockModal.style.display = 'flex';
 
         // Force reflow to ensure proper rendering
         lockModal.offsetHeight;
 
+        // Ensure the input is accessible after modal is displayed
+        setTimeout(() => {
+            unlockPassword.disabled = false;
+            unlockPassword.style.pointerEvents = 'auto';
+            unlockPassword.style.zIndex = '1000001';
+            unlockPassword.removeAttribute('disabled');
+            unlockPassword.setAttribute('pointer-events', 'auto');
+        }, 50);
+
         // Persist lock state across page reloads
         sessionStorage.setItem('session_locked', 'true');
 
-        // Focus on password field
+        // Focus on password field after modal is fully rendered
         setTimeout(() => {
             unlockPassword.focus();
-        }, 100);
+        }, 200); // Increased delay to ensure animations complete
 
         // Clear password field
         unlockPassword.value = '';

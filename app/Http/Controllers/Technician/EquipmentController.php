@@ -269,6 +269,26 @@ class EquipmentController extends BaseController
             Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id);
         }
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment added successfully!',
+                'redirect' => route('technician.equipment.index'),
+                'equipment' => [
+                    'id' => $equipment->id,
+                    'model_number' => $equipment->model_number,
+                    'serial_number' => $equipment->serial_number,
+                    'status' => $equipment->status,
+                    'condition' => $equipment->condition,
+                    'created_at' => $equipment->created_at
+                ],
+                'toast' => [
+                    'type' => 'success',
+                    'message' => 'Equipment added successfully.',
+                ]
+            ]);
+        }
+
         return redirect()->route('technician.equipment.index')
             ->with('success', 'Equipment added successfully.');
     }
@@ -343,13 +363,13 @@ class EquipmentController extends BaseController
             'purchase_date' => 'nullable|date',
             'cost_of_purchase' => 'nullable|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required|in:serviceable,for_repair,defective',
+            'status' => 'nullable|in:serviceable,for_repair,defective',
             'condition' => 'nullable|in:good,not_working', // Now optional - auto-set based on status
             'office_id' => 'required|exists:offices,id',
         ]);
 
-        // Auto-set condition based on status if not provided
-        if (empty($validated['condition']) && isset($validated['status'])) {
+        // Auto-set condition based on status if not provided and status is set
+        if (empty($validated['condition']) && isset($validated['status']) && !is_null($validated['status'])) {
             $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
         }
 
@@ -384,6 +404,22 @@ class EquipmentController extends BaseController
         // If relevant fields were changed, set session flag to show history confirmation
         if ($hasRelevantChanges) {
             session(['equipment_updated_show_history_prompt' => $equipment->id]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment updated successfully!',
+                'redirect' => route('technician.equipment.index'),
+                'equipment' => [
+                    'id' => $equipment->id,
+                    'model_number' => $equipment->model_number,
+                    'serial_number' => $equipment->serial_number,
+                    'status' => $equipment->status,
+                    'condition' => $equipment->condition,
+                    'updated_at' => $equipment->updated_at
+                ]
+            ]);
         }
 
         return redirect()->route('technician.equipment.index')

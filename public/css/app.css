@@ -410,7 +410,6 @@ hr{
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  padding: 0 24px;
 }
 /* Cards */
 .card {
@@ -474,7 +473,7 @@ hr{
 
 .action-buttons {
     display: flex;
-    padding: 1rem 0;
+    padding: 1rem;
     gap: 1rem;
     justify-content: flex-start;
     align-items: center;
@@ -548,14 +547,16 @@ hr{
 
 .btn-outline-secondary {
     color: #4a5568;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #bbc6d5;
     background-color: white;
 }
 
 .btn-outline-secondary:hover {
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-color: #cbd5e0;
-    color: #2d3748;
+    transform: translateY(-1px);
+    color: #2c5282;
+    box-shadow: 0 6px 8px -1px rgba(66, 153, 225, 0.4);
 }
 
 .btn-icon {
@@ -594,7 +595,7 @@ hr{
   border-collapse: separate;
   border-spacing: 0;
   min-width: 800px;
-  background: var(--panel);
+  background: #fff ;
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -612,13 +613,12 @@ th {
   border-bottom: 1px solid var(--border);
 }
 
-td {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-light);
-  color: var(--text);
-  font-size: 14px;
-  vertical-align: middle;
-  transition: var(--transition);
+.table tbody td {
+    padding: 1rem 0.75rem !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    font-size: 15px;
+    border-bottom: 1px solid #7f9fbe !important;
 }
 
 tr:last-child td {
@@ -749,9 +749,6 @@ tr:hover td {
     margin-right: 10px;
   }
 
-  .container {
-    padding: 0 16px;
-  }
 
   .topbar {
     padding: 12px 16px;
@@ -822,9 +819,6 @@ tr:hover td {
     visibility: visible;
   }
 
-  .container {
-    padding: 0 12px;
-  }
 
   .topbar {
     padding: 10px 12px;
@@ -899,7 +893,8 @@ tr:hover td {
 /* Small phone responsive */
 @media (max-width: 480px) {
   .container {
-    padding: 0 8px;
+     padding-right: 0rem !important;
+     padding-left: 0rem !important;
   }
 
   .topbar {
@@ -1062,6 +1057,30 @@ tr:hover td {
 .mb-12 { margin-bottom: 12px; }
 
 
+
+
+
+.form-select, .form-control {
+    font-size: 0.875rem;
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.375rem 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #4299e1;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+
+.form-text {
+    margin-top: .25rem;
+    font-size: .85em;
+    color: #707070;
+}
 
 /* Utilities */
 .grid-3 {

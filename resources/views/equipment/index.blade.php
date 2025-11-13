@@ -326,9 +326,26 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    // Close modal and reload page or update table
+                    // Close modal
                     $('#editEquipmentModal').modal('hide');
-                    location.reload();
+
+                    // Check if response is JSON with success/message
+                    if (response && typeof response === 'object' && response.success) {
+                        // Show success toast directly
+                        showToast(response.message, 'success');
+
+                        // Redirect after a short delay to allow toast to be seen
+                        setTimeout(function() {
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                            } else {
+                                location.reload();
+                            }
+                        }, 1000);
+                    } else {
+                        // Fallback to page reload for backward compatibility
+                        location.reload();
+                    }
                 },
                 error: function(xhr) {
                     // Handle errors - show validation errors
@@ -341,6 +358,9 @@
                         }
                         errorHtml += '</ul></div>';
                         $('#editEquipmentContent').prepend(errorHtml);
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        // Show error toast for JSON error responses
+                        showToast(xhr.responseJSON.message, 'error');
                     } else {
                         $('#editEquipmentContent').prepend('<div class="alert alert-danger">An error occurred. Please try again.</div>');
                     }
@@ -361,9 +381,26 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    // Close modal and reload page
+                    // Close modal
                     $('#historyEquipmentModal').modal('hide');
-                    location.reload();
+
+                    // Check if response is JSON with success/message
+                    if (response && typeof response === 'object' && response.success) {
+                        // Show success toast directly
+                        showToast(response.message, 'success');
+
+                        // Redirect after a short delay to allow toast to be seen
+                        setTimeout(function() {
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                            } else {
+                                location.reload();
+                            }
+                        }, 1000);
+                    } else {
+                        // Fallback to page reload for backward compatibility
+                        location.reload();
+                    }
                 },
                 error: function(xhr) {
                     // Handle errors - show validation errors
@@ -376,6 +413,9 @@
                         }
                         errorHtml += '</ul></div>';
                         $('#historyEquipmentContent').prepend(errorHtml);
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        // Show error toast for JSON error responses
+                        showToast(xhr.responseJSON.message, 'error');
                     } else {
                         $('#historyEquipmentContent').prepend('<div class="alert alert-danger">An error occurred. Please try again.</div>');
                     }

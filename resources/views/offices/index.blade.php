@@ -30,14 +30,12 @@
 @else
 
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="action-buttons">
+    <div class="action-buttons">
             @if(auth()->user()->hasPermissionTo('settings.manage'))
             <a href="{{ route('admin.offices.create') }}" class="btn btn-primary">
                 <i class='bx bx-plus me-1'></i> Add New Office
             </a>
             @endif
-        </div>
     </div>
 
     <!-- Search and Filter Card -->

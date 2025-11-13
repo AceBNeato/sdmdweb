@@ -115,6 +115,7 @@ class EquipmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',
             'serial_number' => 'required|string|max:100|unique:equipment',
             'equipment_type_id' => 'required|exists:equipment_types,id',
@@ -176,6 +177,22 @@ class EquipmentController extends Controller
         }
 
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment added successfully.',
+                'redirect' => route($prefix . '.equipment.index'),
+                'equipment' => [
+                    'id' => $equipment->id,
+                    'model_number' => $equipment->model_number,
+                    'serial_number' => $equipment->serial_number,
+                    'status' => $equipment->status,
+                    'condition' => $equipment->condition,
+                    'created_at' => $equipment->created_at
+                ]
+            ]);
+        }
 
         return redirect()->route($prefix . '.equipment.index')
             ->with('success', 'Equipment added successfully.');
@@ -256,13 +273,13 @@ class EquipmentController extends Controller
             'cost_of_purchase' => 'nullable|numeric|min:0',
             'office_id' => 'required|exists:offices,id',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required|in:serviceable,for_repair,defective',
+            'status' => 'nullable|in:serviceable,for_repair,defective',
             'condition' => 'nullable|in:good,not_working', // Now optional - auto-set based on status
             'notes' => 'nullable|string',
         ]);
 
-        // Auto-set condition based on status if not provided
-        if (empty($validated['condition'])) {
+        // Auto-set condition based on status if not provided and status is set
+        if (empty($validated['condition']) && isset($validated['status']) && !is_null($validated['status'])) {
             $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
         }
 
@@ -276,6 +293,14 @@ class EquipmentController extends Controller
         ]);
 
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment updated successfully.',
+                'redirect' => route($prefix . '.equipment.index')
+            ]);
+        }
 
         return redirect()->route($prefix . '.equipment.index')
             ->with('success', 'Equipment updated successfully.');
@@ -293,6 +318,14 @@ class EquipmentController extends Controller
         $equipment->forceDelete();
 
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment deleted successfully.',
+                'redirect' => route($prefix . '.equipment.index')
+            ]);
+        }
 
         return redirect()->route($prefix . '.equipment.index')
             ->with('success', 'Equipment deleted successfully.');
@@ -405,6 +438,12 @@ class EquipmentController extends Controller
             $success = $this->storedProcedureService->createEquipmentHistory($historyData);
 
             if (!$success) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to create history entry. Please try again.'
+                    ], 422);
+                }
                 return back()
                     ->withInput()
                     ->with('error', 'Failed to create history entry. Please try again.');
@@ -419,11 +458,25 @@ class EquipmentController extends Controller
                 $successMessage .= ' Equipment condition set to Good.';
             }
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMessage,
+                    'redirect' => route($prefix . '.equipment.index')
+                ]);
+            }
+
             return redirect()
                 ->route($prefix . '.equipment.index')
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to add history entry. Please try again.'
+                ], 500);
+            }
             return back()
                 ->withInput()
                 ->with('error', 'Failed to add history entry. Please try again.');

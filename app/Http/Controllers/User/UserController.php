@@ -246,6 +246,22 @@ class UserController extends Controller
 
         \Illuminate\Support\Facades\Log::info('User creation completed: ' . $message);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect' => route('admin.accounts.index'),
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'position' => $user->position,
+                    'is_active' => $user->is_active
+                ]
+            ]);
+        }
+
         return redirect()->route('admin.accounts.index')
             ->with('success', $message);
     }
@@ -503,6 +519,22 @@ class UserController extends Controller
         // Clear any cached permissions
         if (method_exists($user, 'forgetCachedPermissions')) {
             $user->forgetCachedPermissions();
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'User updated successfully.',
+                'redirect' => route('admin.accounts.index'),
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'position' => $user->position,
+                    'is_active' => $user->is_active
+                ]
+            ]);
         }
 
         return redirect()->route('admin.accounts.index')

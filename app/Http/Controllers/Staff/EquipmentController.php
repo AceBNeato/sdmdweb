@@ -187,6 +187,22 @@ class EquipmentController extends Controller
             Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id . ' - ' . $e->getMessage());
         }
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment added successfully.',
+                'redirect' => route('staff.equipment.index'),
+                'equipment' => [
+                    'id' => $equipment->id,
+                    'model_number' => $equipment->model_number,
+                    'serial_number' => $equipment->serial_number,
+                    'status' => $equipment->status,
+                    'condition' => $equipment->condition,
+                    'created_at' => $equipment->created_at
+                ]
+            ]);
+        }
+
         return redirect()->route('staff.equipment.index')
             ->with('success', 'Equipment added successfully.');
     }
@@ -305,6 +321,22 @@ class EquipmentController extends Controller
             'action' => 'equipment.update',
             'description' => "Updated equipment: {$equipment->model_number} ({$equipment->serial_number})"
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment updated successfully.',
+                'redirect' => route('staff.equipment.index'),
+                'equipment' => [
+                    'id' => $equipment->id,
+                    'model_number' => $equipment->model_number,
+                    'serial_number' => $equipment->serial_number,
+                    'status' => $equipment->status,
+                    'condition' => $equipment->condition,
+                    'updated_at' => $equipment->updated_at
+                ]
+            ]);
+        }
 
         return redirect()->route('staff.equipment.index')
             ->with('success', 'Equipment updated successfully.');

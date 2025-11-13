@@ -530,8 +530,14 @@
 
         // Toast notification system
         function showToast(message, type = 'success') {
-            const toastContainer = document.getElementById('toast-container');
-            if (!toastContainer) return;
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                // Create toast container if it doesn't exist (fallback for technician pages)
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
 
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
