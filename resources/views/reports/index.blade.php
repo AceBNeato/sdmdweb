@@ -89,7 +89,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technic
                                 <small class="text-muted">{{ $equipment->serial_number }}</small>
                             </td>
                             <td>
-                                <div class="text-truncate" style="max-width: 150px;" title="{{ $equipment->office->name ?? 'N/A' }}">
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ $equipment->office->name ?? 'N/A' }}">
                                     {{ $equipment->office->name ?? 'N/A' }}
                                 </div>
                             </td>

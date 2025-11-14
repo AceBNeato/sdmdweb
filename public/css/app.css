@@ -669,6 +669,10 @@ tr:hover td {
 }
 
 
+.table .text-truncate {
+    max-width: 200px !important;
+}
+
 
 /* Empty state for equipment and offices */
 .empty-equipment,

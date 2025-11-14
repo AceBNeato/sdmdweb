@@ -32,6 +32,7 @@ use App\Http\Controllers\Auth\StaffLoginController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\BackupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -626,6 +627,15 @@ Route::middleware(['auth'])
                     return view('settings.index', compact('settings'));
                 })->name('index');
                 Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'update'])->name('update');
+            });
+
+            // Database Backup & Restore (Super Admin Only)
+            Route::prefix('backup')->name('backup.')->middleware('auth')->group(function () {
+                Route::get('/', [BackupController::class, 'index'])->name('index');
+                Route::post('/create', [BackupController::class, 'backup'])->name('create');
+                Route::post('/restore', [BackupController::class, 'restore'])->name('restore');
+                Route::get('/download/{filename}', [BackupController::class, 'download'])->name('download');
+                Route::delete('/delete/{filename}', [BackupController::class, 'delete'])->name('delete');
             });
 
             // QR Scanner (Global)
