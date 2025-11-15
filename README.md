@@ -48,6 +48,15 @@ php artisan key:generate
 #   - DB_PASSWORD=secret
 #   - APP_URL=http://sdmd.test (or your domain)
 
+#   - MAIL_MAILER=smtp
+#   - MAIL_HOST=smtp.gmail.com
+#   - MAIL_PORT=587
+#   - MAIL_USERNAME=sdmdweb1@gmail.com
+#   - MAIL_PASSWORD="htbr gvmi auds mlji"
+#   - MAIL_ENCRYPTION=null
+#   - MAIL_FROM_ADDRESS=sdmdweb1@gmail.com
+#   - MAIL_FROM_NAME="SDMD WEB"
+
 # 5. Run migrations + seeders (creates roles, offices, default users)
 php artisan migrate --seed
 

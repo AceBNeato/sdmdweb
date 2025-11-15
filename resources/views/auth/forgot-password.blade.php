@@ -50,7 +50,7 @@
                     <i class='bx bx-lock-open-alt'></i>
                 </div>
                 <h2>Forgot Password?</h2>
-                <p>No worries! Enter your email address and we'll send you a secure reset link.</p>
+                <p>Request a password reset from the administrator.</p>
             </div>
 
             @if (session('status'))
@@ -67,21 +67,10 @@
 
             <form action="{{ route('admin.password.email') }}" method="POST" class="enhanced-form" id="forgotPasswordForm">
                 @csrf
-                <!-- Email -->
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class='bx bx-envelope'></i>
-                        Email Address
-                    </label>
-                    <div class="input-wrapper">
-                        <input type="email" 
-                               name="email" 
-                               placeholder="Enter your email address" 
-                               value="{{ old('email') }}" 
-                               required
-                               class="enhanced-input @error('email') error @enderror">
-                        <div class="input-focus-line"></div>
-                    </div>
+                <div class="form-group text-center">
+                    <p>Click the button below to send a password reset request to the administrator.</p>
+                    <p>An email will be sent to arthurdalemicaroz@sdmd.edu.ph</p>
+                    
                     @error('email')
                         <div class="error-message animate-slide-in">
                             <i class='bx bx-error-circle'></i>
@@ -90,11 +79,11 @@
                     @enderror
                 </div>
 
-                <!-- Send Reset Link Button -->
+                <!-- Request Button -->
                 <button type="submit" class="enhanced-button" id="submitBtn">
                     <span class="button-content">
                         <i class='bx bx-paper-plane'></i>
-                        <span class="button-text">Send Reset Link</span>
+                        <span class="button-text">Request Password Reset</span>
                     </span>
                     <div class="button-loader">
                         <div class="spinner"></div>

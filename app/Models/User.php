@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Office;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 
 class User extends Authenticatable
@@ -146,6 +147,14 @@ class User extends Authenticatable
     public function technician()
     {
         return $this->hasOne(\App\Models\Technician::class, 'user_id');
+    }
+
+    /**
+     * Get the password reset requests for the user.
+     */
+    public function passwordResetRequests(): HasMany
+    {
+        return $this->hasMany(PasswordResetRequest::class);
     }
 
     /**
