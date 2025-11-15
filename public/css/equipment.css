@@ -490,6 +490,7 @@ body {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        max-width: 200px !important;
     }
 
     /* Touch-friendly table rows */
@@ -629,7 +630,7 @@ body {
 
     /* Even more aggressive truncation on small screens */
     .table .text-truncate {
-        max-width: 80px;
+        max-width: 20px;
     }
 
 
