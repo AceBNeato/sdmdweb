@@ -12,11 +12,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Office;
+use App\Notifications\CustomResetPassword;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Auth\Passwords\CanResetPassword;
 
 
 class User extends Authenticatable
 {
+    use CanResetPassword;
     use HasFactory, Notifiable, HasRolesAndPermissions, \Illuminate\Database\Eloquent\SoftDeletes;
 
     /**
@@ -35,8 +38,19 @@ class User extends Authenticatable
             }
         });
 
-        // Note: Removed global scope for active users to allow authentication
+            // Note: Removed global scope for active users to allow authentication
         // of inactive users (they will be checked after authentication)
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPassword($token));
     }
 
     /**
