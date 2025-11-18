@@ -26,6 +26,51 @@
         .forgot-password-link a:hover {
             text-decoration: underline;
         }
+
+        /* Full-screen loading modal when sending OTP */
+        .loading-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .loading-backdrop.active {
+            display: flex;
+        }
+
+        .loading-card {
+            background: #ffffff;
+            padding: 1.5rem 2rem;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.25);
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            border: 3px solid rgba(37, 99, 235, 0.2);
+            border-top-color: #2563eb;
+            animation: spin 0.9s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 
@@ -50,7 +95,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('password.email') }}">
+            <form method="POST" action="{{ route('password.email') }}" id="sendOtpForm">
                 @csrf
 
                 <div class="mb-4">
@@ -62,8 +107,8 @@
                 </div>
 
                 <div class="mb-4">
-                    <button type="submit" class="login-button">
-                        Send Password Reset Link
+                    <button type="submit" class="login-button" id="sendOtpButton">
+                        Send OTP
                     </button>
                 </div>
             </form>
@@ -77,6 +122,14 @@
     </div>
 </div>
 
+<!-- Loading modal for Send OTP -->
+<div class="loading-backdrop" id="otpLoadingModal">
+    <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Sending OTP, please wait...</div>
+    </div>
+    </div>
+
 <!-- Footer -->
 <footer>
     Copyright {{ date('Y') }}. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
@@ -84,7 +137,25 @@
 
 <!-- Scripts -->
 <script>
-    // Add any necessary JavaScript here
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('sendOtpForm');
+        const button = document.getElementById('sendOtpButton');
+        const modal = document.getElementById('otpLoadingModal');
+
+        if (form && button && modal) {
+            form.addEventListener('submit', function () {
+                // Show blocking loading modal
+                modal.classList.add('active');
+
+                // Disable button to prevent double submit
+                button.disabled = true;
+
+                // Optional: change button text while loading
+                button.textContent = 'Sending...';
+            });
+        }
+    });
 </script>
+
 </body>
 </html>

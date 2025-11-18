@@ -55,6 +55,20 @@
             color: #e53e3e;
             font-weight: 500;
         }
+
+        /* Back to login link - match email.blade.php style */
+        .back-to-login {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .back-to-login a {
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-to-login a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 

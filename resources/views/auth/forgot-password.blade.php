@@ -50,7 +50,7 @@
                     <i class='bx bx-lock-open-alt'></i>
                 </div>
                 <h2>Forgot Password?</h2>
-                <p>Request a password reset from the administrator.</p>
+                <p>No worries! Enter your email and we'll send you a link to reset your password.</p>
             </div>
 
             @if (session('status'))
@@ -65,12 +65,22 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.password.email') }}" method="POST" class="enhanced-form" id="forgotPasswordForm">
+            <form action="{{ route('password.email') }}" method="POST" class="enhanced-form" id="forgotPasswordForm">
                 @csrf
                 <div class="form-group text-center">
-                    <p>Click the button below to send a password reset request to the administrator.</p>
-                    <p>An email will be sent to arthurdalemicaroz@sdmd.edu.ph</p>
-                    
+                    <p>Enter your account email below to receive a password reset OTP.</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">
+                        <i class='bx bx-envelope'></i>
+                        <span>Email</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input id="email" type="email" name="email" class="enhanced-input" value="{{ old('email') }}" required autofocus>
+                        <span class="input-focus-line"></span>
+                    </div>
+
                     @error('email')
                         <div class="error-message animate-slide-in">
                             <i class='bx bx-error-circle'></i>
@@ -79,11 +89,11 @@
                     @enderror
                 </div>
 
-                <!-- Request Button -->
+                <!-- Send OTP Button -->
                 <button type="submit" class="enhanced-button" id="submitBtn">
                     <span class="button-content">
                         <i class='bx bx-paper-plane'></i>
-                        <span class="button-text">Request Password Reset</span>
+                        <span class="button-text">Send OTP</span>
                     </span>
                     <div class="button-loader">
                         <div class="spinner"></div>

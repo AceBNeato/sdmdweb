@@ -158,13 +158,6 @@
 
             <p class="text-muted">If you didn't request a password reset, please ignore this email or contact support if you have any concerns.</p>
             
-            <div class="divider"></div>
-            
-            <p style="font-size: 12px; color: #a0aec0;">
-                Having trouble? You can also click the link below to verify your email:
-                <br>
-                <a href="{{ $resetUrl }}" style="word-break: break-all; color: #5ae7ff;">{{ $resetUrl }}</a>
-            </p>
         </div>
 
         <div class="footer">

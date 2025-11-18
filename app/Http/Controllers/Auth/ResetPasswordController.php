@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Models\PasswordResetOtp;
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -118,6 +119,14 @@ class ResetPasswordController extends Controller
                 ->with('error', 'Invalid or expired password reset session.');
         }
 
+        // Check if the new password is different from the current one
+        $user = User::where('email', $request->email)->first();
+        if ($user && Hash::check($request->new_password, $user->password)) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['password' => 'The new password must be different from your current password.']);
+        }
+
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
@@ -146,7 +155,7 @@ class ResetPasswordController extends Controller
         return [
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|confirmed|min:8',
+            'new_password' => 'required|confirmed|min:8',
         ];
     }
 
@@ -156,9 +165,11 @@ class ResetPasswordController extends Controller
      * @return array
      */
     protected function validationErrorMessages()
-    {
-        return [];
-    }
+{
+    return [
+        'new_password.confirmed' => 'The new password and confirmation must be the same.',
+    ];
+}
 
     /**
      * Get the password reset credentials from the request.
@@ -168,9 +179,12 @@ class ResetPasswordController extends Controller
      */
     protected function credentials(Request $request)
     {
-        return $request->only(
-            'email', 'password', 'password_confirmation', 'token'
-        );
+        return [
+            'email' => $request->email,
+            'password' => $request->new_password,
+            'password_confirmation' => $request->new_password_confirmation,
+            'token' => $request->token,
+        ];
     }
 
     /**
@@ -182,20 +196,23 @@ class ResetPasswordController extends Controller
      */
     protected function resetPassword($user, $password)
     {
+        // Update the password
         $user->password = Hash::make($password);
+        
+        // Invalidate all existing sessions
         $user->setRememberToken(Str::random(60));
+        
+        // Save the user model
         $user->save();
 
+        // Fire password reset event
         event(new PasswordReset($user));
 
         // Clear the password reset session
         session()->forget(['password_reset_token', 'password_reset_email']);
         
-        // Delete the used OTP
-        PasswordResetOtp::where('email', $user->email)->delete();
-        
-        // Log the user in
-        auth()->login($user);
+        // Delete all OTPs for this email
+        PasswordResetOtp::deleteForEmail($user->email);
     }
 
     /**
@@ -240,8 +257,9 @@ class ResetPasswordController extends Controller
      *
      * @return string
      */
-    public function redirectPath()
-    {
-        return '/home';
-    }
+public function redirectPath()
+{
+    // After password reset, always go back to login page
+    return route('login');
+}
 }

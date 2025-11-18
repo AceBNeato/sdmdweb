@@ -27,7 +27,7 @@
             <h2>Reset Password</h2>
             <p>Enter your new password below</p>
 
-            <form action="{{ route('password.update') }}" method="POST">
+            <form action="{{ route('password.update') }}" method="POST" autocomplete="off">
                 @csrf
                 <input type="hidden" name="token" value="{{ $token }}">
                 
@@ -91,6 +91,8 @@
 <!-- Footer -->
 <footer>
     Copyright 2025. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
+""" NOTE: Back button handling added to prevent navigating back in the reset flow. """
+
 </footer>
 
 <script>
@@ -116,6 +118,17 @@
                 }
             });
         });
+        // Prevent going back in history from this page: if user presses Back,
+        // immediately send them to the login page instead of previous screens.
+        if (window.history && window.history.pushState) {
+            // Push a new state so that the first back triggers popstate.
+            window.history.pushState({ page: 'reset-password' }, '', window.location.href);
+
+            window.addEventListener('popstate', function (event) {
+                // Redirect to login when the user tries to go back
+                window.location.href = '{{ route('login') }}';
+            });
+        }
     });
 </script>
 
