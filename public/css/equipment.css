@@ -77,16 +77,24 @@ body {
     border: 1px solid #fde68a;
 }
 
-.col-md-8{
-    width: 90% !important;
-    height: auto !important;
-}
+.col-md-4{
+    padding: 1rem !important;
+    margin-top: 0rem !important;
+    width: 100% !important;
+}   
+
 
 .col-md-6{
     padding: 1rem !important;
     margin-top: 0rem !important;
     width: 100% !important;
 }   
+
+.col-md-8{
+    width: 90% !important;
+    height: auto !important;
+}
+
 
 .img-fluid{
     width: 15rem;
