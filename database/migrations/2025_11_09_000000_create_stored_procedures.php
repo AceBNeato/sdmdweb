@@ -161,7 +161,7 @@ return new class extends Migration
                 -- Assign roles
                 SET role_count = JSON_LENGTH(p_role_ids);
                 WHILE i < role_count DO
-                    SET role_id = JSON_EXTRACT(p_role_ids, CONCAT('$[', i, ']'));
+                    SET role_id = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_role_ids, CONCAT('$[', i, ']'))) AS UNSIGNED);
                     INSERT INTO role_user (user_id, role_id, created_at, updated_at)
                     VALUES (new_user_id, role_id, NOW(), NOW());
                     SET i = i + 1;
