@@ -30,9 +30,9 @@ use App\Http\Controllers\PublicEquipmentController;
 use App\Http\Controllers\Auth\TechnicianLoginController;
 use App\Http\Controllers\Auth\StaffLoginController;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\EmailVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -632,7 +632,6 @@ Route::middleware(['auth'])
                 Route::get('accounts', [\App\Http\Controllers\User\SystemLogController::class, 'accountsLogs'])->name('accounts');
                 Route::get('equipment', [\App\Http\Controllers\User\SystemLogController::class, 'equipmentLogs'])->name('equipment');
                 Route::get('user-logins', [\App\Http\Controllers\User\SystemLogController::class, 'userLoginLogs'])->name('user-logins');
-                Route::get('downloads', [\App\Http\Controllers\User\SystemLogController::class, 'downloadLogs'])->name('downloads');
                 Route::get('export', [\App\Http\Controllers\User\SystemLogController::class, 'export'])->name('export');
                 Route::delete('clear', [\App\Http\Controllers\User\SystemLogController::class, 'clear'])->name('clear');
             });

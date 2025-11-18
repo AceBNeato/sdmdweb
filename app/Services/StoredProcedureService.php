@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class StoredProcedureService
 {
@@ -120,6 +122,82 @@ class StoredProcedureService
             Log::error("Failed to create user with roles", [
                 'email' => $userData['email'],
                 'error' => $e->getMessage()
+            ]);
+
+            if ($this->isMissingCreateUserProcedure($e)) {
+                Log::warning('Stored procedure create_user_with_roles missing. Falling back to Eloquent user creation.');
+                return $this->fallbackCreateUserWithRoles($userData);
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * Detect if exception was caused by missing stored procedure.
+     */
+    protected function isMissingCreateUserProcedure(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+
+        return Str::contains($message, 'create_user_with_roles')
+            && Str::contains($message, 'does not exist');
+    }
+
+    /**
+     * Fallback user creation when stored procedure is unavailable.
+     */
+    protected function fallbackCreateUserWithRoles(array $userData): ?int
+    {
+        try {
+            return DB::transaction(function () use ($userData) {
+                $user = User::create([
+                    'first_name' => $userData['first_name'],
+                    'last_name' => $userData['last_name'],
+                    'email' => $userData['email'],
+                    'password' => $userData['password'],
+                    'phone' => $userData['phone'] ?? null,
+                    'position' => $userData['position'],
+                    'office_id' => $userData['office_id'],
+                    'campus_id' => $userData['campus_id'],
+                ]);
+
+                if (!empty($userData['role_ids'])) {
+                    $roleIds = array_map(static fn ($roleId) => (int) $roleId, $userData['role_ids']);
+                    $user->roles()->sync($roleIds);
+                }
+
+                try {
+                    DB::table('activities')->insert([
+                        'user_id' => $userData['created_by_id'],
+                        'action' => 'user.create',
+                        'description' => sprintf(
+                            'Created user: %s %s (%s)',
+                            $userData['first_name'],
+                            $userData['last_name'],
+                            $userData['email']
+                        ),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Throwable $activityException) {
+                    Log::warning('Failed to log user creation activity in fallback path', [
+                        'email' => $userData['email'],
+                        'error' => $activityException->getMessage(),
+                    ]);
+                }
+
+                Log::info('User created using fallback path', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ]);
+
+                return $user->id;
+            });
+        } catch (\Throwable $fallbackException) {
+            Log::error('Fallback user creation failed', [
+                'email' => $userData['email'],
+                'error' => $fallbackException->getMessage(),
             ]);
 
             return null;

@@ -7,7 +7,6 @@
         'accounts' => 'Accounts Logs',
         'equipment' => 'Equipment Logs',
         'login' => 'User Login Logs',
-        'download' => 'Download Logs',
     ];
 
     $typeLabel = $typeLabels[$type] ?? 'System Logs';
@@ -15,7 +14,6 @@
         'accounts' => route('admin.system-logs.accounts'),
         'equipment' => route('admin.system-logs.equipment'),
         'login' => route('admin.system-logs.user-logins'),
-        'download' => route('admin.system-logs.downloads'),
         default => route('admin.system-logs.index'),
     };
 
@@ -216,9 +214,6 @@
         <a class="nav-link {{ $type === 'login' ? 'active' : '' }}" href="{{ route('admin.system-logs.user-logins') }}" title="Authentication: login, logout, session lock/unlock">
             <i class='bx bx-log-in me-1'></i> User Logins
         </a>
-        <a class="nav-link {{ $type === 'download' ? 'active' : '' }}" href="{{ route('admin.system-logs.downloads') }}" title="File downloads: QR codes, history sheets, reports, CSV/PDF exports">
-            <i class='bx bx-download me-1'></i> Downloads
-        </a>
     </div>
 
     @if($type !== 'all')
@@ -249,12 +244,6 @@
                             <span class="activity-tag">Session Lock</span>
                             <span class="activity-tag">Session Unlock</span>
                             <span class="activity-tag">Authentication Events</span>
-                        @elseif($type === 'download')
-                            <span class="activity-tag">QR Code Downloads</span>
-                            <span class="activity-tag">History Sheet PDFs</span>
-                            <span class="activity-tag">Report Exports</span>
-                            <span class="activity-tag">CSV Downloads</span>
-                            <span class="activity-tag">File Exports</span>
                         @endif
                     </div>
                 </div>

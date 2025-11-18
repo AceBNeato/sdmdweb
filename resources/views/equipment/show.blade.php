@@ -246,69 +246,7 @@
 
 
 @push('scripts')
-<script>
-    // Show/hide fields based on status selection
-    document.getElementById('status').addEventListener('change', function() {
-        const status = this.value;
-        const assignedToField = document.getElementById('assignedToField');
-        const maintenanceDateField = document.getElementById('maintenanceDateField');
-
-        if (status === 'in_use') {
-            assignedToField.style.display = 'block';
-            maintenanceDateField.style.display = 'none';
-        } else if (status === 'maintenance') {
-            assignedToField.style.display = 'none';
-            maintenanceDateField.style.display = 'block';
-        } else {
-            assignedToField.style.display = 'none';
-            maintenanceDateField.style.display = 'none';
-        }
-    });
-
-    function updateEquipmentStatus() {
-        // admin-specific status update modal or functionality
-        showToast('Status update feature coming soon for admins!', 'info');
-    }
-
-    function showToast(message, type = 'info') {
-        const toastContainer = document.querySelector('.toast-container') || createToastContainer();
-
-        const toastId = 'toast-' + Date.now();
-        const toastHtml = `
-            <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} border-0" role="alert">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <i class='bx ${type === 'success' ? 'bx-check-circle' : type === 'error' ? 'bx-error' : 'bx-info-circle'} me-2'></i>
-                        ${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>
-        `;
-
-        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, {
-            autohide: true,
-            delay: 3000
-        });
-        toast.show();
-
-        toastElement.addEventListener('hidden.bs.toast', function() {
-            toastElement.remove();
-        });
-    }
-
-    function createToastContainer() {
-        const container = document.createElement('div');
-        container.className = 'toast-container position-fixed top-0 end-0 p-3';
-        document.body.appendChild(container);
-        return container;
-    }
-</script>
+<script src="{{ asset('js/equipment-show.js') }}"></script>
 @endpush
-
-<script src="{{ asset('js/admin/equipment-show.js') }}"></script>
 
 @endsection

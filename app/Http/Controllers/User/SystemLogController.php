@@ -54,16 +54,6 @@ class SystemLogController extends BaseController
         return $this->getLogsByType($request, 'login');
     }
 
-    /**
-     * Display download logs.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\View\View
-     */
-    public function downloadLogs(Request $request)
-    {
-        return $this->getLogsByType($request, 'download');
-    }
 
     /**
      * Get logs filtered by type.
@@ -210,27 +200,6 @@ class SystemLogController extends BaseController
 
                 $query->where(function ($q) use ($authKeywords) {
                     foreach ($authKeywords as $keyword) {
-                        $q->orWhere('action', 'like', "%{$keyword}%")
-                          ->orWhere('description', 'like', "%{$keyword}%");
-                    }
-                });
-                break;
-
-            case 'download':
-                $downloadKeywords = [
-                    'download',
-                    'export',
-                    'print',
-                    'csv',
-                    'pdf',
-                    'history sheet',
-                    'history_sheet',
-                    'qr-code',
-                    'qrcode',
-                ];
-
-                $query->where(function ($q) use ($downloadKeywords) {
-                    foreach ($downloadKeywords as $keyword) {
                         $q->orWhere('action', 'like', "%{$keyword}%")
                           ->orWhere('description', 'like', "%{$keyword}%");
                     }
