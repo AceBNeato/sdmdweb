@@ -165,9 +165,11 @@ class ResetPasswordController extends Controller
      * @return array
      */
     protected function validationErrorMessages()
-    {
-        return [];
-    }
+{
+    return [
+        'new_password.confirmed' => 'The new password and confirmation must be the same.',
+    ];
+}
 
     /**
      * Get the password reset credentials from the request.
@@ -255,9 +257,9 @@ class ResetPasswordController extends Controller
      *
      * @return string
      */
-    public function redirectPath()
-    {
-        // After password reset, always go back to login page
-        return route('login');
-    }
+public function redirectPath()
+{
+    // After password reset, always go back to login page
+    return route('login');
+}
 }

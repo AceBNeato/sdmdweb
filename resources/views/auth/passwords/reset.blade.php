@@ -130,7 +130,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('password.update') }}" autocomplete="off">
+            <form method="POST" action="{{ route('password.update') }}" >
                 @csrf
                 <input type="hidden" name="token" value="{{ $token }}">
 
@@ -141,7 +141,7 @@
                         <input type="password" 
                                name="new_password" 
                                required 
-                               autocomplete="off"
+                          
                                class="@error('new_password') border-red-500 @enderror password-input">
                         <span class="password-toggle" data-target="new_password">
                             <i class='bx bx-hide'></i>
@@ -158,7 +158,7 @@
                         <input type="password" 
                                name="new_password_confirmation" 
                                required 
-                               autocomplete="off"
+                         
                                class="@error('new_password') border-red-500 @enderror password-input">
                         <span class="password-toggle" data-target="new_password_confirmation">
                             <i class='bx bx-hide'></i>
@@ -251,6 +251,17 @@
                 if (e.target === modal) {
                     modal.classList.remove('active');
                 }
+            });
+        }
+
+        // Prevent going back in history from this page: if user presses Back,
+        // immediately send them to the login page instead of previous screens.
+        if (window.history && window.history.pushState) {
+            // Push a new state so that the first back triggers popstate.
+            window.history.pushState({ page: 'reset-password-main' }, '', window.location.href);
+
+            window.addEventListener('popstate', function () {
+                window.location.href = '{{ route('login') }}';
             });
         }
     });
