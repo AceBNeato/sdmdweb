@@ -46,6 +46,18 @@
             padding: 30px;
             background: #fff;
         }
+        .otp-code {
+            font-size: 2.5rem;
+            font-weight: bold;
+            letter-spacing: 0.5rem;
+            text-align: center;
+            margin: 25px 0;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e0;
+            color: #2d3748;
+        }
         .button {
             display: inline-block;
             padding: 12px 30px;
@@ -92,6 +104,31 @@
         .mb-4 {
             margin-bottom: 1rem;
         }
+        .steps {
+            margin: 25px 0;
+            padding: 0;
+            list-style: none;
+        }
+        .steps li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+        .steps li:before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #5ae7ff;
+            font-weight: bold;
+        }
+        .note {
+            background: #f7fafc;
+            border-left: 4px solid #5ae7ff;
+            padding: 12px 15px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            border-radius: 0 4px 4px 0;
+        }
     </style>
 </head>
 <body>
@@ -99,24 +136,32 @@
         <div class="header">
             <img src="{{ $message->embed(public_path('images/SDMDlogo.png')) }}" alt="SDMD Logo">
             <h1>SDMD Equipment Management System</h1>
-            <p>Password Reset Request</p>
+            <p>Password Reset Verification</p>
         </div>
 
         <div class="content">
             <p>Hello <strong>{{ $user->name }}</strong>,</p>
             <p>You are receiving this email because we received a password reset request for your SDMD Equipment Management System account.</p>
             
-            <div class="text-center">
-                <a href="{{ $resetUrl }}" class="button">Reset Password</a>
+            <div class="note">
+                <p>Please use the following One-Time Password (OTP) to verify your identity:</p>
+                <div class="otp-code">{{ $otp }}</div>
+                <p class="text-center">This OTP is valid until: <strong>{{ $expiresAt }}</strong></p>
             </div>
 
-            <p class="text-muted">This password reset link will expire in 60 minutes.</p>
-            <p>If you did not request a password reset, you can safely ignore this email.</p>
+            <p>To complete your password reset:</p>
+            <ol class="steps">
+                <li>Return to the password reset page</li>
+                <li>Enter the OTP shown above</li>
+                <li>Create your new password</li>
+            </ol>
+
+            <p class="text-muted">If you didn't request a password reset, please ignore this email or contact support if you have any concerns.</p>
             
             <div class="divider"></div>
             
             <p style="font-size: 12px; color: #a0aec0;">
-                If you're having trouble clicking the "Reset Password" button, copy and paste the URL below into your web browser:
+                Having trouble? You can also click the link below to verify your email:
                 <br>
                 <a href="{{ $resetUrl }}" style="word-break: break-all; color: #5ae7ff;">{{ $resetUrl }}</a>
             </p>
@@ -124,6 +169,7 @@
 
         <div class="footer">
             <p>© {{ date('Y') }} SDMD Equipment Management System. All rights reserved.</p>
+            <p>This is an automated message, please do not reply to this email.</p>
         </div>
     </div>
 </body>

@@ -50,7 +50,6 @@
     <div class="right-section">
         <div class="login-card">
             <h2>Create New Password</h2>
-            <p>Enter your new password below to reset your account access.</p>
             
             @if (session('status'))
                 <div class="mb-4 font-medium text-sm text-green-600">
@@ -62,19 +61,7 @@
                 @csrf
                 <input type="hidden" name="token" value="{{ $token }}">
 
-                <div class="mb-4">
-                    <label>Email</label>
-                    <input type="email" 
-                           name="email" 
-                           value="{{ old('email', $email) }}" 
-                           required 
-                           autofocus
-                           class="@error('email') border-red-500 @enderror">
-                    @error('email')
-                        <p class="error-message">{{ $message }}</p>
-                    @enderror
-                </div>
-
+                <input type="hidden" name="email" value="{{ old('email', $email) }}">
                 <div class="mb-4">
                     <label>New Password</label>
                     <input type="password" 

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\PasswordResetOtp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -19,14 +20,23 @@ class CustomResetPassword extends Notification
     public $token;
 
     /**
+     * The OTP for verification.
+     *
+     * @var string
+     */
+    public $otp;
+
+    /**
      * Create a new notification instance.
      *
      * @param string $token
+     * @param string $otp
      * @return void
      */
-    public function __construct($token)
+    public function __construct($token, $otp = null)
     {
         $this->token = $token;
+        $this->otp = $otp;
     }
 
     /**
@@ -44,16 +54,18 @@ class CustomResetPassword extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $resetUrl = url(route('password.reset', [
+        $resetUrl = url(route('password.verify.otp', [
             'token' => $this->token,
             'email' => $notifiable->getEmailForPasswordReset(),
         ], false));
 
         return (new MailMessage)
-            ->subject('SDMD - Password Reset Request')
+            ->subject('SDMD - Password Reset OTP')
             ->view('emails.password-reset', [
                 'user' => $notifiable,
-                'resetUrl' => $resetUrl
+                'otp' => $this->otp,
+                'resetUrl' => $resetUrl,
+                'expiresAt' => now()->addMinutes(30)->format('M d, Y H:i')
             ]);
     }
 

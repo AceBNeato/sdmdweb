@@ -95,13 +95,32 @@ Route::middleware(['guest'])->group(function () {
 
     // Password Reset
     Route::prefix('password')->group(function () {
+        // Show the forgot password form
         Route::get('forgot', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showLinkRequestForm'])
             ->name('password.request');
+            
+        // Handle the forgot password form submission
         Route::post('email', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])
             ->name('password.email');
-        Route::get('reset/{token}', [\App\Http\Controllers\Auth\AuthController::class, 'showResetPasswordForm'])
+            
+        // Show the OTP verification form
+        Route::get('verify-otp/{token}', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'showVerifyOtpForm'])
+            ->name('password.verify.otp');
+            
+        // Handle OTP verification form submission
+        Route::post('verify-otp', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'verifyOtp'])
+            ->name('password.verify.otp.submit');
+            
+        // Resend OTP
+        Route::post('resend-otp', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'resendOtp'])
+            ->name('password.resend.otp');
+            
+        // Show the reset password form (after OTP verification)
+        Route::get('reset/{token}', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'showResetForm'])
             ->name('password.reset');
-        Route::post('update', [\App\Http\Controllers\Auth\AuthController::class, 'resetPassword'])
+            
+        // Handle the password reset form submission
+        Route::post('reset', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])
             ->name('password.update');
     });
 
