@@ -63,7 +63,7 @@
 
                 <div class="mb-4">
                     <button type="submit" class="login-button">
-                        Send Password Reset Link
+                        Send OTP
                     </button>
                 </div>
             </form>

@@ -40,15 +40,19 @@ class ForgotPasswordController extends Controller
             return back()->with('status', 'If your email exists in our records, you will receive a password reset link.');
         }
 
-        // Generate a password reset token
+        // Generate a password reset token (stored in password_resets table)
         $token = Password::broker()->createToken($user);
         
-        // Generate and store OTP
-        $otpData = PasswordResetOtp::createOtp($user->email);
+        // Generate and store OTP using the SAME token, so the OTP flow and password reset use one token
+        $otpData = PasswordResetOtp::createOtp($user->email, $token);
         
         // Send the password reset notification with OTP
         $user->notify(new CustomResetPassword($otpData['token'], $otpData['otp']));
 
-        return back()->with('status', 'We have emailed your password reset link with OTP!');
+        // Immediately redirect user to the OTP verification page
+        return redirect()->route('password.verify.otp', [
+            'token' => $otpData['token'],
+            'email' => $user->email,
+        ])->with('status', 'We have emailed your password reset OTP. Please enter it below to continue.');
     }
 }
