@@ -2,8 +2,7 @@
 
 @push('styles')
     <link href="{{ asset('css/accounts/accounts.css') }}" rel="stylesheet">
-    <style>
-    </style>
+    <link href="{{ asset('css/accounts/accounts-show.css') }}" rel="stylesheet">
 @endpush
 
 @section('title', auth()->user()->is_admin ? 'SDMD Admin - Accounts' : (auth()->user()->hasRole('technician') ? 'SDMD Technician - Accounts' : (auth()->user()->hasRole('staff') ? 'SDMD Staff - Accounts' : 'SDMD Accounts')))
@@ -144,18 +143,20 @@
                         <td>
                             <div class="btn-group" role="group">
                                 @if(auth()->user()->hasPermissionTo('users.view'))
-                                <a href="{{ route('admin.accounts.show', $user) }}"
-                                   class="btn btn-sm btn-primary"
-                                   title="view">
+                                <button type="button" class="btn btn-sm btn-primary view-user-btn"
+                                        data-user-id="{{ $user->id }}"
+                                        data-url="{{ route('admin.accounts.show', $user) }}"
+                                        title="view">
                                     <i class='bx bx-show-alt'></i>
-                                </a>
+                                </button>
                                 @endif
                                 @if(auth()->user()->hasPermissionTo('users.edit'))
-                                <a href="{{ route('admin.accounts.edit', $user) }}"
-                                   class="btn btn-sm btn-outline-secondary"
-                                   title="edit">
+                                <button type="button" class="btn btn-sm btn-outline-secondary edit-user-btn"
+                                        data-user-id="{{ $user->id }}"
+                                        data-url="{{ route('admin.accounts.edit', ['user' => $user, 'modal' => 1]) }}"
+                                        title="edit">
                                     <i class='bx bx-edit'></i>
-                                </a>
+                                </button>
                                 @endif
                             </div>
                         </td>
@@ -187,6 +188,118 @@
 
 
 @endif
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Handle VIEW button clicks
+    $('.view-user-btn').on('click', function() {
+        var userId = $(this).data('user-id');
+        var url = $(this).data('url');
+        var modal = $('#viewUserModal');
+        var content = $('#viewUserContent');
+
+        // Show loading spinner
+        content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+
+        // Load content via AJAX
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                content.html(response);
+                bindEditButtons();
+            },
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                content.html('<div class="alert alert-danger">Failed to load user details. Error: ' + xhr.status + ' - ' + error + '</div>');
+            }
+        });
+
+        // Show modal
+        if (!modal.parent().is('body')) {
+            modal.appendTo('body');
+        }
+        modal.modal('show');
+    });
+
+    // Handle EDIT button clicks
+    function bindEditButtons() {
+        $('.edit-user-btn').off('click').on('click', function() {
+            var url = $(this).data('url');
+            var modal = $('#editUserModal');
+            var content = $('#editUserContent');
+
+            content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    content.html(response);
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                    content.html('<div class="alert alert-danger">Failed to load edit form. Error: ' + xhr.status + ' - ' + error + '</div>');
+                }
+            });
+
+            if (!modal.parent().is('body')) {
+                modal.appendTo('body');
+            }
+            modal.modal('show');
+        });
+    }
+
+    bindEditButtons();
+});
+</script>
+@endpush
+
+<!-- User View Modal -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewUserModalLabel">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="viewUserContent">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Edit Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="editUserContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 

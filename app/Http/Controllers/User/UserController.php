@@ -376,6 +376,11 @@ class UserController extends Controller
         // Load user relationships
         $user->load(['campus', 'office']);
 
+        if (request()->ajax()) {
+            // Return partial view for modal
+            return view('accounts.show_modal', compact('user'));
+        }
+
         return view('accounts.show', compact('user'));
     }
 
@@ -418,7 +423,13 @@ class UserController extends Controller
         $userRoles = $user->roles->pluck('id')->toArray();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
-        return view('accounts.edit', compact('user', 'roles', 'allPermissions', 'userPermissions', 'offices', 'userRoles', 'campuses'));
+        $viewData = compact('user', 'roles', 'allPermissions', 'userPermissions', 'offices', 'userRoles', 'campuses');
+
+        if (request()->ajax() || request()->wantsJson() || request()->boolean('modal')) {
+            return view('accounts.edit_modal', $viewData);
+        }
+
+        return view('accounts.edit', $viewData);
     }
 
     /**

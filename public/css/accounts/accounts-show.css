@@ -1,3 +1,23 @@
+/* Modal stacking for account view */
+.modal-backdrop,
+.modal-backdrop.show {
+    z-index: 1040 !important;
+}
+
+#viewUserModal,
+#viewUserModal.show,
+#editUserModal,
+#editUserModal.show {
+    z-index: 1055 !important;
+}
+
+#viewProfileModal,
+#viewProfileModal.show,
+#editProfileModal,
+#editProfileModal.show {
+    z-index: 1060 !important;
+}
+
 /* Accounts Show Page Styles */
 .content {
     padding: 1rem;
