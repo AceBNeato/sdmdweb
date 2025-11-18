@@ -279,13 +279,31 @@ document.getElementById('password').addEventListener('input', function() {
 
 // Initialize role cards
 document.addEventListener('DOMContentLoaded', function() {
-    @foreach($roles as $role)
-        const radio{{ $role->id }} = document.getElementById('role-{{ $role->id }}');
-        if (radio{{ $role->id }} && radio{{ $role->id }}.checked) {
-            radio{{ $role->id }}.closest('.role-card').classList.add('selected');
-        }
-    @endforeach
+    updateRoleSelection();
 });
+
+function updateRoleSelection() {
+    document.querySelectorAll('.roles-grid .role-card').forEach(function(card) {
+        card.classList.remove('selected');
+    });
+
+    document.querySelectorAll('.roles-grid input[name="roles"]:checked').forEach(function(radio) {
+        var roleCard = radio.closest('.role-card');
+        if (roleCard) {
+            roleCard.classList.add('selected');
+        }
+    });
+}
+
+function selectRole(roleId) {
+    var radio = document.getElementById('role-' + roleId);
+    if (!radio) {
+        return;
+    }
+
+    radio.checked = true;
+    updateRoleSelection();
+}
 
 // Form validation
 (function () {

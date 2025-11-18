@@ -148,39 +148,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Direct Permissions Section -->
-            <div class="form-section">
-                <h6 class="form-section-title">
-                    <i class='bx bx-key'></i>
-                    Direct Permissions
-                </h6>
-
-                <div class="mb-4">
-                    <div class="permissions-grid">
-                        @foreach($allPermissions as $permission)
-                            <div class="permission-card">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                           name="direct_permissions[]"
-                                           value="{{ $permission->id }}"
-                                           id="permission_{{ $permission->id }}"
-                                           {{ in_array($permission->id, $userPermissions ?? []) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="permission_{{ $permission->id }}">
-                                        {{ $permission->display_name ?? $permission->name }}
-                                    </label>
-                                </div>
-                                @if($permission->description)
-                                    <small class="form-text">{{ $permission->description }}</small>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                    <small class="form-text text-muted">Grant specific permissions directly to this user. These work in addition to role permissions.</small>
-                </div>
-            </div>
-
-            <!-- Roles Section (Only visible to superadmin) -->
+ <!-- Roles Section (Only visible to superadmin) -->
             @if(auth()->user()->is_super_admin)
             <div class="form-section">
                 <h6 class="form-section-title">
@@ -228,6 +196,38 @@
             @endif
 
         </div>
+            <!-- Direct Permissions Section -->
+            <div class="form-section">
+                <h6 class="form-section-title">
+                    <i class='bx bx-key'></i>
+                    Direct Permissions
+                </h6>
+
+                <div class="mb-4">
+                    <div class="permissions-grid">
+                        @foreach($allPermissions as $permission)
+                            <div class="permission-card">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="direct_permissions[]"
+                                           value="{{ $permission->id }}"
+                                           id="permission_{{ $permission->id }}"
+                                           {{ in_array($permission->id, $userPermissions ?? []) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="permission_{{ $permission->id }}">
+                                        {{ $permission->display_name ?? $permission->name }}
+                                    </label>
+                                </div>
+                                @if($permission->description)
+                                    <small class="form-text">{{ $permission->description }}</small>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    <small class="form-text text-muted">Grant specific permissions directly to this user. These work in addition to role permissions.</small>
+                </div>
+            </div>
+
+           
 
         <div class="form-actions d-flex justify-content-end gap-2 border-top p-3">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">

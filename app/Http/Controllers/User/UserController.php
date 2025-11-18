@@ -336,7 +336,7 @@ class UserController extends Controller
     /**
      * Remove the specified user from storage.
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
         // Prevent non-admins from deleting admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
@@ -350,9 +350,25 @@ class UserController extends Controller
                 ->with('error', 'You cannot delete your own account.');
         }
 
+        // Require current password confirmation
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        if (!Hash::check($request->input('password'), auth()->user()->password)) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', 'Password confirmation failed. User was not deleted.');
+        }
+
         try {
-            // Delete the user
-            $user->delete();
+            DB::transaction(function () use ($user) {
+                // Detach related data before permanent deletion
+                $user->roles()->detach();
+                $user->permissions()->detach();
+
+                // Permanently remove the user
+                $user->forceDelete();
+            });
 
             return redirect()->route('admin.accounts.index')
                 ->with('success', 'User deleted successfully.');

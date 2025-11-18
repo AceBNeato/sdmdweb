@@ -123,6 +123,7 @@ class EquipmentController extends Controller
         // }
         
         $validated = $request->validate([
+            'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',
             'serial_number' => 'required|string|max:100|unique:equipment',
             'equipment_type_id' => 'required|exists:equipment_types,id',
@@ -306,6 +307,7 @@ class EquipmentController extends Controller
         // }
 
         $validated = $request->validate([
+            'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',
             'serial_number' => 'required|string|max:100|unique:equipment,serial_number,' . $equipment->id,
             'equipment_type_id' => 'required|integer|exists:equipment_types,id',

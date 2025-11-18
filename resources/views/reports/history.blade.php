@@ -36,8 +36,8 @@
     <!-- Header Actions -->
     <div class="action-buttons">
         <div class="dashboard-actions">
-            <a href="{{ route($prefix . '.equipment.index') }}" class="btn btn-outline-secondary">
-                <i class='bx bx-arrow-back'></i> Back to Equipment
+            <a href="{{ route($prefix . '.reports.index') }}" class="btn btn-outline-secondary">
+                <i class='bx bx-arrow-back'></i> Back to Reports
             </a>
         </div>
 

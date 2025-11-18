@@ -7,7 +7,9 @@
 #viewUserModal,
 #viewUserModal.show,
 #editUserModal,
-#editUserModal.show {
+#editUserModal.show,
+#deleteUserModal,
+#deleteUserModal.show {
     z-index: 1055 !important;
 }
 
@@ -16,6 +18,96 @@
 #editProfileModal,
 #editProfileModal.show {
     z-index: 1060 !important;
+}
+
+.delete-user-modal .modal-dialog {
+    transform: translateY(-10px);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.delete-user-modal.show .modal-dialog {
+    transform: translateY(0);
+}
+
+.delete-user-modal .modal-content {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(220, 53, 69, 0.25);
+    overflow: hidden;
+}
+
+.delete-user-modal .modal-header {
+    padding: 1.75rem 1.75rem 0;
+}
+
+.delete-user-modal .modal-body {
+    padding: 1.5rem 1.75rem;
+}
+
+.delete-user-modal .modal-footer {
+    padding: 0 1.75rem 1.75rem;
+}
+
+.delete-modal-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0.85rem;
+    background: linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.05));
+    border: 1px solid rgba(220,53,69,0.15);
+}
+
+.delete-modal-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    background: rgba(220,53,69,0.15);
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    color: #dc3545;
+}
+
+.delete-modal-copy p {
+    line-height: 1.4;
+}
+
+.delete-password-group .input-group-text {
+    background-color: rgba(220,53,69,0.08);
+    border-right: none;
+    color: #dc3545;
+}
+
+.delete-password-group .form-control {
+    border-left: none;
+    border-right: none;
+}
+
+.delete-password-group .password-toggle {
+    border-left: none;
+}
+
+.delete-password-group .password-toggle i {
+    transition: transform 0.2s ease;
+}
+
+.delete-password-group .password-toggle:hover i {
+    transform: scale(1.05);
+}
+
+.delete-user-modal .btn-danger {
+    box-shadow: 0 10px 30px rgba(220, 53, 69, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.delete-user-modal .btn-danger:disabled {
+    box-shadow: none;
+}
+
+.delete-user-modal .btn-danger:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 34px rgba(220, 53, 69, 0.35);
 }
 
 /* Accounts Show Page Styles */

@@ -158,6 +158,19 @@
                                     <i class='bx bx-edit'></i>
                                 </button>
                                 @endif
+                                @if(auth()->user()->is_super_admin && auth()->id() !== $user->id)
+                                <form action="{{ route('admin.accounts.destroy', $user) }}" method="POST" class="delete-user-form d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <input type="hidden" name="password" class="delete-user-password-input">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary delete-user-btn"
+                                            data-user-name="{{ $user->name }}"
+                                            title="delete">
+                                        <i class='bx bx-trash'></i>
+                                    </button>
+                                </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -212,6 +225,7 @@ $(document).ready(function() {
             success: function(response) {
                 content.html(response);
                 bindEditButtons();
+                bindDeleteButtons();
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
@@ -257,7 +271,81 @@ $(document).ready(function() {
         });
     }
 
+    var deleteModal = $('#deleteUserModal');
+    var deleteUserName = $('#deleteUserName');
+    var deleteUserPasswordInput = $('#deleteUserPassword');
+    var deleteUserError = $('#deleteUserError');
+    var currentDeleteForm = null;
+    var deletePasswordToggle = $('#deleteUserPasswordToggle');
+    var deletePasswordIcon = deletePasswordToggle.find('i');
+    var deleteSubmitButton = $('#confirmDeleteUserBtn');
+    var deleteSubmitSpinner = $('#deleteUserLoadingSpinner');
+    var deleteSubmitLabel = deleteSubmitButton.find('.btn-label');
+
+    function bindDeleteButtons() {
+        $('.delete-user-btn').off('click').on('click', function() {
+            currentDeleteForm = $(this).closest('form');
+            var userName = $(this).data('user-name');
+
+            deleteUserName.text(userName);
+            deleteUserPasswordInput.val('');
+            deleteUserError.addClass('d-none').text('');
+
+            if (!deleteModal.parent().is('body')) {
+                deleteModal.appendTo('body');
+            }
+
+            deleteModal.modal('show');
+        });
+    }
+
+    $('#confirmDeleteUserBtn').on('click', function() {
+        if (!currentDeleteForm) {
+            return;
+        }
+
+        var passwordVal = deleteUserPasswordInput.val().trim();
+
+        if (!passwordVal.length) {
+            deleteUserError.removeClass('d-none').text('Please enter your password to confirm deletion.');
+            deleteUserPasswordInput.trigger('focus');
+            return;
+        }
+
+        deleteSubmitButton.prop('disabled', true);
+        deleteSubmitSpinner.removeClass('d-none');
+        deleteSubmitLabel.addClass('visually-hidden');
+
+        currentDeleteForm.find('.delete-user-password-input').val(passwordVal);
+        deleteModal.modal('hide');
+        currentDeleteForm.trigger('submit');
+    });
+
+    deleteModal.on('shown.bs.modal', function() {
+        deleteUserPasswordInput.trigger('focus');
+    });
+
+    deleteModal.on('hidden.bs.modal', function() {
+        deleteUserPasswordInput.val('');
+        deleteUserError.addClass('d-none').text('');
+        currentDeleteForm = null;
+        deleteSubmitSpinner.addClass('d-none');
+        deleteSubmitLabel.removeClass('visually-hidden');
+        deleteSubmitButton.prop('disabled', false);
+        deleteUserPasswordInput.attr('type', 'password');
+        deletePasswordIcon.removeClass('bx-hide').addClass('bx-show-alt');
+    });
+
+    deletePasswordToggle.on('click', function() {
+        var isPassword = deleteUserPasswordInput.attr('type') === 'password';
+        deleteUserPasswordInput.attr('type', isPassword ? 'text' : 'password');
+        deletePasswordIcon.toggleClass('bx-show-alt', !isPassword);
+        deletePasswordIcon.toggleClass('bx-hide', isPassword);
+        deleteUserPasswordInput.trigger('focus');
+    });
+
     bindEditButtons();
+    bindDeleteButtons();
 });
 </script>
 @endpush
@@ -296,6 +384,52 @@ $(document).ready(function() {
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Confirmation Modal -->
+<div class="modal fade delete-user-modal" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <span class="badge rounded-pill bg-danger-subtle text-danger fw-semibold mb-2"><i class='bx bx-error-circle me-1'></i> High Risk Action</span>
+                    <h5 class="modal-title text-danger fw-bold mb-1" id="deleteUserModalLabel">Confirm User Deletion</h5>
+                    <p class="modal-subtitle text-muted mb-0">Please review the details carefully before proceeding.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-modal-alert mb-4">
+                    <div class="delete-modal-icon">
+                        <i class='bx bx-user-x'></i>
+                    </div>
+                    <div class="delete-modal-copy">
+                        <p class="fw-semibold mb-1">You are about to permanently delete <strong id="deleteUserName"></strong>.</p>
+                        <p class="text-muted mb-0">This will revoke all access and remove associated records that depend on this account. This action cannot be undone.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger d-none" id="deleteUserError" role="alert"></div>
+
+                <label for="deleteUserPassword" class="form-label fw-semibold">Enter your password to confirm</label>
+                <div class="input-group delete-password-group mb-2">
+                    <span class="input-group-text"><i class='bx bx-lock-alt'></i></span>
+                    <input type="password" class="form-control delete-password-input" id="deleteUserPassword" placeholder="Current password" autocomplete="current-password">
+                    <button type="button" class="btn btn-outline-secondary password-toggle" id="deleteUserPasswordToggle" aria-label="Toggle password visibility">
+                        <i class='bx bx-show-alt'></i>
+                    </button>
+                </div>
+                <p class="text-muted small mb-0">For security reasons, only super administrators who confirm their password can delete user accounts.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger d-flex align-items-center gap-2" id="confirmDeleteUserBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="deleteUserLoadingSpinner" role="status" aria-hidden="true"></span>
+                    <span class="btn-label"><i class='bx bx-trash'></i> Delete User</span>
+                </button>
             </div>
         </div>
     </div>
