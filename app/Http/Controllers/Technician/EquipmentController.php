@@ -631,38 +631,82 @@ class EquipmentController extends BaseController
             if (strpos($qrData, '{') === 0 || strpos($qrData, '"id"') !== false) {
                 $parsedData = json_decode($qrData, true);
 
-                if (!$parsedData || !isset($parsedData['id'])) {
+                if (!$parsedData) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Invalid QR code format'
                     ], 400);
                 }
 
-                $equipment = Equipment::with('office')
-                    ->find($parsedData['id']);
+                // Handle equipment_url type (current format used by technicians)
+                if (isset($parsedData['type']) && $parsedData['type'] === 'equipment_url') {
+                    if (!isset($parsedData['equipment_id'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Invalid QR code format - missing equipment_id'
+                        ], 400);
+                    }
 
-                if (!$equipment) {
+                    $equipment = Equipment::with('office')
+                        ->find($parsedData['equipment_id']);
+
+                    if (!$equipment) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Equipment not found'
+                        ], 404);
+                    }
+
                     return response()->json([
-                        'success' => false,
-                        'message' => 'Equipment not found'
-                    ], 404);
+                        'success' => true,
+                        'equipment' => [
+                            'id' => $equipment->id,
+                            'model_number' => $equipment->model_number,
+                            'serial_number' => $equipment->serial_number,
+                            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
+                            'status' => $equipment->status,
+                            'condition' => $equipment->condition,
+                            'location' => $equipment->location,
+                            'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                            'qr_code' => $equipment->qr_code,
+                            'qr_code_image_path' => $equipment->qr_code_image_path,
+                        ]
+                    ]);
+                }
+
+                // Handle direct id field (legacy format)
+                if (isset($parsedData['id'])) {
+                    $equipment = Equipment::with('office')
+                        ->find($parsedData['id']);
+
+                    if (!$equipment) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Equipment not found'
+                        ], 404);
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'equipment' => [
+                            'id' => $equipment->id,
+                            'model_number' => $equipment->model_number,
+                            'serial_number' => $equipment->serial_number,
+                            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
+                            'status' => $equipment->status,
+                            'condition' => $equipment->condition,
+                            'location' => $equipment->location,
+                            'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                            'qr_code' => $equipment->qr_code,
+                            'qr_code_image_path' => $equipment->qr_code_image_path,
+                        ]
+                    ]);
                 }
 
                 return response()->json([
-                    'success' => true,
-                    'equipment' => [
-                        'id' => $equipment->id,
-                        'model_number' => $equipment->model_number,
-                        'serial_number' => $equipment->serial_number,
-                        'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
-                        'status' => $equipment->status,
-                        'condition' => $equipment->condition,
-                        'location' => $equipment->location,
-                        'office' => $equipment->office ? $equipment->office->name : 'N/A',
-                        'qr_code' => $equipment->qr_code,
-                        'qr_code_image_path' => $equipment->qr_code_image_path,
-                    ]
-                ]);
+                    'success' => false,
+                    'message' => 'Invalid QR code format - unsupported JSON structure'
+                ], 400);
             }
 
             // Handle URL format (legacy support)
@@ -720,6 +764,44 @@ class EquipmentController extends BaseController
         $request->validate([
             'qr_data' => 'required|string',
         ]);
+
+        $qrData = $request->qr_data;
+
+        // Check if QR data is a URL with query parameters
+        if (is_string($qrData) && strpos($qrData, '?') !== false) {
+            // Parse URL query parameters
+            $parsedUrl = parse_url($qrData);
+            if (isset($parsedUrl['query'])) {
+                parse_str($parsedUrl['query'], $queryParams);
+                if (isset($queryParams['id'])) {
+                    $equipment = Equipment::with('office')
+                        ->find($queryParams['id']);
+
+                    if (!$equipment) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Equipment not found'
+                        ], 404);
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'equipment' => [
+                            'id' => $equipment->id,
+                            'model_number' => $equipment->model_number,
+                            'serial_number' => $equipment->serial_number,
+                            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
+                            'status' => $equipment->status,
+                            'condition' => $equipment->condition,
+                            'location' => $equipment->location,
+                            'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                            'qr_code' => $equipment->qr_code,
+                            'qr_code_image_path' => $equipment->qr_code_image_path,
+                        ]
+                    ]);
+                }
+            }
+        }
 
         return $this->processQrData($request->qr_data);
     }

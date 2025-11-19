@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Models\PasswordResetOtp;
 use App\Models\User;
 use App\Http\Controllers\Controller;
+use App\Notifications\CustomResetPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -73,6 +74,40 @@ class ResetPasswordController extends Controller
         $request->session()->put('password_reset_email', $request->email);
 
         return redirect()->route('password.reset', ['token' => $token, 'email' => $request->email]);
+    }
+
+    /**
+     * Resend the OTP for password reset
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function resendOtp(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            return back()->with('error', 'User not found.');
+        }
+
+        // Delete existing OTPs for this email
+        PasswordResetOtp::deleteForEmail($request->email);
+
+        // Generate a new password reset token
+        $token = Password::broker()->createToken($user);
+        
+        // Generate and store new OTP
+        $otpData = PasswordResetOtp::createOtp($user->email, $token);
+        
+        // Send the password reset notification with new OTP
+        $user->notify(new CustomResetPassword($otpData['token'], $otpData['otp']));
+
+        return back()->with('status', 'A new OTP has been sent to your email.');
     }
 
     /**

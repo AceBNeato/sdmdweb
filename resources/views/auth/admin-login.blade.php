@@ -18,6 +18,8 @@
 </head>
 
 <body>
+<div id="particles-js"></div>
+<div class="gradient-overlay"></div>
 <div class="container">
     <!-- Left Section (Image + Text) -->
     <div class="left-section">
@@ -109,6 +111,33 @@ window.loginData = {
     lockout: {{ session('lockout', false) ? 'true' : 'false' }},
     remaining_seconds: {{ session()->has('remaining_seconds') ? session('remaining_seconds') : 'null' }}
 };
+</script>
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script>
+particlesJS('particles-js', {
+  particles: {
+    number: { value: 80, density: { enable: true, value_area: 800 } },
+    color: { value: "#ffffff" },
+    shape: { type: "circle" },
+    opacity: { value: 0.5, random: true },
+    size: { value: 3, random: true },
+    line_linked: {
+      enable: true,
+      distance: 150,
+      color: "#ffffff",
+      opacity: 0.5,
+      width: 1
+    },
+    move: { enable: true, speed: 2, direction: "none", random: true }
+  },
+  interactivity: {
+    detect_on: "canvas",
+    events: {
+      onhover: { enable: true, mode: "repulse" },
+      onclick: { enable: true, mode: "push" }
+    }
+  }
+});
 </script>
 <script src="{{ asset('js/login.js') }}"></script>
 

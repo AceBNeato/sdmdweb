@@ -13,7 +13,7 @@ function showToast(message, type = 'success') {
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
         <div class="toast-content">
-            <i class="bx bx-${type === 'success' ? 'check-circle' : 'error-circle'}"></i>
+            <i class="bx bx-${type === 'success' ? 'check-circle' : type === 'error' ? 'error-circle' : 'info-circle'}"></i>
             <span>${message}</span>
         </div>
         <button class="toast-close" onclick="this.parentElement.remove()">
@@ -200,8 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.sessionMessages.error) {
             showToast(window.sessionMessages.error, 'error');
         }
-        if (window.sessionMessages.warning) {
-            showToast(window.sessionMessages.warning, 'warning');
+        if (window.sessionMessages.info) {
+            showToast(window.sessionMessages.info, 'info');
         }
     }
 });

@@ -258,19 +258,20 @@
     <!-- Back Button Prevention and Authentication Script -->
     <script>
         // Set global authentication variables for external scripts
-        window.isAuthenticated = @json($isAuthenticated);
-        window.loginUrl = @json(url('/login'));
+        window.isAuthenticated = {!! json_encode($isAuthenticated) !!};
+        window.loginUrl = {!! json_encode(url('/login')) !!};
     </script>
     <script src="{{ asset('js/auth-prevention.js') }}"></script>
 
     <!-- Toast Notification System -->
     <script>
         // Set global session messages for toast system
-        window.sessionMessages = @json([
+        window.sessionMessages = {!! json_encode([
             'success' => session('success'),
             'error' => session('error'),
-            'warning' => session('warning')
-        ]);
+            'warning' => session('warning'),
+            'info' => session('info')
+        ]) !!};
     </script>
     <script src="{{ asset('js/toast-system.js') }}"></script>
     <script src="{{ asset('js/ui-functionality.js') }}"></script>
@@ -278,7 +279,7 @@
     @if($isAuthenticated)
         <script>
             // Pass session data to JavaScript
-            window.sessionData = @json($sessionData);
+            window.sessionData = {!! json_encode($sessionData) !!};
         </script>
         <script src="{{ asset('js/session-lock.js') }}"></script>
     @endif

@@ -94,7 +94,7 @@
                     <div class="form-group">
                         <label for="password">New Password</label>
                         <input type="password" class="form-control @error('password') is-invalid @enderror"
-                               id="password" name="password"
+                               id="password" name="password" autocomplete="new-password"
                                placeholder="Enter new password (leave blank to keep current)">
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -113,7 +113,7 @@
                     <div class="form-group">
                         <label for="password_confirmation">Confirm New Password</label>
                         <input type="password" class="form-control"
-                               id="password_confirmation" name="password_confirmation"
+                               id="password_confirmation" name="password_confirmation" autocomplete="new-password"
                                placeholder="Confirm new password">
                     </div>
                 </div>
@@ -212,7 +212,7 @@
                                            name="direct_permissions[]"
                                            value="{{ $permission->id }}"
                                            id="permission_{{ $permission->id }}"
-                                           {{ in_array($permission->id, $userPermissions ?? []) ? 'checked' : '' }}>
+                                           {{ in_array($permission->id, $directPermissions ?? []) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="permission_{{ $permission->id }}">
                                         {{ $permission->display_name ?? $permission->name }}
                                     </label>
@@ -223,7 +223,17 @@
                             </div>
                         @endforeach
                     </div>
-                    <small class="form-text text-muted">Grant specific permissions directly to this user. These work in addition to role permissions.</small>
+                    <small class="form-text text-muted">
+                        <strong>Direct Permissions are independent</strong> - they allow fine-tuning user access beyond role templates.<br>
+                        Use cases:
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li><strong>Exceptions</strong>: Grant specific access not in their role (e.g., staff member needs equipment approval)</li>
+                            <li><strong>Restrictions</strong>: Remove specific permissions from a role (e.g., technician can't delete records)</li>
+                            <li><strong>Temporary Access</strong>: Grant time-limited permissions without role changes</li>
+                            <li><strong>Testing</strong>: Try permissions before committing to role changes</li>
+                        </ul>
+                        <strong>Note:</strong> Changing roles resets direct permissions to match the new role's baseline.
+                    </small>
                 </div>
             </div>
 
@@ -239,3 +249,139 @@
         </div>
     </form>
 </div>
+
+<script>
+// Role permissions data
+const rolePermissions = {
+    @foreach($roles as $role)
+        '{{ $role->id }}': [{{ $role->permissions->pluck('id')->join(',') }}],
+    @endforeach
+};
+
+// Password strength checker
+const passwordField = document.getElementById('password');
+if (passwordField) {
+    passwordField.addEventListener('input', function() {
+        const password = this.value;
+        const strengthDiv = document.getElementById('password-strength');
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthText = document.getElementById('strength-text');
+
+        if (password.length === 0) {
+            strengthDiv.style.display = 'none';
+            return;
+        }
+
+        strengthDiv.style.display = 'block';
+
+        // Calculate strength
+        let strength = 0;
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[a-z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 15;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 10;
+
+        // Update UI
+        strengthBar.className = 'strength-bar';
+        if (strength < 30) {
+            strengthBar.classList.add('strength-weak');
+            strengthText.textContent = 'Password strength: Weak';
+        } else if (strength < 60) {
+            strengthBar.classList.add('strength-fair');
+            strengthText.textContent = 'Password strength: Fair';
+        } else if (strength < 90) {
+            strengthBar.classList.add('strength-good');
+            strengthText.textContent = 'Password strength: Good';
+        } else {
+            strengthBar.classList.add('strength-strong');
+            strengthText.textContent = 'Password strength: Strong';
+        }
+    });
+}
+
+// Initialize role cards
+updateRoleSelection();
+
+// Clear manual overrides on initialization
+resetManualOverrides();
+
+// Initialize direct permissions based on selected role
+const initialSelectedRole = document.querySelector('.roles-grid input[name="roles"]:checked');
+if (initialSelectedRole) {
+    updateDirectPermissionsForRole(initialSelectedRole.value);
+}
+
+function updateRoleSelection() {
+    document.querySelectorAll('.roles-grid .role-card').forEach(function(card) {
+        card.classList.remove('selected');
+    });
+
+    document.querySelectorAll('.roles-grid input[name="roles"]:checked').forEach(function(radio) {
+        var roleCard = radio.closest('.role-card');
+        if (roleCard) {
+            roleCard.classList.add('selected');
+        }
+    });
+}
+
+function selectRole(roleId) {
+    var radio = document.getElementById('role_' + roleId);
+    if (!radio) {
+        return;
+    }
+
+    radio.checked = true;
+    updateRoleSelection();
+
+    // Clear manual override flags when role changes so new role permissions can be suggested
+    resetManualOverrides();
+
+    // Update direct permissions based on selected role
+    updateDirectPermissionsForRole(roleId);
+}
+
+function resetManualOverrides() {
+    // Clear all manual override flags when role changes
+    document.querySelectorAll('.permissions-grid input[name="direct_permissions[]"]').forEach(function(checkbox) {
+        checkbox.removeAttribute('data-manually-unchecked');
+    });
+}
+
+function updateDirectPermissionsForRole(roleId) {
+    // Get the permissions for this role
+    const rolePerms = rolePermissions[roleId] || [];
+
+    // Reset all direct permissions to unchecked first
+    document.querySelectorAll('.permissions-grid input[name="direct_permissions[]"]').forEach(function(checkbox) {
+        checkbox.checked = false;
+        checkbox.removeAttribute('data-manually-unchecked');
+        checkbox.removeAttribute('data-role-suggested');
+    });
+
+    // Check the permissions that belong to this role
+    rolePerms.forEach(function(permId) {
+        const checkbox = document.getElementById('permission_' + permId);
+        if (checkbox) {
+            checkbox.checked = true;
+            checkbox.setAttribute('data-role-suggested', 'true');
+        }
+    });
+}
+
+// Track manual permission changes
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to permission checkboxes to track manual changes
+    document.querySelectorAll('.permissions-grid input[name="direct_permissions[]"]').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            if (!this.checked) {
+                // Mark as manually unchecked
+                this.setAttribute('data-manually-unchecked', 'true');
+            } else {
+                // Remove manual override when checked
+                this.removeAttribute('data-manually-unchecked');
+            }
+        });
+    });
+});
+</script>

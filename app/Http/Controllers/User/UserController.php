@@ -9,6 +9,7 @@ use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use App\Services\StoredProcedureService;
 use App\Services\EmailService;
 use Illuminate\Support\Str;
@@ -48,6 +49,11 @@ class UserController extends Controller
             ->whereDoesntHave('roles', function($q) {
                 $q->where('name', 'super-admin');
             });
+
+        // Restrict staff users to only see users from their own office
+        if (auth()->user()->hasRole('staff') && auth()->user()->office_id) {
+            $usersQuery->where('office_id', auth()->user()->office_id);
+        }
 
         // Apply search filter
         if ($search) {
@@ -109,6 +115,18 @@ class UserController extends Controller
         // Get filter options
         $campuses = \App\Models\Campus::where('is_active', true)->orderBy('name')->get();
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
+
+        // For staff users, restrict filter options to their campus/office
+        if (auth()->user()->hasRole('staff')) {
+            if (auth()->user()->campus_id) {
+                $campuses = $campuses->where('id', auth()->user()->campus_id);
+                $offices = $offices->where('campus_id', auth()->user()->campus_id);
+            }
+            if (auth()->user()->office_id) {
+                $offices = $offices->where('id', auth()->user()->office_id);
+            }
+        }
+
         $roles = Role::when(!auth()->user()->is_admin, function($query) {
                 // Non-admin users can only filter by non-admin roles
                 return $query->where('name', '!=', 'admin');
@@ -134,6 +152,17 @@ class UserController extends Controller
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
+        // For staff users, restrict office options to their campus/office
+        if (auth()->user()->hasRole('staff')) {
+            if (auth()->user()->campus_id) {
+                $campuses = $campuses->where('id', auth()->user()->campus_id);
+                $offices = $offices->where('campus_id', auth()->user()->campus_id);
+            }
+            if (auth()->user()->office_id) {
+                $offices = $offices->where('id', auth()->user()->office_id);
+            }
+        }
+
         return view('accounts.form', compact('roles', 'offices', 'campuses'));
     }
 
@@ -152,6 +181,23 @@ class UserController extends Controller
             'office_id' => 'required|exists:offices,id',
             'roles' => 'required|exists:roles,id',
         ]);
+
+        // For staff users, validate that the selected office is within their campus/office
+        if (auth()->user()->hasRole('staff')) {
+            $selectedOffice = \App\Models\Office::find($validated['office_id']);
+            if ($selectedOffice) {
+                if (auth()->user()->campus_id && $selectedOffice->campus_id !== auth()->user()->campus_id) {
+                    return redirect()->back()
+                        ->with('error', 'You can only create users within your campus.')
+                        ->withInput();
+                }
+                if (auth()->user()->office_id && $selectedOffice->id !== auth()->user()->office_id) {
+                    return redirect()->back()
+                        ->with('error', 'You can only create users within your office.')
+                        ->withInput();
+                }
+            }
+        }
 
         // Prevent non-admins from assigning admin role
         if (!auth()->user()->is_admin) {
@@ -294,7 +340,27 @@ class UserController extends Controller
         }
 
         // Update user roles
+        // Log role change
+        $oldRole = $user->roles->first();
+        $newRole = Role::find($validated['roles']);
+
+        \Illuminate\Support\Facades\Log::info('User role updated via updateRoles method', [
+            'admin_user_id' => auth()->id(),
+            'admin_user_email' => auth()->user()->email,
+            'affected_user_id' => $user->id,
+            'affected_user_email' => $user->email,
+            'old_role_id' => $oldRole ? $oldRole->id : null,
+            'old_role_name' => $oldRole ? $oldRole->name : 'none',
+            'new_role_id' => $newRole ? $newRole->id : null,
+            'new_role_name' => $newRole ? $newRole->name : 'none',
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent()
+        ]);
+
         $user->roles()->sync([$validated['roles']]);
+
+        // Force logout if this user is currently logged in
+        $this->forceUserLogout($user);
 
         // Update direct permissions if provided
         if (isset($validated['direct_permissions'])) {
@@ -330,7 +396,7 @@ class UserController extends Controller
         }
 
         return redirect()->route('admin.accounts.index')
-            ->with('success', 'User roles and permissions updated successfully.');
+            ->with('success', 'User roles and permissions updated successfully. User has been automatically logged out for security.');
     }
 
     /**
@@ -389,6 +455,11 @@ class UserController extends Controller
             abort(403, 'You do not have permission to view this user.');
         }
 
+        // Prevent staff users from viewing users outside their office
+        if (auth()->user()->hasRole('staff') && auth()->user()->office_id && $user->office_id !== auth()->user()->office_id) {
+            abort(403, 'You can only view users within your office.');
+        }
+
         // Load user relationships
         $user->load(['campus', 'office']);
 
@@ -411,6 +482,12 @@ class UserController extends Controller
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
+        // Prevent staff users from editing users outside their office
+        if (auth()->user()->hasRole('staff') && auth()->user()->office_id && $user->office_id !== auth()->user()->office_id) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', 'You can only edit users within your office.');
+        }
+
         // Load relationships
         $user->load(['campus', 'office']);
 
@@ -426,7 +503,7 @@ class UserController extends Controller
         $allPermissions = Permission::orderBy('group')
             ->orderBy('name')
             ->get();
-            
+
         // Get effective permissions (what the user can actually do)
         $userPermissions = [];
         foreach ($allPermissions as $permission) {
@@ -435,11 +512,25 @@ class UserController extends Controller
             }
         }
 
+        // Get direct permissions only (permissions assigned directly to user)
+        $directPermissions = $user->permissions->where('pivot.is_active', true)->pluck('id')->toArray();
+
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
         $userRoles = $user->roles->pluck('id')->toArray();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
-        $viewData = compact('user', 'roles', 'allPermissions', 'userPermissions', 'offices', 'userRoles', 'campuses');
+        // For staff users, restrict office options to their campus/office
+        if (auth()->user()->hasRole('staff')) {
+            if (auth()->user()->campus_id) {
+                $campuses = $campuses->where('id', auth()->user()->campus_id);
+                $offices = $offices->where('campus_id', auth()->user()->campus_id);
+            }
+            if (auth()->user()->office_id) {
+                $offices = $offices->where('id', auth()->user()->office_id);
+            }
+        }
+
+        $viewData = compact('user', 'roles', 'allPermissions', 'userPermissions', 'directPermissions', 'offices', 'userRoles', 'campuses');
 
         if (request()->ajax() || request()->wantsJson() || request()->boolean('modal')) {
             return view('accounts.edit_modal', $viewData);
@@ -459,6 +550,12 @@ class UserController extends Controller
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
+        // Prevent staff users from updating users outside their office
+        if (auth()->user()->hasRole('staff') && auth()->user()->office_id && $user->office_id !== auth()->user()->office_id) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', 'You can only update users within your office.');
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -471,6 +568,23 @@ class UserController extends Controller
             'direct_permissions' => 'nullable|array',
             'direct_permissions.*' => 'exists:permissions,id',
         ]);
+
+        // For staff users, validate that the selected office is within their campus/office
+        if (auth()->user()->hasRole('staff')) {
+            $selectedOffice = \App\Models\Office::find($validated['office_id']);
+            if ($selectedOffice) {
+                if (auth()->user()->campus_id && $selectedOffice->campus_id !== auth()->user()->campus_id) {
+                    return redirect()->back()
+                        ->with('error', 'You can only assign users to offices within your campus.')
+                        ->withInput();
+                }
+                if (auth()->user()->office_id && $selectedOffice->id !== auth()->user()->office_id) {
+                    return redirect()->back()
+                        ->with('error', 'You can only assign users to your office.')
+                        ->withInput();
+                }
+            }
+        }
 
         // Get the office and derive campus_id
         $office = \App\Models\Office::find($validated['office_id']);
@@ -493,6 +607,7 @@ class UserController extends Controller
         }
 
         // Update roles if provided and user is superadmin
+        $roleChanged = false;
         if (isset($validated['roles']) && auth()->user()->is_super_admin) {
             // Prevent non-admins from assigning admin role
             if (!auth()->user()->is_super_admin) {
@@ -512,7 +627,33 @@ class UserController extends Controller
             $isBeingAssignedTechnician = $technicianRole && $validated['roles'] == $technicianRole->id;
             $currentlyHasTechnicianRole = $user->hasRole('technician');
 
+            // Check if role actually changed
+            $currentRoleId = $user->roles->first()?->id;
+            $roleChanged = $currentRoleId != $validated['roles'];
+
+            // Log role change
+            $oldRole = $user->roles->first();
+            $newRole = Role::find($validated['roles']);
+
+            \Illuminate\Support\Facades\Log::info('User role updated', [
+                'admin_user_id' => auth()->id(),
+                'admin_user_email' => auth()->user()->email,
+                'affected_user_id' => $user->id,
+                'affected_user_email' => $user->email,
+                'old_role_id' => $oldRole ? $oldRole->id : null,
+                'old_role_name' => $oldRole ? $oldRole->name : 'none',
+                'new_role_id' => $newRole ? $newRole->id : null,
+                'new_role_name' => $newRole ? $newRole->name : 'none',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
+            ]);
+
             $user->roles()->sync([$validated['roles']]);
+
+            // Force logout if this user is currently logged in and role changed
+            if ($roleChanged) {
+                $this->forceUserLogout($user);
+            }
         }
 
         // Handle direct permissions if provided
@@ -564,9 +705,36 @@ class UserController extends Controller
             ]);
         }
 
+        $message = 'User updated successfully.';
+        if ($roleChanged) {
+            $message .= ' User has been automatically logged out due to role change for security.';
+        }
+
         return redirect()->route('admin.accounts.index')
-            ->with('success', 'User updated successfully.');
+            ->with('success', $message);
     }
+
+    /**
+     * Force logout a user from all guards if they are currently logged in
+     */
+    private function forceUserLogout(User $user)
+    {
+        $guards = ['web', 'admin', 'technician', 'staff'];
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check() && Auth::guard($guard)->id() === $user->id) {
+                Auth::guard($guard)->logout();
+
+                // Invalidate all sessions for this user to ensure complete logout
+                DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->delete();
+
+                break; // No need to check other guards once we find and logout the user
+            }
+        }
+    }
+
     /**
      * Toggle the active status of a user.
      */

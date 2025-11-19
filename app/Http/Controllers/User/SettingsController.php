@@ -4,11 +4,18 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\BackupService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class SettingsController extends Controller
 {
+    protected BackupService $backupService;
+
+    public function __construct(BackupService $backupService)
+    {
+        $this->backupService = $backupService;
+    }
+
     public function index()
     {
         $settings = [
@@ -16,20 +23,29 @@ class SettingsController extends Controller
             'session_lockout_minutes' => Setting::getValue('session_lockout_minutes', Setting::getSessionTimeoutMinutes()),
         ];
 
-        return view('settings.index', compact('settings'));
+        $backupSettings = Setting::getBackupSettings();
+        $backups = $this->backupService->listBackups();
+
+        return view('settings.index', compact('settings', 'backupSettings', 'backups'));
     }
 
     public function update(Request $request)
     {
         $request->validate([
             'session_lockout_minutes' => 'required|integer|min:1|max:60',
+            'backup_auto_time' => 'nullable|date_format:H:i',
+            'backup_auto_days' => 'nullable|array',
+            'backup_auto_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
         ]);
 
         Setting::setValue('session_lockout_minutes', $request->session_lockout_minutes, 'integer', 'Session lockout in minutes for screen lock');
 
-        // Clear any cached settings
-        Cache::forget('settings.session_lockout_minutes');
+        $enabled = $request->boolean('backup_auto_enabled');
+        $time = $request->input('backup_auto_time', '02:00');
+        $days = array_map('strtolower', (array) $request->input('backup_auto_days', []));
 
-        return back()->with('success', 'Settings updated successfully!');
+        Setting::setBackupSettings($enabled, $time, $days);
+
+        return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
     }
 }

@@ -238,9 +238,9 @@ Route::middleware(['auth:technician'])
             Route::get('/scan', [\App\Http\Controllers\Technician\EquipmentController::class, 'scanView'])
                 ->name('equipment.scan.view');
             Route::post('/scan', [\App\Http\Controllers\Technician\EquipmentController::class, 'scanQrCode'])
-                ->name('equipment.scan')->middleware('permission:equipment.view');
+                ->name('equipment.scan');
             Route::post('/decode-qr', [\App\Http\Controllers\Technician\EquipmentController::class, 'decodeQrCode'])
-                ->name('equipment.decode-qr')->middleware('permission:equipment.view');
+                ->name('equipment.decode-qr');
             
             // QR Code routes
             Route::prefix('{equipment}')->group(function () {
@@ -638,18 +638,14 @@ Route::middleware(['auth'])
 
             // Settings
             Route::prefix('settings')->name('settings.')->middleware('permission:settings.manage')->group(function () {
-                Route::get('/', function() {
-                    $settings = [
-                        'session_lockout_minutes' => \App\Models\Setting::getSessionLockoutMinutes(),
-                    ];
-                    return view('settings.index', compact('settings'));
-                })->name('index');
+                Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'index'])->name('index');
                 Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'update'])->name('update');
             });
 
             // Database Backup & Restore (Super Admin Only)
             Route::prefix('backup')->name('backup.')->middleware('auth')->group(function () {
                 Route::get('/', [BackupController::class, 'index'])->name('index');
+                Route::get('/list', [BackupController::class, 'list'])->name('list');
                 Route::post('/create', [BackupController::class, 'backup'])->name('create');
                 Route::post('/restore', [BackupController::class, 'restore'])->name('restore');
                 Route::get('/download/{filename}', [BackupController::class, 'download'])->name('download');

@@ -41,6 +41,10 @@
     border-left-color: #ffc107;
 }
 
+.toast-info {
+    border-left-color: #17a2b8;
+}
+
 .toast-content {
     display: flex;
     align-items: center;
@@ -64,6 +68,10 @@
 
 .toast-warning .toast-content i {
     color: #ffc107;
+}
+
+.toast-info .toast-content i {
+    color: #17a2b8;
 }
 
 .toast-content span {

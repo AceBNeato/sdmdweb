@@ -23,7 +23,7 @@ return new class extends Migration
         // Insert default session timeout setting
         DB::table('settings')->insert([
             'key' => 'session_timeout_minutes',
-            'value' => '1',
+            'value' => '5',
             'type' => 'integer',
             'description' => 'Session timeout in minutes for inactivity',
             'created_at' => now(),

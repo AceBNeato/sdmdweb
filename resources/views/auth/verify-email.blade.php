@@ -1,29 +1,93 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Email Verification - {{ config('app.name', 'SDMD Equipment Management') }}</title>
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-    <!-- Scripts -->
+    <!-- Cache Prevention Headers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, no-transform, private">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Email Verification - SDMD Equipment Management System</title>
+    <link rel="icon" href="{{ asset('images/SDMDlogo.png') }}" sizes="any">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons/css/boxicons.min.css" rel="stylesheet" />
+    <link href="{{ asset('css/login.css') }}" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="antialiased">
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-        <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
-            <!-- Logo -->
-            <div class="text-center mb-6">
-                <img src="{{ asset('images/SDMDlogo.png') }}" alt="SDMD Logo" class="mx-auto h-16 w-auto">
-                <h2 class="mt-4 text-2xl font-bold text-gray-900">SDMD Equipment Management</h2>
-            </div>
+    <style>
+        .forgot-password-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .forgot-password-link a {
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .forgot-password-link a:hover {
+            text-decoration: underline;
+        }
 
-            <div class="mb-4 text-sm text-gray-600">
-                {{ __('Before proceeding, please check your email for a verification link.') }}
-            </div>
+        /* Full-screen loading modal when resending verification */
+        .loading-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .loading-backdrop.active {
+            display: flex;
+        }
+
+        .loading-card {
+            background: #ffffff;
+            padding: 1.5rem 2rem;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.25);
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            border: 3px solid rgba(37, 99, 235, 0.2);
+            border-top-color: #2563eb;
+            animation: spin 0.9s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <!-- Left Section (Image + Text) -->
+    <div class="left-section">
+        <img src="{{ asset('images/SDMDlogo.png') }}" alt="Background Image">
+        <h1>Verify Your <br><span>Email</span></h1>
+        <p>SDMD Equipment Management System</p>
+    </div>
+
+    <!-- Right Section (Email Verification Form) -->
+    <div class="right-section">
+        <div class="login-card">
+            <h2>Email Verification Required</h2>
+            <p>Before proceeding, please check your email for a verification link. If you didn't receive it, we can send you another one.</p>
 
             @if (session('resent'))
                 <div class="mb-4 font-medium text-sm text-green-600">
@@ -31,24 +95,71 @@
                 </div>
             @endif
 
-            <div class="mb-4 text-sm text-gray-600">
-                {{ __('If you did not receive the email, we will gladly send you another.') }}
-            </div>
+            @if (session('status'))
+                <div class="mb-4 font-medium text-sm text-green-600">
+                    {{ session('status') }}
+                </div>
+            @endif
 
-            <form method="POST" action="{{ route('email.verification.resend') }}">
+            @if (session('error'))
+                <div class="mb-4 font-medium text-sm text-red-600">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('email.verification.resend') }}" id="resendVerificationForm">
                 @csrf
 
-                <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    {{ __('Resend Verification Email') }}
-                </button>
+                <div class="mb-4">
+                    <button type="submit" class="login-button" id="resendButton">
+                        Resend Verification Email
+                    </button>
+                </div>
             </form>
 
-            <div class="mt-4 text-center">
-                <a href="{{ route('logout') }}" class="text-sm text-gray-600 hover:text-gray-900 underline">
-                    {{ __('Logout') }}
+            <div class="forgot-password-link">
+                <a href="{{ route('logout') }}">
+                    <i class='bx bx-log-out'></i> Logout
                 </a>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Loading modal for Resend Verification -->
+<div class="loading-backdrop" id="resendLoadingModal">
+    <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Sending verification email, please wait...</div>
+    </div>
+    </div>
+
+<!-- Footer -->
+<footer>
+    Copyright {{ date('Y') }}. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
+</footer>
+
+<!-- Scripts -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('resendVerificationForm');
+        const button = document.getElementById('resendButton');
+        const modal = document.getElementById('resendLoadingModal');
+
+        if (form && button && modal) {
+            form.addEventListener('submit', function () {
+                // Show blocking loading modal
+                modal.classList.add('active');
+
+                // Disable button to prevent double submit
+                button.disabled = true;
+
+                // Optional: change button text while loading
+                button.textContent = 'Sending...';
+            });
+        }
+    });
+</script>
+
 </body>
 </html>

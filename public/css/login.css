@@ -3,10 +3,32 @@ body {
     background: linear-gradient(180deg, #1a1f26, #3f4b5d);
     font-family: Arial, sans-serif;
     margin: 0;
-    height: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+}
+
+.gradient-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(26, 31, 38, 0.85), rgba(63, 75, 93, 0.9));
+    z-index: -1;
+    pointer-events: none;
 }
 
 .toggle-password {
@@ -31,6 +53,8 @@ body {
     margin: 0 auto;
     animation: fadeIn 1s ease-in-out;
     overflow: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .container::-webkit-scrollbar {
@@ -94,17 +118,20 @@ body {
     font-size: 1.25rem;
     color: #1e293b;
     font-weight: bold;
+    text-align: center;
 }
 .login-card p {
     font-size: 0.875rem;
     color: #64748b;
-    margin: 5px 0;
+    margin: 5px 0 20px 0;
+    text-align: center;
 }
 .login-card h3 {
     font-size: 1rem;
     color: #1e40af;
     font-weight: bold;
     margin-bottom: 20px;
+    text-align: center;
 }
 .login-card label{
     display: block;
@@ -154,6 +181,9 @@ body {
     margin: 15px 0;
     font-size: 13px;
     color: #64748b;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 25px;
 }
 
 .login-card button {
@@ -174,7 +204,8 @@ footer {
     text-align: center;
     color: #fff;
     font-size: 0.75rem;
-    padding: 10px;
+    position: relative;
+    z-index: 1;
 }
 footer a {
     color: #fff;

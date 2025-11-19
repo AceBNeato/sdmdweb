@@ -140,6 +140,7 @@
 }
 .logs-table-card thead th {
   border: none;
+  text-align: center;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
