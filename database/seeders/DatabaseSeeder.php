@@ -19,8 +19,7 @@ class DatabaseSeeder extends Seeder
             RbacSeeder::class, // This creates roles and permissions first
             CampusesAndOfficesSeeder::class, // This creates campuses and offices first
             SuperAdminSeeder::class, // This creates only Super Admin and Admin users
-            EquipmentTypesSeeder::class,
-            CategorySeeder::class,
+            
         ]);
 
         $this->command->info('✅ System setup complete!');

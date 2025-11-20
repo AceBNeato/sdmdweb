@@ -1,66 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
 use App\Models\Category;
 use App\Models\EquipmentType;
-use App\Services\BackupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
-class SettingsController extends Controller
+class SystemController extends Controller
 {
-    protected BackupService $backupService;
-
-    public function __construct(BackupService $backupService)
-    {
-        $this->backupService = $backupService;
-    }
-
-    public function index()
-    {
-        $settings = [
-            'session_timeout_minutes' => Setting::getSessionTimeoutMinutes(),
-            'session_lockout_minutes' => Setting::getValue('session_lockout_minutes', Setting::getSessionTimeoutMinutes()),
-        ];
-
-        $backupSettings = Setting::getBackupSettings();
-        $backups = $this->backupService->listBackups();
-
-        return view('settings.index', compact('settings', 'backupSettings', 'backups'));
-    }
-
-    public function update(Request $request)
-    {
-        $request->validate([
-            'session_lockout_minutes' => 'required|integer|min:1|max:60',
-            'backup_auto_time' => 'nullable|date_format:H:i',
-            'backup_auto_days' => 'nullable|array',
-            'backup_auto_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
-        ]);
-
-        Setting::setValue('session_lockout_minutes', $request->session_lockout_minutes, 'integer', 'Session lockout in minutes for screen lock');
-
-        $enabled = $request->boolean('backup_auto_enabled');
-        $time = $request->input('backup_auto_time', '02:00');
-        $days = array_map('strtolower', (array) $request->input('backup_auto_days', []));
-
-        Setting::setBackupSettings($enabled, $time, $days);
-
-        return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
-    }
-
-    // ==========================================
-    // SYSTEM MANAGEMENT METHODS
-    // ==========================================
-
     /**
      * Display the system management dashboard.
      */
-    public function systemIndex()
+    public function index()
     {
         return view('system.index');
     }
@@ -79,11 +33,16 @@ class SettingsController extends Controller
         // Search functionality
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         // Filter by status
-        // Note: Status filtering removed as is_active column is being dropped
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('is_active', $request->status === 'active');
+        }
 
         $categories = $query->orderBy('name')->paginate(15);
 
@@ -105,6 +64,10 @@ class SettingsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:categories,name',
+            'description' => 'nullable|string|max:1000',
+            'color' => 'nullable|string|max:7|regex:/^#[a-fA-F0-9]{6}$/',
+            'icon' => 'nullable|string|max:255',
+            'is_active' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -113,9 +76,9 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
-        Category::create($request->only(['name']));
+        Category::create($request->all());
 
-        return redirect()->route('admin.settings.system.categories.index')
+        return redirect()->route('admin.system.categories.index')
             ->with('success', 'Category created successfully.');
     }
 
@@ -134,6 +97,10 @@ class SettingsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'description' => 'nullable|string|max:1000',
+            'color' => 'nullable|string|max:7|regex:/^#[a-fA-F0-9]{6}$/',
+            'icon' => 'nullable|string|max:255',
+            'is_active' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -142,9 +109,9 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
-        $category->update($request->only(['name']));
+        $category->update($request->all());
 
-        return redirect()->route('admin.settings.system.categories.index')
+        return redirect()->route('admin.system.categories.index')
             ->with('success', 'Category updated successfully.');
     }
 
@@ -161,8 +128,21 @@ class SettingsController extends Controller
 
         $category->delete();
 
-        return redirect()->route('admin.settings.system.categories.index')
+        return redirect()->route('admin.system.categories.index')
             ->with('success', 'Category deleted successfully.');
+    }
+
+    /**
+     * Toggle category active status.
+     */
+    public function toggleCategory(Category $category)
+    {
+        $category->update(['is_active' => !$category->is_active]);
+
+        $status = $category->is_active ? 'activated' : 'deactivated';
+
+        return redirect()->back()
+            ->with('success', "Category {$status} successfully.");
     }
 
     // ==========================================
@@ -179,13 +159,18 @@ class SettingsController extends Controller
         // Search functionality
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         // Filter by status
-        // Note: Status filtering removed as is_active column is being dropped
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('is_active', $request->status === 'active');
+        }
 
-        $equipmentTypes = $query->orderBy('name')->paginate(15);
+        $equipmentTypes = $query->orderBy('sort_order')->orderBy('name')->paginate(15);
 
         return view('system.equipment-types.index', compact('equipmentTypes'));
     }
@@ -195,7 +180,8 @@ class SettingsController extends Controller
      */
     public function createEquipmentType()
     {
-        return view('system.equipment-types.create');
+        $maxSortOrder = EquipmentType::max('sort_order') ?? 0;
+        return view('system.equipment-types.create', compact('maxSortOrder'));
     }
 
     /**
@@ -205,6 +191,9 @@ class SettingsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:equipment_types,name',
+            'description' => 'nullable|string|max:1000',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -213,9 +202,12 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
-        EquipmentType::create($request->only(['name']));
+        $data = $request->all();
+        $data['slug'] = Str::slug($request->name);
 
-        return redirect()->route('admin.settings.system.equipment-types.index')
+        EquipmentType::create($data);
+
+        return redirect()->route('admin.system.equipment-types.index')
             ->with('success', 'Equipment type created successfully.');
     }
 
@@ -234,6 +226,9 @@ class SettingsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:equipment_types,name,' . $equipmentType->id,
+            'description' => 'nullable|string|max:1000',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -242,9 +237,12 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
-        $equipmentType->update($request->only(['name']));
+        $data = $request->all();
+        $data['slug'] = Str::slug($request->name);
 
-        return redirect()->route('admin.settings.system.equipment-types.index')
+        $equipmentType->update($data);
+
+        return redirect()->route('admin.system.equipment-types.index')
             ->with('success', 'Equipment type updated successfully.');
     }
 
@@ -261,7 +259,42 @@ class SettingsController extends Controller
 
         $equipmentType->delete();
 
-        return redirect()->route('admin.settings.system.equipment-types.index')
+        return redirect()->route('admin.system.equipment-types.index')
             ->with('success', 'Equipment type deleted successfully.');
+    }
+
+    /**
+     * Toggle equipment type active status.
+     */
+    public function toggleEquipmentType(EquipmentType $equipmentType)
+    {
+        $equipmentType->update(['is_active' => !$equipmentType->is_active]);
+
+        $status = $equipmentType->is_active ? 'activated' : 'deactivated';
+
+        return redirect()->back()
+            ->with('success', "Equipment type {$status} successfully.");
+    }
+
+    /**
+     * Update equipment types sort order.
+     */
+    public function updateSortOrder(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'equipment_types' => 'required|array',
+            'equipment_types.*.id' => 'required|integer|exists:equipment_types,id',
+            'equipment_types.*.sort_order' => 'required|integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Invalid data provided.'], 422);
+        }
+
+        foreach ($request->equipment_types as $item) {
+            EquipmentType::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Sort order updated successfully.']);
     }
 }

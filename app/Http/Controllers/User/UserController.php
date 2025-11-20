@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Services\StoredProcedureService;
 use App\Services\EmailService;
+use App\Notifications\EmailVerificationNotification;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -271,8 +272,9 @@ class UserController extends Controller
 
         // Send verification email
         try {
-            $emailSent = $this->emailService->sendEmailVerification($user, $verificationUrl);
-            \Illuminate\Support\Facades\Log::info('Email sending result: ' . ($emailSent ? 'SUCCESS' : 'FAILED'));
+            $user->notify(new EmailVerificationNotification($verificationUrl, $user));
+            \Illuminate\Support\Facades\Log::info('Email verification notification sent successfully');
+            $emailSent = true;
         } catch (\Exception $e) {
             // Log the error but don't fail the user creation
             \Illuminate\Support\Facades\Log::error('Email verification failed during user creation', [
@@ -650,9 +652,14 @@ class UserController extends Controller
 
             $user->roles()->sync([$validated['roles']]);
 
-            // Force logout if this user is currently logged in and role changed
+            // Force logout and redirect if this user is currently logged in and role changed
             if ($roleChanged) {
                 $this->forceUserLogout($user);
+                // If this is the current user being updated, redirect to login
+                if (auth()->check() && auth()->id() === $user->id) {
+                    Auth::logout();
+                    return redirect()->route('login')->with('warning', 'Your role has been changed by an administrator. Please login again with your new role.');
+                }
             }
         }
 
@@ -689,7 +696,29 @@ class UserController extends Controller
             $user->forgetCachedPermissions();
         }
 
+        // Check if this is the current user who had their role changed
+        $currentUserRoleChanged = $roleChanged && auth()->check() && auth()->id() === $user->id;
+
         if ($request->ajax() || $request->wantsJson()) {
+            if ($currentUserRoleChanged) {
+                // Current user had role changed, return special response
+                return response()->json([
+                    'success' => true,
+                    'message' => '⚠️ Your role has been changed! You will be logged out and redirected to login.',
+                    'alert_type' => 'warning',
+                    'redirect' => route('login'),
+                    'force_logout' => true,
+                    'user' => [
+                        'id' => $user->id,
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
+                        'email' => $user->email,
+                        'position' => $user->position,
+                        'is_active' => $user->is_active
+                    ]
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully.',
@@ -707,6 +736,10 @@ class UserController extends Controller
 
         $message = 'User updated successfully.';
         if ($roleChanged) {
+            if ($currentUserRoleChanged) {
+                // Current user had role changed - they were already redirected above
+                return;
+            }
             $message .= ' User has been automatically logged out due to role change for security.';
         }
 
@@ -719,19 +752,21 @@ class UserController extends Controller
      */
     private function forceUserLogout(User $user)
     {
-        $guards = ['web', 'admin', 'technician', 'staff'];
+        $guards = ['web', 'technician', 'staff'];
 
+        $loggedOut = false;
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check() && Auth::guard($guard)->id() === $user->id) {
                 Auth::guard($guard)->logout();
-
-                // Invalidate all sessions for this user to ensure complete logout
-                DB::table('sessions')
-                    ->where('user_id', $user->id)
-                    ->delete();
-
-                break; // No need to check other guards once we find and logout the user
+                $loggedOut = true;
             }
+        }
+
+        // Always clear all sessions for this user to ensure complete logout
+        if ($loggedOut || true) { // Always clear sessions when role changes for safety
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
         }
     }
 

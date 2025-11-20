@@ -105,8 +105,7 @@ class EquipmentController extends BaseController
         // }
 
         // Get equipment types for filter
-        $equipmentTypes = \App\Models\EquipmentType::where('is_active', true)
-            ->orderBy('name')
+        $equipmentTypes = \App\Models\EquipmentType::orderBy('name')
             ->pluck('name', 'id')
             ->toArray();
 
@@ -116,7 +115,7 @@ class EquipmentController extends BaseController
         }])->orderBy('name')->get();
 
         // Get categories for filter
-        $categories = Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
+        $categories = Category::orderBy('name')->pluck('name', 'id');
 
         // Build equipment query with filters
         $query = Equipment::with(['office', 'equipmentType'])
@@ -177,8 +176,8 @@ class EquipmentController extends BaseController
         // }
         
         $equipment = new Equipment();
-        $categories = Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
-        $equipmentTypes = EquipmentType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name', 'id');
+        $categories = Category::orderBy('name')->pluck('name', 'id');
+        $equipmentTypes = EquipmentType::orderBy('name')->pluck('name', 'id');
 
         // Technicians can now create equipment for any office
         $campuses = \App\Models\Campus::with(['offices' => function($query) {
@@ -314,8 +313,8 @@ class EquipmentController extends BaseController
         //     return redirect()->back()->with('error', 'You do not have permission to edit this equipment.');
         // }
 
-        $categories = Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
-        $equipmentTypes = EquipmentType::where('is_active', true)->orderBy('name')->pluck('name', 'id')->toArray();
+        $categories = Category::orderBy('name')->pluck('name', 'id');
+        $equipmentTypes = EquipmentType::orderBy('name')->pluck('name', 'id')->toArray();
 
         // Technicians can now edit equipment for any office
         $campuses = \App\Models\Campus::with(['offices' => function($query) {
@@ -1119,6 +1118,122 @@ class EquipmentController extends BaseController
     }
 
     /**
+     * Show the form for editing the specified history entry.
+     *
+     * @param  \App\Models\Equipment  $equipment
+     * @param  \App\Models\EquipmentHistory  $history
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function editHistory(Equipment $equipment, EquipmentHistory $history)
+    {
+        $user = Auth::guard('technician')->user();
+
+        // Check if history belongs to this equipment
+        if ($history->equipment_id !== $equipment->id) {
+            return redirect()->route('technician.equipment.show', $equipment)
+                ->with('error', 'History entry does not belong to this equipment.');
+        }
+
+        // Check if technician created this history entry
+        $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
+        if ($history->user_id !== $userId) {
+            return redirect()->route('technician.equipment.show', $equipment)
+                ->with('error', 'You can only edit history entries you created.');
+        }
+
+        if (request()->ajax()) {
+            return view('equipment.history_edit_modal', compact('equipment', 'history'));
+        }
+
+        return view('equipment.history.edit', [
+            'equipment' => $equipment->load('office'),
+            'history' => $history
+        ]);
+    }
+
+    /**
+     * Update the specified history entry in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Equipment  $equipment
+     * @param  \App\Models\EquipmentHistory  $history
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateHistory(Request $request, Equipment $equipment, EquipmentHistory $history)
+    {
+        $user = Auth::guard('technician')->user();
+
+        // Check if history belongs to this equipment
+        if ($history->equipment_id !== $equipment->id) {
+            return redirect()->route('technician.equipment.show', $equipment)
+                ->with('error', 'History entry does not belong to this equipment.');
+        }
+
+        // Check if technician created this history entry
+        $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
+        if ($history->user_id !== $userId) {
+            return redirect()->route('technician.equipment.show', $equipment)
+                ->with('error', 'You can only edit history entries you created.');
+        }
+
+        $validated = $request->validate([
+            'action_taken' => 'required|string|max:1000',
+            'equipment_status' => 'required|in:serviceable,for_repair,defective',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Update the history entry
+            $history->update([
+                'action_taken' => $validated['action_taken'],
+                'remarks' => $request->input('remarks') ?: $this->getRemarksFromStatus($validated['equipment_status']),
+            ]);
+
+            // Update equipment status if provided
+            if (isset($validated['equipment_status'])) {
+                $updateData = [
+                    'status' => $validated['equipment_status'],
+                ];
+
+                // Set condition based on status
+                if ($validated['equipment_status'] === 'serviceable') {
+                    $updateData['condition'] = 'good';
+                } elseif (in_array($validated['equipment_status'], ['for_repair', 'defective'])) {
+                    $updateData['condition'] = 'not_working';
+                }
+
+                $equipment->update($updateData);
+            }
+
+            DB::commit();
+
+            $successMessage = 'History entry updated successfully!';
+            if (isset($validated['equipment_status'])) {
+                $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
+                $successMessage .= ' Equipment status updated to ' . $statusText . '.';
+            }
+
+            return redirect()->route('technician.reports.history', $equipment->id)
+                ->with('success', $successMessage);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Failed to update history entry', [
+                'error' => $e->getMessage(),
+                'equipment_id' => $equipment->id,
+                'history_id' => $history->id,
+                'user_id' => $userId
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to update history entry. Please try again.');
+        }
+    }
+
+    /**
      * Generate unique Job Order number for the given date.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -1351,6 +1466,17 @@ class EquipmentController extends BaseController
         session()->forget('equipment_updated_show_history_prompt');
         
         return response()->json(['success' => true]);
+    }
+
+    private function getRemarksFromStatus($status)
+    {
+        $remarks = [
+            'serviceable' => 'Serviceable',
+            'for_repair' => 'For Repair',
+            'defective' => 'Defective',
+        ];
+
+        return $remarks[$status] ?? 'Unknown status';
     }
 
     public function printQrcodes(Request $request)

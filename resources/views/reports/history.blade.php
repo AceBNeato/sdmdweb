@@ -18,13 +18,6 @@
     @php abort(403) @endphp
 @else
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ session('error') }}
@@ -104,6 +97,14 @@
                             @if($history->jo_number)
                             <div class="record-secondary">
                                 <span class="jo-number">JO #{{ $history->jo_number }}</span>
+                                @if(auth()->user()->is_admin || (auth()->guard('technician')->check() && $history->user_id == auth('technician')->user()->user_id))
+                                    <a href="#" class="btn btn-sm btn-outline-primary edit-history-btn ms-2"
+                                       data-history-id="{{ $history->id }}"
+                                       data-url="{{ route($prefix . '.equipment.history.edit', [$equipment, $history]) }}"
+                                       title="Edit History Entry">
+                                        <i class='bx bx-edit'></i>
+                                    </a>
+                                @endif
                             </div>
                             @endif
                         </div>
@@ -179,6 +180,72 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.addEventListener('input', filterRecords);
     actionFilter.addEventListener('change', filterRecords);
     technicianFilter.addEventListener('change', filterRecords);
+
+    // Handle edit history button clicks
+    document.querySelectorAll('.edit-history-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+
+            // Create or get the edit modal
+            let modal = document.getElementById('editHistoryModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'editHistoryModal';
+                modal.className = 'modal fade';
+                modal.setAttribute('tabindex', '-1');
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit History Entry</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" id="editHistoryContent">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Show loading state
+            const content = document.getElementById('editHistoryContent');
+            content.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+
+            // Load content via AJAX
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                content.innerHTML = '<div class="alert alert-danger">Failed to load edit form. Please try again.</div>';
+                console.error('Error loading edit form:', error);
+            });
+
+            // Show modal
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        });
+    });
 });
 </script>
 @endpush

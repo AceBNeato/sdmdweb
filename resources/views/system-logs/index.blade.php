@@ -70,11 +70,11 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ $currentRoute }}" class="row g-3">
-                <div class="col-md-3">
+                <div class="col-12 col-sm-6 col-md-3">
                     <label for="search" class="form-label">Search</label>
                     <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Search actions, descriptions, or users...">
                 </div>
-                <div class="col-md-2">
+                <div class="col-12 col-sm-6 col-md-2">
                     <label for="user_id" class="form-label">User</label>
                     <select class="form-select" id="user_id" name="user_id">
                         <option value="all">All Users</option>
@@ -85,7 +85,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-12 col-sm-6 col-md-2">
                     <label for="action" class="form-label">Action</label>
                     <select class="form-select" id="action" name="action">
                         <option value="all">All Actions</option>
@@ -96,36 +96,36 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-12 col-sm-6 col-md-2">
                     <label for="date_from" class="form-label">From Date</label>
                     <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request('date_from') }}">
                 </div>
-                <div class="col-md-2">
+                <div class="col-12 col-sm-6 col-md-2">
                     <label for="date_to" class="form-label">To Date</label>
                     <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request('date_to') }}">
                 </div>
-                <div class="col-md-1 d-flex align-items-end">
+                <div class="col-12 col-sm-6 col-md-1 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class='bx bx-search'></i>
                     </button>
                 </div>
             </form>
 
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div>
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-3 gap-2">
+                <div class="w-100 w-sm-auto">
                     @if(request()->hasAny(['search', 'user_id', 'action', 'date_from', 'date_to']))
-                        <a href="{{ $currentRoute }}" class="btn btn-outline-secondary btn-sm">
-                            <i class='bx bx-x'></i> Clear Filters
+                        <a href="{{ $currentRoute }}" class="btn btn-outline-secondary btn-sm w-100 w-sm-auto">
+                            <i class='bx bx-x me-1'></i> Clear Filters
                         </a>
                     @endif
                 </div>
-                <div>
+                <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
                     <a href="{{ route('admin.system-logs.export', request()->query()) }}" class="btn btn-success btn-sm">
-                        <i class='bx bx-download'></i> Export CSV
+                        <i class='bx bx-download me-1'></i> Export CSV
                     </a>
                     @if(auth()->user()->hasPermissionTo('system.logs.manage'))
                         <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#clearLogsModal">
-                            <i class='bx bx-trash'></i> Clear Old Logs
+                            <i class='bx bx-trash me-1'></i> Clear Old Logs
                         </button>
                     @endif
                 </div>
@@ -255,33 +255,33 @@
     <div class="card logs-table-card">
         @if($activities->count() > 0)
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table id="logs-table" class="table align-middle">
                     <thead>
                         <tr>
                             <th scope="col">User</th>
                             <th scope="col">Action</th>
-                            <th scope="col">Description</th>
-                            <th scope="col">Timestamp</th>
+                            <th scope="col" class="d-none d-md-table-cell">Description</th>
+                            <th scope="col" class="d-none d-md-table-cell">Timestamp</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($activities as $activity)
-                            <tr>
+                            <tr class="logs-row" data-activity-id="{{ $activity->id }}" data-user-name="{{ $activity->user->name ?? 'Unknown User' }}" data-user-email="{{ $activity->user->email ?? 'Email not available' }}" data-action="{{ $activity->action }}" data-description="{{ $activity->description ?? 'No description available' }}" data-timestamp="{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y h:i A') }}">
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="logs-user-info">
                                             <div class="fw-medium">{{ $activity->user->name ?? 'Unknown User' }}</div>
-                                            <div class="text-muted small">{{ $activity->user->email ?? 'Email not available' }}</div>
+                                            <div class="text-muted small d-none d-md-block">{{ $activity->user->email ?? 'Email not available' }}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
                                     <span class="badge">{{ $activity->action }}</span>
                                 </td>
-                                <td>
+                                <td class="d-none d-md-table-cell">
                                     <div class="text-body">{{ $activity->description ?? 'No description available' }}</div>
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end d-none d-md-table-cell">
                                     <div class="timestamp">{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y') }}</div>
                                     <small>{{ $activity->created_at->timezone(config('app.timezone'))->format('h:i A') }}</small>
                                 </td>
@@ -291,20 +291,58 @@
                 </table>
             </div>
 
-            <div class="showing">
-                <div class="text-muted">Showing {{ $activities->firstItem() }} to {{ $activities->lastItem() }} of {{ $activities->total() }} entries</div>
-                {{ $activities->links() }}
+            <!-- Log Details Modal for Mobile -->
+            <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="logModalLabel">Log Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="log-detail-item">
+                                <div class="detail-label">User</div>
+                                <div class="detail-value" id="modal-user-name"></div>
+                            </div>
+                            <div class="log-detail-item">
+                                <div class="detail-label">Email</div>
+                                <div class="detail-value" id="modal-user-email"></div>
+                            </div>
+                            <div class="log-detail-item">
+                                <div class="detail-label">Action</div>
+                                <div class="detail-value">
+                                    <span class="badge" id="modal-action"></span>
+                                </div>
+                            </div>
+                            <div class="log-detail-item">
+                                <div class="detail-label">Description</div>
+                                <div class="detail-value" id="modal-description"></div>
+                            </div>
+                            <div class="log-detail-item">
+                                <div class="detail-label">Timestamp</div>
+                                <div class="detail-value" id="modal-timestamp"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
         @else
-            <div class="logs-empty">
-                <i class='bx bx-history'></i>
-                <h3 class="fw-semibold">No {{ $typeLabel }} Yet</h3>
-                <p class="mb-0">We're not seeing any {{ strtolower($typeLabel) }} right now. As soon as activity happens, it will appear here automatically.</p>
-            </div>
+                <div class="logs-empty">
+                    <i class='bx bx-history'></i>
+                    <h3 class="fw-semibold">No {{ $typeLabel }} Yet</h3>
+                    <p class="mb-0">We're not seeing any {{ strtolower($typeLabel) }} right now. As soon as activity happens, it will appear here automatically.</p>
+                </div>
         @endif
     </div>
 </div>
+
 @endif
+
+@endsection
 
 @push('scripts')
 <script>
@@ -317,7 +355,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Handle log row clicks for mobile modal
+    document.addEventListener('click', function(event) {
+        const logRow = event.target.closest('.logs-row');
+        if (logRow && window.innerWidth < 768) { // Only for mobile/tablet
+            event.preventDefault();
+
+            // Get data from data attributes
+            const userName = logRow.dataset.userName || 'Unknown User';
+            const userEmail = logRow.dataset.userEmail || 'Email not available';
+            const action = logRow.dataset.action || '';
+            const description = logRow.dataset.description || 'No description available';
+            const timestamp = logRow.dataset.timestamp || '';
+
+            // Populate modal
+            document.getElementById('modal-user-name').textContent = userName;
+            document.getElementById('modal-user-email').textContent = userEmail;
+            document.getElementById('modal-action').textContent = action;
+            document.getElementById('modal-description').textContent = description;
+            document.getElementById('modal-timestamp').textContent = timestamp;
+
+            // Ensure clean modal state
+            const modalElement = document.getElementById('logModal');
+            const existingModal = bootstrap.Modal.getInstance(modalElement);
+            if (existingModal) {
+                existingModal.dispose();
+            }
+
+            // Create new modal instance
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: true,
+                keyboard: true,
+                focus: true
+            });
+
+            modal.show();
+        }
+    });
 });
 </script>
 @endpush
-@endsection

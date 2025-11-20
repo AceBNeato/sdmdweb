@@ -168,6 +168,13 @@ class RbacSeeder extends Seeder
                 'description' => 'Storing equipment history',
                 'is_active' => true,
             ],
+            [
+                'name' => 'history.edit',
+                'display_name' => 'Edit History',
+                'group' => 'History',
+                'description' => 'Edit equipment history entries',
+                'is_active' => true,
+            ],
 
             // QR Scan
             [
@@ -247,7 +254,7 @@ class RbacSeeder extends Seeder
             'equipment.view', 'equipment.edit', 'equipment.create',
             'reports.view', 'reports.generate',
             'profile.view', 'profile.update',
-            'history.create', 'history.store',
+            'history.create', 'history.store', 'history.edit',
         ])->get();
         $technicianRole->permissions()->attach($technicianPermissions);
 

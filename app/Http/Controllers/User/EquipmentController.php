@@ -37,6 +37,7 @@ class EquipmentController extends Controller
         $this->middleware('permission:equipment.delete')->only(['destroy']);
         $this->middleware('permission:history.create')->only(['createHistory']);
         $this->middleware('permission:history.store')->only(['storeHistory']);
+        $this->middleware('permission:history.edit')->only(['editHistory', 'updateHistory']);
         $this->middleware('permission:qr.scan')->only(['qrScanner']);
     }
     public function index(Request $request)
@@ -83,14 +84,12 @@ class EquipmentController extends Controller
 
         $equipment = $query->latest()->paginate(10)->appends($request->query());
 
-        $equipmentTypes = \App\Models\EquipmentType::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
+        $equipmentTypes = \App\Models\EquipmentType::orderBy('name')
             ->pluck('name', 'id');
 
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
-        $categories = \App\Models\Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
+        $categories = \App\Models\Category::orderBy('name')->pluck('name', 'id');
 
         return view('equipment.index', compact('equipment', 'equipmentTypes', 'campuses', 'categories'));
     }
@@ -99,13 +98,11 @@ class EquipmentController extends Controller
     {
         $equipment = new Equipment(); // Create empty equipment instance for form
 
-        $equipmentTypes = \App\Models\EquipmentType::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
+        $equipmentTypes = \App\Models\EquipmentType::orderBy('name')
             ->pluck('name', 'id');
 
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
-        $categories = \App\Models\Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
+        $categories = \App\Models\Category::orderBy('name')->pluck('name', 'id');
         $offices = Office::where('is_active', true)->orderBy('name')->get();
         $staff = collect(); // Empty collection for create - staff will be loaded via AJAX
 
@@ -244,13 +241,11 @@ class EquipmentController extends Controller
 
     public function edit(Equipment $equipment)
     {
-        $equipmentTypes = \App\Models\EquipmentType::where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
+        $equipmentTypes = \App\Models\EquipmentType::orderBy('name')
             ->pluck('name', 'id');
 
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
-        $categories = Category::where('is_active', true)->orderBy('name')->pluck('name', 'id');
+        $categories = Category::orderBy('name')->pluck('name', 'id');
         $offices = Office::where('is_active', true)->orderBy('name')->get();
 
         if (request()->ajax()) {
@@ -811,6 +806,104 @@ class EquipmentController extends Controller
         ]);
     }
 
+    /**
+     * Show the form for editing the specified history entry.
+     *
+     * @param  \App\Models\Equipment  $equipment
+     * @param  \App\Models\EquipmentHistory  $history
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function editHistory(Equipment $equipment, EquipmentHistory $history)
+    {
+        // Check if history belongs to this equipment
+        if ($history->equipment_id !== $equipment->id) {
+            return redirect()->route('admin.equipment.show', $equipment)
+                ->with('error', 'History entry does not belong to this equipment.');
+        }
+
+        if (request()->ajax()) {
+            return view('equipment.history_edit_modal', compact('equipment', 'history'));
+        }
+
+        return view('equipment.history.edit', [
+            'equipment' => $equipment->load('office'),
+            'history' => $history
+        ]);
+    }
+
+    /**
+     * Update the specified history entry in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Equipment  $equipment
+     * @param  \App\Models\EquipmentHistory  $history
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateHistory(Request $request, Equipment $equipment, EquipmentHistory $history)
+    {
+        // Check if history belongs to this equipment
+        if ($history->equipment_id !== $equipment->id) {
+            return redirect()->route('admin.equipment.show', $equipment)
+                ->with('error', 'History entry does not belong to this equipment.');
+        }
+
+        $validated = $request->validate([
+            'action_taken' => 'required|string|max:1000',
+            'equipment_status' => 'required|in:serviceable,for_repair,defective',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Update the history entry
+            $history->update([
+                'action_taken' => $validated['action_taken'],
+                'remarks' => $request->input('remarks') ?: $this->getRemarksFromStatus($validated['equipment_status']),
+            ]);
+
+            // Update equipment status if provided
+            if (isset($validated['equipment_status'])) {
+                $updateData = [
+                    'status' => $validated['equipment_status'],
+                ];
+
+                // Set condition based on status
+                if ($validated['equipment_status'] === 'serviceable') {
+                    $updateData['condition'] = 'good';
+                } elseif (in_array($validated['equipment_status'], ['for_repair', 'defective'])) {
+                    $updateData['condition'] = 'not_working';
+                }
+
+                $equipment->update($updateData);
+            }
+
+            DB::commit();
+
+            $successMessage = 'History entry updated successfully!';
+            if (isset($validated['equipment_status'])) {
+                $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
+                $successMessage .= ' Equipment status updated to ' . $statusText . '.';
+            }
+
+            return redirect()->route('admin.reports.history', $equipment->id)
+                ->with('success', $successMessage);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Failed to update history entry', [
+                'error' => $e->getMessage(),
+                'equipment_id' => $equipment->id,
+                'history_id' => $history->id,
+                'user_id' => auth()->id()
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to update history entry. Please try again.');
+        }
+    }
+
     public function qrCode(Equipment $equipment)
     {
         // If QR code image is saved, return it
@@ -848,5 +941,22 @@ class EquipmentController extends Controller
 
         // Fallback: return a simple text response
         return response('QR Code not available')->header('Content-Type', 'text/plain');
+    }
+
+    /**
+     * Get remarks text based on equipment status
+     */
+    private function getRemarksFromStatus(string $status): string
+    {
+        switch ($status) {
+            case 'serviceable':
+                return 'Serviceable';
+            case 'for_repair':
+                return 'For Repair';
+            case 'defective':
+                return 'Defective';
+            default:
+                return '';
+        }
     }
 }

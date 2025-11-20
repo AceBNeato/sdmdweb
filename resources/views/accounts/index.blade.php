@@ -282,7 +282,7 @@
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger d-flex align-items-center gap-2" id="confirmDeleteUserBtn">
+                <button type="button" class="btn btn-outline-primary" id="confirmDeleteUserBtn">
                     <span class="spinner-border spinner-border-sm d-none" id="deleteUserLoadingSpinner" role="status" aria-hidden="true"></span>
                     <span class="btn-label"><i class='bx bx-trash'></i> Delete User</span>
                 </button>

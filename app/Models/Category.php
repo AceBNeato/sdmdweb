@@ -13,14 +13,9 @@ class Category extends Model
 
     protected $fillable = [
         'name',
-        'description',
-        'color',
-        'icon',
-        'is_active',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
     ];
 
     /**
@@ -29,14 +24,6 @@ class Category extends Model
     public function equipment(): HasMany
     {
         return $this->hasMany(Equipment::class);
-    }
-
-    /**
-     * Scope to get only active categories
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
     }
 
     /**

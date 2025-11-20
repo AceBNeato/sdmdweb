@@ -52,7 +52,7 @@ php artisan key:generate
 #   - MAIL_HOST=smtp.gmail.com
 #   - MAIL_PORT=587
 #   - MAIL_USERNAME=sdmdweb1@gmail.com
-#   - MAIL_PASSWORD="htbr gvmi auds mlji"
+#   - MAIL_PASSWORD="focr qixw fcvl iqhg"
 #   - MAIL_ENCRYPTION=null
 #   - MAIL_FROM_ADDRESS=sdmdweb1@gmail.com
 #   - MAIL_FROM_NAME="SDMD WEB"

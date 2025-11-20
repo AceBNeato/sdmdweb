@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\EmailService;
+use App\Notifications\EmailVerificationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -109,13 +110,9 @@ class EmailVerificationController extends Controller
         $verificationUrl = route('email.verify', ['token' => $token]);
 
         // Send verification email
-        $sent = $this->emailService->sendEmailVerification($user, $verificationUrl);
+        $user->notify(new EmailVerificationNotification($verificationUrl, $user));
 
-        if ($sent) {
-            return back()->with('success', 'Verification email sent successfully. Please check your email.');
-        } else {
-            return back()->with('error', 'Failed to send verification email. Please try again.');
-        }
+        return back()->with('success', 'Verification email sent successfully. Please check your email.');
     }
 
     /**
@@ -142,25 +139,18 @@ class EmailVerificationController extends Controller
             $verificationUrl = route('email.verify', ['token' => $token]);
 
             // Send verification email
-            $sent = $this->emailService->sendEmailVerification($user, $verificationUrl);
+            $user->notify(new EmailVerificationNotification($verificationUrl, $user));
 
-            if ($sent) {
-                Log::info('Verification email sent by admin', [
-                    'user_id' => $user->id,
-                    'admin_id' => auth()->id(),
-                    'email' => $user->email
-                ]);
+            Log::info('Verification email sent by admin', [
+                'user_id' => $user->id,
+                'admin_id' => auth()->id(),
+                'email' => $user->email
+            ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Verification email sent successfully.'
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send verification email.'
-                ]);
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Verification email sent successfully.'
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Failed to send verification email', [
