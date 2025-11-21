@@ -160,11 +160,7 @@ class EmailService
      */
     private function getVerificationEmailTemplate($user, $verificationUrl)
     {
-        $userName = htmlspecialchars($user->first_name . ' ' . $user->last_name);
-        $sanitizedUrl = htmlspecialchars($verificationUrl);
-        $logoUrl = rtrim(config('app.url'), '/') . '/images/SDMDlogo.png';
-
-        return <<<HTML
+        return '
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -173,83 +169,82 @@ class EmailService
             <title>Verify Your Email - SDMD Equipment Management System</title>
             <style>
                 body {
-                    font-family: 'Inter', Arial, sans-serif;
+                    font-family: Arial, sans-serif;
                     line-height: 1.6;
-                    color: #f3f4f6;
-                    margin: 0;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
                     padding: 0;
                     background: linear-gradient(180deg, #1a1f26, #3f4b5d);
                     min-height: 100vh;
                 }
                 .email-container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 12px;
+                    background: #fff;
+                    border-radius: 15px;
                     overflow: hidden;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    margin: 20px;
                 }
                 .header {
-                    background: linear-gradient(135deg, #1a1f26 0%, #3f4b5d 100%);
-                    padding: 40px 20px 30px;
+                    background: linear-gradient(180deg, #1a1f26, #3f4b5d);
+                    padding: 40px 20px;
                     text-align: center;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    color: #fff;
                 }
                 .header img {
-                    max-width: 120px;
+                    max-width: 150px;
                     height: auto;
                     margin-bottom: 15px;
                 }
                 .header h1 {
-                    color: #ffffff;
+                    font-size: 1.8rem;
                     margin: 10px 0 5px;
-                    font-size: 24px;
-                    font-weight: 600;
                 }
                 .header p {
-                    color: #9ca3af;
+                    color: #a0aec0;
                     margin: 0;
-                    font-size: 16px;
-                    font-weight: 400;
+                    letter-spacing: 1px;
                 }
                 .content {
                     padding: 30px;
-                    background: rgba(26, 31, 38, 0.85);
-                    color: #e5e7eb;
-                }
-                .note {
-                    background: rgba(59, 130, 246, 0.1);
-                    border-left: 4px solid #3b82f6;
-                    padding: 20px;
-                    margin: 25px 0;
-                    border-radius: 0 8px 8px 0;
+                    background: #fff;
                 }
                 .button {
                     display: inline-block;
-                    padding: 14px 32px;
-                    background: #3b82f6;
-                    color: #ffffff !important;
+                    padding: 12px 30px;
+                    background: #5ae7ff;
+                    color: #1a1f26 !important;
                     text-decoration: none;
-                    border-radius: 8px;
+                    border-radius: 6px;
+                    margin: 20px 0;
                     font-weight: 600;
-                    letter-spacing: 0.03em;
-                    transition: background 0.2s ease;
+                    transition: all 0.3s ease;
+                    border: none;
+                    cursor: pointer;
                 }
                 .button:hover {
-                    background: #60a5fa;
+                    background: #4ad7ff;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(90, 231, 255, 0.3);
                 }
                 .footer {
                     text-align: center;
-                    padding: 25px 20px;
-                    font-size: 13px;
-                    color: #9ca3af;
-                    background: rgba(15, 23, 42, 0.6);
-                    border-top: 1px solid rgba(255, 255, 255, 0.05);
+                    padding: 20px;
+                    font-size: 12px;
+                    color: #a0aec0;
+                    background: #1a1f26;
+                    border-top: 1px solid #2d3748;
+                }
+                .divider {
+                    border-top: 1px solid #e2e8f0;
+                    margin: 25px 0;
+                    opacity: 0.2;
+                }
+                .text-primary {
+                    color: #5ae7ff;
                 }
                 .text-muted {
-                    color: #9ca3af;
+                    color: #718096;
                 }
                 .text-center {
                     text-align: center;
@@ -257,44 +252,61 @@ class EmailService
                 .mt-4 {
                     margin-top: 1rem;
                 }
-                strong {
-                    color: #ffffff;
-                    font-weight: 600;
+                .mb-4 {
+                    margin-bottom: 1rem;
                 }
-                a {
-                    color: #3b82f6;
-                    text-decoration: none;
+                .steps {
+                    margin: 25px 0;
+                    padding: 0;
+                    list-style: none;
                 }
-                a:hover {
-                    color: #60a5fa;
-                    text-decoration: underline;
+                .steps li {
+                    margin-bottom: 15px;
+                    padding-left: 30px;
+                    position: relative;
+                }
+                .steps li:before {
+                    content: "→";
+                    position: absolute;
+                    left: 0;
+                    color: #5ae7ff;
+                    font-weight: bold;
+                }
+                .note {
+                    background: #f7fafc;
+                    border-left: 4px solid #5ae7ff;
+                    padding: 12px 15px;
+                    margin: 15px 0;
+                    font-size: 0.9em;
+                    border-radius: 0 4px 4px 0;
                 }
             </style>
         </head>
         <body>
             <div class="email-container">
                 <div class="header">
-                    <img src="{$logoUrl}" alt="SDMD Logo">
+                    <img src="' . config('app.url') . '/images/SDMDlogo.png" alt="SDMD Logo">
                     <h1>SDMD Equipment Management System</h1>
                     <p>Email Verification</p>
                 </div>
 
                 <div class="content">
-                    <p>Hello <strong>{$userName}</strong>,</p>
+                    <p>Hello <strong>' . htmlspecialchars($user->first_name . ' ' . $user->last_name) . '</strong>,</p>
                     <p>Your account has been created by an administrator. To activate your account and start using the system, please verify your email address.</p>
-
+                    
                     <div class="note">
                         <p><strong>Click the button below to verify your email:</strong></p>
                         <div class="text-center mt-4">
-                            <a href="{$verificationUrl}" class="button">Verify Email Address</a>
+                            <a href="' . $verificationUrl . '" class="button">Verify Email Address</a>
                         </div>
                         <p class="text-center text-muted mt-4">This verification link will expire in 24 hours for security reasons.</p>
                     </div>
 
-                    <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                    <p class="text-muted">{$sanitizedUrl}</p>
+                    <p>If the button doesn\'t work, you can also copy and paste this link into your browser:</p>
+                    <p class="text-muted">' . $verificationUrl . '</p>
 
                     <p class="text-muted">If you did not request this account, please ignore this email or contact support if you have any concerns.</p>
+                    
                 </div>
 
                 <div class="footer">
@@ -303,8 +315,7 @@ class EmailService
                 </div>
             </div>
         </body>
-        </html>
-        HTML;
+        </html>';
     }
 
     /**
