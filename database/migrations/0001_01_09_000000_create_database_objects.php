@@ -18,7 +18,7 @@ return new class extends Migration
                 CREATE VIEW equipment_summary_view AS
                 SELECT 
                     e.id,
-                    e.name,
+                    CONCAT(e.brand, ' ', e.model_number) as name,
                     e.serial_number,
                     e.status,
                     e.is_available,
@@ -36,7 +36,7 @@ return new class extends Migration
                 LEFT JOIN categories c ON e.category_id = c.id
                 LEFT JOIN equipment_history eh ON e.id = eh.equipment_id
                 WHERE e.deleted_at IS NULL
-                GROUP BY e.id, e.name, e.serial_number, e.status, e.is_available, 
+                GROUP BY e.id, e.brand, e.model_number, e.serial_number, e.status, e.is_available, 
                          e.office_id, o.name, e.equipment_type_id, et.name, 
                          e.category_id, c.name
             ");
@@ -48,13 +48,13 @@ return new class extends Migration
                 CREATE VIEW equipment_summary AS
                 SELECT 
                     e.id,
-                    e.name,
+                    CONCAT(e.brand, ' ', e.model_number) as name,
                     e.serial_number,
                     e.description,
                     e.status,
                     e.purchase_date,
-                    e.purchase_cost,
-                    e.model,
+                    e.cost_of_purchase as purchase_cost,
+                    e.model_number as model,
                     e.qr_code,
                     e.office_id,
                     e.category_id,
@@ -130,7 +130,7 @@ return new class extends Migration
                 BEGIN
                     SELECT 
                         e.id,
-                        e.name,
+                        CONCAT(e.brand, ' ', e.model_number) as name,
                         e.serial_number,
                         e.status,
                         e.is_available,
@@ -141,7 +141,7 @@ return new class extends Migration
                     LEFT JOIN categories c ON e.category_id = c.id
                     WHERE e.office_id = p_office_id
                     AND e.deleted_at IS NULL
-                    ORDER BY e.name;
+                    ORDER BY e.brand, e.model_number;
                 END
             ");
         }
@@ -155,7 +155,7 @@ return new class extends Migration
                         eh.action,
                         eh.description,
                         eh.date,
-                        e.name as equipment_name,
+                        CONCAT(e.brand, ' ', e.model_number) as equipment_name,
                         e.serial_number
                     FROM equipment_history eh
                     JOIN equipment e ON eh.equipment_id = e.id
