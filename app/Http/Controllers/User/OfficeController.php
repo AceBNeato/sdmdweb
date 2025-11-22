@@ -42,6 +42,11 @@ class OfficeController extends BaseController
             });
         }
 
+        // Filter by campus
+        if ($request->has('campus_id') && $request->campus_id !== 'all' && $request->campus_id !== '') {
+            $query->where('campus_id', $request->campus_id);
+        }
+
         // Filter by status
         if ($request->has('status') && in_array($request->status, ['active', 'inactive'])) {
             $query->where('is_active', $request->status === 'active');
