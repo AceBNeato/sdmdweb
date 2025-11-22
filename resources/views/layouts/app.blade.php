@@ -95,7 +95,7 @@
                 @endif
 
                 <!-- Offices - only for admin -->
-                @if($currentUser && $currentUser->hasPermissionTo('settings.manage'))
+                @if($currentUser && $currentUser->hasPermissionTo('offices.view'))
                 @if($prefix === 'admin')
                 <a href="{{ route('admin.offices.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.offices') ? 'active' : '' }}">
                     <i class='bx bx-building'></i>Office
@@ -225,28 +225,6 @@
         </div>
     </div>
 
-    <div class="modal fade" id="cookieConsentModal" tabindex="-1" aria-labelledby="cookieConsentModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title" id="cookieConsentModalLabel">Cookies Notice</h5>
-                </div>
-                <div class="modal-body pt-3">
-                    <p class="mb-3">We use essential cookies to keep your session secure and analytics cookies to understand how the system is used. You can accept or decline analytics cookies at any time.</p>
-                    <ul class="small mb-3 ps-3">
-                        <li>Essential cookies are required for secure sign-in and session continuity.</li>
-                        <li>Analytics cookies help us improve usability. They are optional.</li>
-                    </ul>
-                    <p class="small text-muted mb-0">Read more in our <a href="{{ url('/privacy-policy') }}" class="link-secondary">Privacy Policy</a>.</p>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-action="cookie-decline">Decline analytics</button>
-                    <button type="button" class="btn btn-primary" data-action="cookie-accept">Accept all</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Notifications Container -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -297,7 +275,6 @@
     </script>
     <script src="{{ asset('js/toast-system.js') }}"></script>
     <script src="{{ asset('js/ui-functionality.js') }}"></script>
-    <script src="{{ asset('js/cookie-consent.js') }}"></script>
 
     @if($isAuthenticated)
         <script>

@@ -39,7 +39,6 @@ return new class extends Migration
             // Assignment tracking fields - ensure proper types
             $table->string('assigned_to_type', 100)->nullable()->change();
             $table->unsignedBigInteger('assigned_to_id')->nullable()->change();
-            $table->string('assigned_by_type', 100)->nullable()->change();
             $table->unsignedBigInteger('assigned_by_id')->nullable()->change();
         });
     }

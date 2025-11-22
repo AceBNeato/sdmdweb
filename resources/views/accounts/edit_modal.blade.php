@@ -196,49 +196,6 @@
             @endif
 
         </div>
-            <!-- Direct Permissions Section -->
-            <div class="form-section">
-                <h6 class="form-section-title">
-                    <i class='bx bx-key'></i>
-                    Direct Permissions
-                </h6>
-
-                <div class="mb-4">
-                    <div class="permissions-grid">
-                        @foreach($allPermissions as $permission)
-                            <div class="permission-card">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                           name="direct_permissions[]"
-                                           value="{{ $permission->id }}"
-                                           id="permission_{{ $permission->id }}"
-                                           {{ in_array($permission->id, $directPermissions ?? []) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="permission_{{ $permission->id }}">
-                                        {{ $permission->display_name ?? $permission->name }}
-                                    </label>
-                                </div>
-                                @if($permission->description)
-                                    <small class="form-text">{{ $permission->description }}</small>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                    <small class="form-text text-muted">
-                        <strong>Direct Permissions are independent</strong> - they allow fine-tuning user access beyond role templates.<br>
-                        Use cases:
-                        <ul style="margin: 5px 0; padding-left: 20px;">
-                            <li><strong>Exceptions</strong>: Grant specific access not in their role (e.g., staff member needs equipment approval)</li>
-                            <li><strong>Restrictions</strong>: Remove specific permissions from a role (e.g., technician can't delete records)</li>
-                            <li><strong>Temporary Access</strong>: Grant time-limited permissions without role changes</li>
-                            <li><strong>Testing</strong>: Try permissions before committing to role changes</li>
-                        </ul>
-                        <strong>Note:</strong> Changing roles resets direct permissions to match the new role's baseline.
-                    </small>
-                </div>
-            </div>
-
-           
-
         <div class="form-actions d-flex justify-content-end gap-2 border-top p-3">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                 <i class='bx bx-x'></i> Cancel

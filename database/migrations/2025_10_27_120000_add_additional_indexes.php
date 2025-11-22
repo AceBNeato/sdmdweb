@@ -9,29 +9,40 @@ return new class extends Migration
     public function up()
     {
         Schema::table('equipment', function (Blueprint $table) {
-            // Composite index for status and office_id to speed up filtering
-            $table->index(['status', 'office_id']);
-            // Index on serial_number if not already unique
-            $table->index('serial_number');
-            // Index on purchase_date for date-based queries
-            $table->index('purchase_date');
+            // Only add indexes if they don't already exist
+            if (!Schema::hasIndex('equipment', 'equipment_status_office_id_index')) {
+                $table->index(['status', 'office_id']);
+            }
+            if (!Schema::hasIndex('equipment', 'equipment_serial_number_index')) {
+                $table->index('serial_number');
+            }
+            if (!Schema::hasIndex('equipment', 'equipment_purchase_date_index')) {
+                $table->index('purchase_date');
+            }
         });
 
         Schema::table('users', function (Blueprint $table) {
-            // Composite index for is_active and office_id
-            $table->index(['is_active', 'office_id']);
+            // Only add index if it doesn't already exist
+            if (!Schema::hasIndex('users', 'users_is_active_office_id_index')) {
+                $table->index(['is_active', 'office_id']);
+            }
         });
 
         Schema::table('offices', function (Blueprint $table) {
-            // Index for active offices filtering
-            $table->index('is_active');
-            // Index for campus-based queries
-            $table->index('campus_id');
+            // Only add indexes if they don't already exist
+            if (!Schema::hasIndex('offices', 'offices_is_active_index')) {
+                $table->index('is_active');
+            }
+            if (!Schema::hasIndex('offices', 'offices_campus_id_index')) {
+                $table->index('campus_id');
+            }
         });
 
         Schema::table('campuses', function (Blueprint $table) {
-            // Index for active campuses filtering
-            $table->index('is_active');
+            // Only add index if it doesn't already exist
+            if (!Schema::hasIndex('campuses', 'campuses_is_active_index')) {
+                $table->index('is_active');
+            }
         });
 
         Schema::table('categories', function (Blueprint $table) {
@@ -39,21 +50,30 @@ return new class extends Migration
         });
 
         Schema::table('activities', function (Blueprint $table) {
-            // Index for user activity queries
-            $table->index(['user_id', 'created_at']);
-            // Index for action-based filtering
-            $table->index('action');
+            // Only add indexes if they don't already exist
+            if (!Schema::hasIndex('activities', 'activities_user_id_created_at_index')) {
+                $table->index(['user_id', 'created_at']);
+            }
+            if (!Schema::hasIndex('activities', 'activities_action_index')) {
+                $table->index('action');
+            }
         });
 
         Schema::table('roles', function (Blueprint $table) {
-            // Index for active roles if needed later
-            $table->index('name');
+            // Only add index if it doesn't already exist
+            if (!Schema::hasIndex('roles', 'roles_name_index')) {
+                $table->index('name');
+            }
         });
 
         Schema::table('permissions', function (Blueprint $table) {
-            // Index for permission lookups
-            $table->index('name');
-            $table->index('group');
+            // Only add indexes if they don't already exist
+            if (!Schema::hasIndex('permissions', 'permissions_name_index')) {
+                $table->index('name');
+            }
+            if (!Schema::hasIndex('permissions', 'permissions_group_index')) {
+                $table->index('group');
+            }
         });
     }
 

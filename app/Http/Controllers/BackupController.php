@@ -69,10 +69,11 @@ class BackupController extends Controller
         }
 
         $filename = basename($filename);
-        $path = storage_path('app/backups/' . $filename);
 
-        if (!file_exists($path)) {
-            abort(404, 'Backup file not found');
+        try {
+            $path = $this->backupService->getBackupAbsolutePath($filename);
+        } catch (\RuntimeException $exception) {
+            abort(404, $exception->getMessage());
         }
 
         return response()->download($path);

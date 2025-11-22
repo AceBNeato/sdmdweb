@@ -78,37 +78,10 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Check if the user has the given permission (direct or through roles).
-     * Direct permissions can override role permissions:
-     * - Active direct permission: grants access
-     * - Inactive direct permission: denies access (even if role grants it)
-     * - No direct permission: use role permissions
+     * Check if the user has the given permission through their roles.
      */
     public function hasPermissionTo($permission): bool
     {
-        // First check if there's a direct permission set for this user
-        $directPermissionQuery = $this->permissions();
-
-        if (is_string($permission)) {
-            $directPermissionQuery->where('name', $permission);
-        } elseif ($permission instanceof Permission) {
-            $directPermissionQuery->where('id', $permission->id);
-        }
-
-        $directPermission = $directPermissionQuery->first();
-
-        // If direct permission exists
-        if ($directPermission) {
-            // Check the pivot is_active status
-            $pivot = $directPermission->pivot;
-            if ($pivot && $pivot->is_active) {
-                return true; // Direct permission is active, grant access
-            } else {
-                return false; // Direct permission is inactive, deny access
-            }
-        }
-
-        // No direct permission set, check permissions through roles
         if (is_string($permission)) {
             return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
                 $query->where('name', $permission);

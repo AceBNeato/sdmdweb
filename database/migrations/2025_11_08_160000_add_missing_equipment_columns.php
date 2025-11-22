@@ -12,11 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('equipment', function (Blueprint $table) {
-            // Add missing columns that the controllers expect
-            $table->text('description')->nullable()->after('serial_number');
-            $table->decimal('cost_of_purchase', 10, 2)->nullable()->after('purchase_date');
-            $table->string('condition')->nullable()->after('status');
-            $table->text('notes')->nullable()->after('condition');
+            // Add missing columns only if they don't already exist
+            if (!Schema::hasColumn('equipment', 'description')) {
+                $table->text('description')->nullable()->after('serial_number');
+            }
+            if (!Schema::hasColumn('equipment', 'cost_of_purchase')) {
+                $table->decimal('cost_of_purchase', 10, 2)->nullable()->after('purchase_date');
+            }
+            if (!Schema::hasColumn('equipment', 'condition')) {
+                $table->string('condition')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('equipment', 'notes')) {
+                $table->text('notes')->nullable()->after('condition');
+            }
         });
     }
 

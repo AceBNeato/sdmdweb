@@ -15,9 +15,7 @@ class PermissionController extends Controller
         $this->middleware('auth');
         // Enable permission checks now that RBAC is fully set up
         $this->middleware('permission:permissions.view')->only(['index', 'show']);
-        $this->middleware('permission:permissions.create')->only(['create', 'store']);
         $this->middleware('permission:permissions.edit')->only(['edit', 'update']);
-        $this->middleware('permission:permissions.delete')->only(['destroy']);
     }
 
     /**

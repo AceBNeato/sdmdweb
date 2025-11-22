@@ -40,16 +40,23 @@
 </style>
 @endpush
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush
+
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="settings-container">
         <!-- Settings Tabs -->
         <div class="settings-tabs">
             <div class="settings-tab active" data-tab="general">
-                <i class="fas fa-cog mr-2"></i>General Settings
+                <i class="fas fa-cog mr-2"></i>Session Settings
             </div>
             <div class="settings-tab" data-tab="system">
-                <i class="fas fa-database mr-2"></i>System Management
+                <i class="fas fa-database mr-2"></i>Equipment Settings
+            </div>
+            <div class="settings-tab" data-tab="backup">
+                <i class="fas fa-hdd mr-2"></i>Backup and Restore
             </div>
         </div>
 
@@ -60,18 +67,6 @@
                 <div class="summary-card">
                     <div class="summary-value">{{ $settings['session_lockout_minutes'] }}</div>
                     <div class="summary-label">Session Lockout (min)</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-value">{{ count($backupSettings['days'] ?? []) }}</div>
-                    <div class="summary-label">Backup Days</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-value">{{ $backupSettings['enabled'] ? 'On' : 'Off' }}</div>
-                    <div class="summary-label">Automation</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-value">{{ count($backups ?? []) }}</div>
-                    <div class="summary-label">Backups</div>
                 </div>
             </div>
 
@@ -86,7 +81,7 @@
 
                 <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6">
                     @csrf
-
+                    <input type="hidden" name="section" value="session">
 
                 <!-- Session Lockout Section -->
                 <div class="settings-section">
@@ -117,6 +112,25 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="settings-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Settings
+                    </button>
+                </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Backup & Restore Tab -->
+        <div id="backup-tab" class="tab-content">
+            <!-- Settings Grid -->
+            <div class="settings-grid">
+
+                <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6">
+                    @csrf
+
 
                 <!-- Database Backup Section -->
                 <div class="settings-section">
@@ -166,6 +180,7 @@
                                             name="backup_auto_days[]"
                                             value="{{ $day }}"
                                             {{ in_array($day, $backupSettings['days'] ?? []) ? 'checked' : '' }}
+                                            
                                         >
                                         <span>{{ ucfirst($day) }}</span>
                                     </label>
@@ -201,76 +216,77 @@
                         Save Settings
                     </button>
                 </div>
-            </div>
+                </form>
 
-            <!-- Backup Management -->
-            <div class="backup-management">
-                <div class="settings-section">
-                    <div class="settings-section-header">
-                        <i class="fas fa-database settings-section-icon"></i>
-                        <h3>Database Backup & Restore</h3>
-                    </div>
-                    <div class="settings-section-content">
-                        <div class="backup-toolbar">
-                            <button type="button" class="btn btn-primary" id="backup-now-btn">
-                                <i class="fas fa-cloud-download-alt mr-2"></i>
-                                Create Backup
-                            </button>
-
-                            <select id="restore-backup-select" class="backup-select">
-                                <option value="" disabled selected>Select a backup</option>
-                                @foreach(($backups ?? []) as $backup)
-                                    <option value="{{ $backup['filename'] }}">
-                                        {{ $backup['filename'] }}
-                                    </option>
-                                @endforeach
-                            </select>
-
-                            <button type="button" id="restore-btn" class="btn btn-danger">
-                                <i class="fas fa-history mr-2"></i>
-                                Restore Selected Backup
-                            </button>
+                <!-- Backup Management -->
+                <div class="backup-management">
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fas fa-database settings-section-icon"></i>
+                            <h3>Database Backup & Restore</h3>
                         </div>
+                        <div class="settings-section-content">
+                            <div class="backup-toolbar">
+                                <button type="button" class="btn btn-primary" id="backup-now-btn">
+                                    <i class="fas fa-cloud-download-alt mr-2"></i>
+                                    Create Backup
+                                </button>
 
-                        <div class="backup-table">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text);">Backup History</h3>
-                                <div style="font-size: 0.875rem; color: var(--text-muted);" id="backup-count">{{ count($backups ?? []) }} backups stored</div>
+                                <select id="restore-backup-select" class="backup-select">
+                                    <option value="" disabled selected>Select a backup</option>
+                                    @foreach(($backups ?? []) as $backup)
+                                        <option value="{{ $backup['filename'] }}">
+                                            {{ $backup['filename'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <button type="button" id="restore-btn" class="btn btn-danger">
+                                    <i class="fas fa-history mr-2"></i>
+                                    Restore Selected Backup
+                                </button>
                             </div>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Filename</th>
-                                        <th>Size</th>
-                                        <th>Created</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="backup-table-body">
-                                    @forelse(($backups ?? []) as $backup)
-                                        <tr data-filename="{{ $backup['filename'] }}">
-                                            <td>{{ $backup['filename'] }}</td>
-                                            <td>{{ $backup['size_human'] }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($backup['created_at'])->format('M d, Y h:i A') }}</td>
-                                            <td class="backup-actions">
-                                                <a href="{{ route('admin.backup.download', $backup['filename']) }}" class="action-link">
-                                                    <i class="fas fa-download mr-1"></i> Download
-                                                </a>
-                                                <button type="button" class="action-link danger" data-delete="{{ $backup['filename'] }}">
-                                                    <i class="fas fa-trash mr-1"></i> Delete
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    @empty
+
+                            <div class="backup-table">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text);">Backup History</h3>
+                                    <div style="font-size: 0.875rem; color: var(--text-muted);" id="backup-count">{{ count($backups ?? []) }} backups stored</div>
+                                </div>
+                                <table>
+                                    <thead>
                                         <tr>
-                                            <td colspan="4" style="text-align: center; padding: 3rem;">
-                                                <i class="fas fa-database text-3xl mb-2 text-gray-400"></i>
-                                                <div>No backups found. Create your first backup above.</div>
-                                            </td>
+                                            <th>Filename</th>
+                                            <th>Size</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
                                         </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody id="backup-table-body">
+                                        @forelse(($backups ?? []) as $backup)
+                                            <tr data-filename="{{ $backup['filename'] }}">
+                                                <td>{{ $backup['filename'] }}</td>
+                                                <td>{{ $backup['size_human'] }}</td>
+                                                <td>{{ \Carbon\Carbon::parse($backup['created_at'])->format('M d, Y h:i A') }}</td>
+                                                <td class="backup-actions">
+                                                    <a href="{{ route('admin.backup.download', $backup['filename']) }}" class="action-link">
+                                                        <i class="fas fa-download mr-1"></i> Download
+                                                    </a>
+                                                    <button type="button" class="action-link danger" data-delete="{{ $backup['filename'] }}">
+                                                        <i class="fas fa-trash mr-1"></i> Delete
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; padding: 3rem;">
+                                                    <i class="fas fa-database text-3xl mb-2 text-gray-400"></i>
+                                                    <div>No backups found. Create your first backup above.</div>
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -279,32 +295,6 @@
 
         <!-- System Management Tab -->
         <div id="system-tab" class="tab-content">
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <i class="fas fa-tags fa-3x text-primary mb-3"></i>
-                            <h5>Categories</h5>
-                            <p class="text-muted">Manage equipment categories</p>
-                            <a href="{{ route('admin.settings.system.categories.index') }}" class="btn btn-primary">
-                                Manage Categories
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <i class="fas fa-cogs fa-3x text-success mb-3"></i>
-                            <h5>Equipment Types</h5>
-                            <p class="text-muted">Manage equipment types and ordering</p>
-                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-success">
-                                Manage Equipment Types
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- System Statistics -->
             <div class="row">
@@ -341,33 +331,35 @@
                     </div>
                 </div>
             </div>
+            <div class="category-row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-tags fa-3x text-primary mb-3"></i>
+                            <h5>Categories</h5>
+                            <p class="text-muted">Manage equipment categories</p>
+                            <a href="{{ route('admin.settings.system.categories.index') }}" class="btn btn-primary">
+                                Manage Categories
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-cogs fa-3x text-success mb-3"></i>
+                            <h5>Equipment Types</h5>
+                            <p class="text-muted">Manage equipment types and ordering</p>
+                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-success">
+                                Manage Equipment Types
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div id="delete-backup-modal" class="modal-backdrop hidden">
-    <div class="modal">
-        <div class="modal-header">
-            <h3 class="modal-title">Delete Backup</h3>
-            <button type="button" class="modal-close" id="delete-cancel-btn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body">
-            <p class="text-gray-700 mb-6">
-                Are you sure you want to delete <span id="delete-backup-filename" class="font-semibold"></span>?
-            </p>
-            <p class="text-sm text-gray-500">This action is permanent. The selected backup file will be removed.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="delete-cancel-btn">
-                Cancel
-            </button>
-            <button type="button" class="btn btn-danger" id="delete-confirm-btn">
-                Delete
-            </button>
-        </div>
+        
+        
     </div>
 </div>
 
@@ -380,11 +372,7 @@
         const manualBackupBtn = document.getElementById('backup-now-btn');
         const restoreBtn = document.getElementById('restore-btn');
         const restoreSelect = document.getElementById('restore-backup-select');
-        const deleteModal = document.getElementById('delete-backup-modal');
-        const deleteFilenameSpan = document.getElementById('delete-backup-filename');
-        const deleteCancelBtn = document.getElementById('delete-cancel-btn');
-        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
-        let pendingDeleteFilename = null;
+        const backupDownloadUrlTemplate = '{{ route('admin.backup.download', ['filename' => 'FILENAME_PLACEHOLDER']) }}';
 
         function setButtonLoading(button, loading, idleText, loadingText) {
             if (!button) return;
@@ -411,40 +399,73 @@
             setTimeout(() => toast.remove(), 4000);
         }
 
-        function showModal(modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function hideModal(modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
         function refreshBackupTable() {
-            fetch('{{ route('admin.backup.index') }}', {
+            fetch('{{ route('admin.backup.list') }}', {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newTableBody = doc.getElementById('backup-table-body');
-                    const newCount = doc.getElementById('backup-count');
-                    const newOptions = doc.querySelectorAll('#restore-backup-select option');
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const backups = data.backups || [];
+                    const tableBody = document.getElementById('backup-table-body');
+                    const countEl = document.getElementById('backup-count');
 
-                    if (newTableBody && newCount) {
-                        document.getElementById('backup-table-body').innerHTML = newTableBody.innerHTML;
-                        document.getElementById('backup-count').textContent = newCount.textContent;
+                    if (tableBody && countEl) {
+                        tableBody.innerHTML = '';
+                        countEl.textContent = `${backups.length} backups stored`;
+
+                        if (backups.length === 0) {
+                            tableBody.innerHTML = `
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 3rem;">
+                                        <i class="fas fa-database text-3xl mb-2 text-gray-400"></i>
+                                        <div>No backups found. Create your first backup above.</div>
+                                    </td>
+                                </tr>
+                            `;
+                        } else {
+                            backups.forEach(backup => {
+                                const createdAtRaw = backup.created_at || '';
+                                let createdAtDisplay = createdAtRaw;
+                                const parsedDate = createdAtRaw ? new Date(createdAtRaw.replace(' ', 'T')) : null;
+                                if (parsedDate && !isNaN(parsedDate.getTime())) {
+                                    createdAtDisplay = parsedDate.toLocaleString();
+                                }
+
+                                const row = document.createElement('tr');
+                                row.setAttribute('data-filename', backup.filename);
+                                row.innerHTML = `
+                                    <td>${backup.filename}</td>
+                                    <td>${backup.size_human}</td>
+                                    <td>${createdAtDisplay}</td>
+                                    <td class="backup-actions">
+                                        <a href="${backupDownloadUrlTemplate.replace('FILENAME_PLACEHOLDER', encodeURIComponent(backup.filename))}" class="action-link">
+                                            <i class="fas fa-download mr-1"></i> Download
+                                        </a>
+                                        <button type="button" class="action-link danger" data-delete="${backup.filename}">
+                                            <i class="fas fa-trash mr-1"></i> Delete
+                                        </button>
+                                    </td>
+                                `;
+                                tableBody.appendChild(row);
+                            });
+                        }
                     }
 
-                    if (newOptions) {
+                    if (restoreSelect) {
                         restoreSelect.innerHTML = '<option value="" disabled selected>Select a backup</option>';
-                        newOptions.forEach((option, index) => {
-                            if (index === 0 && option.value === '') return;
-                            restoreSelect.appendChild(option.cloneNode(true));
+                        backups.forEach(backup => {
+                            const option = document.createElement('option');
+                            option.value = backup.filename;
+                            option.textContent = backup.filename;
+                            restoreSelect.appendChild(option);
                         });
                     }
 
@@ -456,9 +477,54 @@
         function attachDeleteHandlers() {
             document.querySelectorAll('[data-delete]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    pendingDeleteFilename = btn.getAttribute('data-delete');
-                    deleteFilenameSpan.textContent = pendingDeleteFilename;
-                    showModal(deleteModal);
+                    const filename = btn.getAttribute('data-delete');
+
+                    Swal.fire({
+                        title: 'Delete Backup?',
+                        text: `This will permanently remove ${filename}.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Yes, delete it',
+                        cancelButtonText: 'Cancel',
+                    }).then(result => {
+                        if (!result.isConfirmed) {
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'Deleting backup...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        fetch(`{{ url('/admin/backup/delete') }}/${filename}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                Swal.close();
+
+                                if (data.success) {
+                                    showToast('success', data.message || 'Backup deleted.');
+                                    refreshBackupTable();
+                                } else {
+                                    showToast('error', data.error || 'Failed to delete backup.');
+                                }
+                            })
+                            .catch(() => {
+                                Swal.close();
+                                showToast('error', 'An error occurred while deleting the backup.');
+                            });
+                    });
                 });
             });
         }
@@ -527,49 +593,6 @@
                     .finally(() => setButtonLoading(restoreBtn, false, '<i class="fas fa-history mr-2"></i> Restore Selected Backup', '<i class="fas fa-spinner fa-spin mr-2"></i> Restoring...'));
             });
         }
-
-        deleteCancelBtn?.addEventListener('click', () => {
-            hideModal(deleteModal);
-            pendingDeleteFilename = null;
-        });
-
-        // Also add listener to modal close button
-        document.querySelector('#delete-backup-modal .modal-close')?.addEventListener('click', () => {
-            hideModal(deleteModal);
-            pendingDeleteFilename = null;
-        });
-
-        deleteConfirmBtn?.addEventListener('click', () => {
-            if (!pendingDeleteFilename) {
-                return;
-            }
-
-            setButtonLoading(deleteConfirmBtn, true, 'Delete', '<i class="fas fa-spinner fa-spin mr-2"></i> Deleting...');
-
-            fetch(`{{ url('/admin/backup/delete') }}/${pendingDeleteFilename}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('success', data.message || 'Backup deleted.');
-                        refreshBackupTable();
-                    } else {
-                        showToast('error', data.error || 'Failed to delete backup.');
-                    }
-                })
-                .catch(() => showToast('error', 'An error occurred while deleting the backup.'))
-                .finally(() => {
-                    setButtonLoading(deleteConfirmBtn, false, 'Delete', '<i class="fas fa-spinner fa-spin mr-2"></i> Deleting...');
-                    hideModal(deleteModal);
-                    pendingDeleteFilename = null;
-                });
-        });
 
         // Calculate next run display
         const nextRunEl = document.getElementById('backup-next-run');

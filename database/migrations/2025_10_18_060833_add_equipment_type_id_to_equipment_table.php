@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('equipment', function (Blueprint $table) {
-            $table->foreignId('equipment_type_id')->nullable()->constrained()->onDelete('set null');
-            $table->index('equipment_type_id');
+            // Only add the foreign key constraint since column and index already exist
+            $table->foreign('equipment_type_id')->references('id')->on('equipment_types')->onDelete('set null');
         });
     }
 

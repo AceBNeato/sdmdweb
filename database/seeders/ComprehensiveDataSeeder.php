@@ -490,7 +490,6 @@ class ComprehensiveDataSeeder extends Seeder
                 'equipment_id' => $index + 1, // Will be updated after creation
                 'assigned_to_type' => User::class,
                 'assigned_to_id' => $selectedStaff->id,
-                'assigned_by_type' => User::class,
                 'assigned_by_id' => $adminUser ? $adminUser->id : 1,
                 'assigned_at' => now()->subDays(rand(1, 60)),
                 'notes' => 'Assigned for ' . strtolower($equipment['department']) . ' work in ' . $equipment['location'],
@@ -562,7 +561,6 @@ class ComprehensiveDataSeeder extends Seeder
                 $equipment->update([
                     'assigned_to_type' => $assignment['assigned_to_type'],
                     'assigned_to_id' => $assignment['assigned_to_id'],
-                    'assigned_by_type' => $assignment['assigned_by_type'],
                     'assigned_by_id' => $assignment['assigned_by_id'],
                     'assigned_at' => $assignment['assigned_at'],
                     'status' => 'assigned',

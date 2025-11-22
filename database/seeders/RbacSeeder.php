@@ -77,24 +77,10 @@ class RbacSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'permissions.create',
-                'display_name' => 'Create Permissions',
-                'group' => 'Permissions',
-                'description' => 'Create new permissions',
-                'is_active' => true,
-            ],
-            [
                 'name' => 'permissions.edit',
                 'display_name' => 'Edit Permissions',
                 'group' => 'Permissions',
                 'description' => 'Edit existing permissions',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'permissions.delete',
-                'display_name' => 'Delete Permissions',
-                'group' => 'Permissions',
-                'description' => 'Delete permissions',
                 'is_active' => true,
             ],
 
@@ -150,6 +136,14 @@ class RbacSeeder extends Seeder
                 'display_name' => 'Manage Settings',
                 'group' => 'Settings',
                 'description' => 'Update system settings',
+                'is_active' => true,
+            ],
+
+            [
+                'name' => 'offices.view',
+                'display_name' => 'View Offices',
+                'group' => 'Offices',
+                'description' => 'View offices',
                 'is_active' => true,
             ],
 

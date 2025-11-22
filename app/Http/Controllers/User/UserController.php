@@ -328,8 +328,6 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'roles' => 'required|exists:roles,id',
-            'direct_permissions' => 'nullable|array',
-            'direct_permissions.*' => 'exists:permissions,id',
         ]);
 
         // Prevent non-admins from assigning admin role
@@ -363,39 +361,6 @@ class UserController extends Controller
 
         // Force logout if this user is currently logged in
         $this->forceUserLogout($user);
-
-        // Update direct permissions if provided
-        if (isset($validated['direct_permissions'])) {
-            $checkedPermissionIds = $validated['direct_permissions'];
-            $allPermissionIds = Permission::pluck('id')->toArray();
-            $uncheckedPermissionIds = array_diff($allPermissionIds, $checkedPermissionIds);
-
-            // Handle checked permissions
-            foreach ($checkedPermissionIds as $permissionId) {
-                if ($user->permissions->contains($permissionId)) {
-                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => true]);
-                } else {
-                    $user->permissions()->attach($permissionId, ['is_active' => true]);
-                }
-            }
-
-            // Handle unchecked permissions
-            foreach ($uncheckedPermissionIds as $permissionId) {
-                if ($user->permissions->contains($permissionId)) {
-                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => false]);
-                } else {
-                    $user->permissions()->attach($permissionId, ['is_active' => false]);
-                }
-            }
-        } else {
-            // Disable all direct permissions if none selected
-            DB::table('permission_user')->where('user_id', $user->id)->update(['is_active' => false]);
-        }
-
-        // Clear any cached permissions
-        if (method_exists($user, 'forgetCachedPermissions')) {
-            $user->forgetCachedPermissions();
-        }
 
         return redirect()->route('admin.accounts.index')
             ->with('success', 'User roles and permissions updated successfully. User has been automatically logged out for security.');
@@ -502,21 +467,6 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
 
-        $allPermissions = Permission::orderBy('group')
-            ->orderBy('name')
-            ->get();
-
-        // Get effective permissions (what the user can actually do)
-        $userPermissions = [];
-        foreach ($allPermissions as $permission) {
-            if ($user->hasPermissionTo($permission->name)) {
-                $userPermissions[] = $permission->id;
-            }
-        }
-
-        // Get direct permissions only (permissions assigned directly to user)
-        $directPermissions = $user->permissions->where('pivot.is_active', true)->pluck('id')->toArray();
-
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
         $userRoles = $user->roles->pluck('id')->toArray();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
@@ -532,7 +482,7 @@ class UserController extends Controller
             }
         }
 
-        $viewData = compact('user', 'roles', 'allPermissions', 'userPermissions', 'directPermissions', 'offices', 'userRoles', 'campuses');
+        $viewData = compact('user', 'roles', 'offices', 'userRoles', 'campuses');
 
         if (request()->ajax() || request()->wantsJson() || request()->boolean('modal')) {
             return view('accounts.edit_modal', $viewData);
@@ -567,8 +517,6 @@ class UserController extends Controller
             'position' => 'required|string|max:255',
             'office_id' => 'required|exists:offices,id',
             'roles' => auth()->user()->is_super_admin ? 'nullable|exists:roles,id' : '',
-            'direct_permissions' => 'nullable|array',
-            'direct_permissions.*' => 'exists:permissions,id',
         ]);
 
         // For staff users, validate that the selected office is within their campus/office
@@ -661,39 +609,6 @@ class UserController extends Controller
                     return redirect()->route('login')->with('warning', 'Your role has been changed by an administrator. Please login again with your new role.');
                 }
             }
-        }
-
-        // Handle direct permissions if provided
-        if (isset($validated['direct_permissions'])) {
-            $checkedPermissionIds = $validated['direct_permissions'];
-            $allPermissionIds = Permission::pluck('id')->toArray();
-            $uncheckedPermissionIds = array_diff($allPermissionIds, $checkedPermissionIds);
-
-            // Handle checked permissions
-            foreach ($checkedPermissionIds as $permissionId) {
-                if ($user->permissions->contains($permissionId)) {
-                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => true]);
-                } else {
-                    $user->permissions()->attach($permissionId, ['is_active' => true]);
-                }
-            }
-
-            // Handle unchecked permissions
-            foreach ($uncheckedPermissionIds as $permissionId) {
-                if ($user->permissions->contains($permissionId)) {
-                    $user->permissions()->updateExistingPivot($permissionId, ['is_active' => false]);
-                } else {
-                    $user->permissions()->attach($permissionId, ['is_active' => false]);
-                }
-            }
-        } else {
-            // Disable all direct permissions if none selected
-            DB::table('permission_user')->where('user_id', $user->id)->update(['is_active' => false]);
-        }
-
-        // Clear any cached permissions
-        if (method_exists($user, 'forgetCachedPermissions')) {
-            $user->forgetCachedPermissions();
         }
 
         // Check if this is the current user who had their role changed
