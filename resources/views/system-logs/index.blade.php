@@ -24,7 +24,7 @@
     $appliedFilters = collect([
         request('search') ? 'Search: "' . request('search') . '"' : null,
         request('user_id') && request('user_id') !== 'all' ? 'User: ' . optional($users->firstWhere('id', request('user_id')))->name : null,
-        request('action') && request('action') !== 'all' ? 'Action: ' . request('action') : null,
+        request('type') && request('type') !== 'all' ? 'Action: ' . request('type') : null,
         request('date_from') ? 'From: ' . request('date_from') : null,
         request('date_to') ? 'To: ' . request('date_to') : null,
     ])->filter();
@@ -52,27 +52,13 @@
     @php abort(403) @endphp
 @else
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
     <!-- Filters and Export Section -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ $currentRoute }}" class="row g-3">
+            <form method="GET" type="{{ $currentRoute }}" class="row g-3">
                 <div class="col-12 col-sm-6 col-md-3">
                     <label for="search" class="form-label">Search</label>
-                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Search actions, descriptions, or users...">
+                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Search types, descriptions, or users...">
                 </div>
                 <div class="col-12 col-sm-6 col-md-2">
                     <label for="user_id" class="form-label">User</label>
@@ -86,11 +72,11 @@
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-2">
-                    <label for="action" class="form-label">Action</label>
-                    <select class="form-select" id="action" name="action">
+                    <label for="type" class="form-label">Action</label>
+                    <select class="form-select" id="type" name="type">
                         <option value="all">All Actions</option>
                         @foreach($actions as $actionItem)
-                            <option value="{{ $actionItem }}" {{ request('action') == $actionItem ? 'selected' : '' }}>
+                            <option value="{{ $actionItem }}" {{ request('type') == $actionItem ? 'selected' : '' }}>
                                 {{ $actionItem }}
                             </option>
                         @endforeach
@@ -113,7 +99,7 @@
 
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-3 gap-2">
                 <div class="w-100 w-sm-auto">
-                    @if(request()->hasAny(['search', 'user_id', 'action', 'date_from', 'date_to']))
+                    @if(request()->hasAny(['search', 'user_id', 'type', 'date_from', 'date_to']))
                         <a href="{{ $currentRoute }}" class="btn btn-outline-secondary btn-sm w-100 w-sm-auto">
                             <i class='bx bx-x me-1'></i> Clear Filters
                         </a>
@@ -142,13 +128,13 @@
                     <h5 class="modal-title">Clear Old System Logs</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('admin.system-logs.clear') }}">
+                <form method="POST" type="{{ route('admin.system-logs.clear') }}">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="days" class="form-label">Delete logs older than (days)</label>
                             <input type="number" class="form-control" id="days" name="days" value="90" min="1" max="365" required>
-                            <div class="form-text">This action cannot be undone. Recommended: 90 days or older.</div>
+                            <div class="form-text">This type cannot be undone. Recommended: 90 days or older.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -266,7 +252,7 @@
                     </thead>
                     <tbody>
                         @foreach($activities as $activity)
-                            <tr class="logs-row" data-activity-id="{{ $activity->id }}" data-user-name="{{ $activity->user->name ?? 'Unknown User' }}" data-user-email="{{ $activity->user->email ?? 'Email not available' }}" data-action="{{ $activity->action }}" data-description="{{ $activity->description ?? 'No description available' }}" data-timestamp="{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y h:i A') }}">
+                            <tr class="logs-row" data-activity-id="{{ $activity->id }}" data-user-name="{{ $activity->user->name ?? 'Unknown User' }}" data-user-email="{{ $activity->user->email ?? 'Email not available' }}" data-type="{{ $activity->type }}" data-description="{{ $activity->description ?? 'No description available' }}" data-timestamp="{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y h:i A') }}">
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="logs-user-info">
@@ -276,7 +262,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge">{{ $activity->action }}</span>
+                                    <span class="badge">{{ $activity->type }}</span>
                                 </td>
                                 <td class="d-none d-md-table-cell">
                                     <div class="text-body">{{ $activity->description ?? 'No description available' }}</div>
@@ -311,7 +297,7 @@
                             <div class="log-detail-item">
                                 <div class="detail-label">Action</div>
                                 <div class="detail-value">
-                                    <span class="badge" id="modal-action"></span>
+                                    <span class="badge" id="modal-type"></span>
                                 </div>
                             </div>
                             <div class="log-detail-item">
@@ -365,14 +351,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get data from data attributes
             const userName = logRow.dataset.userName || 'Unknown User';
             const userEmail = logRow.dataset.userEmail || 'Email not available';
-            const action = logRow.dataset.action || '';
+            const type = logRow.dataset.type || '';
             const description = logRow.dataset.description || 'No description available';
             const timestamp = logRow.dataset.timestamp || '';
 
             // Populate modal
             document.getElementById('modal-user-name').textContent = userName;
             document.getElementById('modal-user-email').textContent = userEmail;
-            document.getElementById('modal-action').textContent = action;
+            document.getElementById('modal-type').textContent = type;
             document.getElementById('modal-description').textContent = description;
             document.getElementById('modal-timestamp').textContent = timestamp;
 

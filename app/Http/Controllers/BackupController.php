@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Activity;
 use App\Models\Setting;
 use App\Services\BackupService;
 use Illuminate\Http\Request;
@@ -43,20 +44,67 @@ class BackupController extends Controller
             $filename = $this->backupService->createBackup();
             Setting::recordBackupRun();
 
+            // Get backup file size for logging
+            $backupPath = $this->backupService->getBackupAbsolutePath($filename);
+            $fileSize = file_exists($backupPath) ? filesize($backupPath) : 0;
+            $fileSizeHuman = $fileSize > 0 ? $this->formatBytes($fileSize) : 'Unknown';
+
+            // Log successful backup creation
+            Activity::logSystemManagement(
+                'Backup Created',
+                'Created database backup: ' . $filename . ' (' . $fileSizeHuman . ')',
+                'backups',
+                $filename,
+                [
+                    'filename' => $filename,
+                    'size_bytes' => $fileSize,
+                    'size_human' => $fileSizeHuman,
+                    'created_by' => 'manual'
+                ],
+                null,
+                'Backup'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Backup created successfully',
-                'filename' => $filename
+                'filename' => $filename,
+                'size_human' => $fileSizeHuman
             ]);
 
         } catch (\Exception $e) {
             Log::error('Backup failed: ' . $e->getMessage());
+
+            // Log failed backup attempt
+            Activity::logSystemManagement(
+                'Backup Failed',
+                'Failed to create database backup: ' . $e->getMessage(),
+                'backups',
+                null,
+                null,
+                ['error' => $e->getMessage()],
+                'Backup'
+            );
 
             return response()->json([
                 'success' => false,
                 'message' => 'Backup failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Format bytes to human readable format
+     */
+    private function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+        
+        return round($bytes, $precision) . ' ' . $units[$i];
     }
 
     /**
@@ -72,7 +120,37 @@ class BackupController extends Controller
 
         try {
             $path = $this->backupService->getBackupAbsolutePath($filename);
+            $fileSize = file_exists($path) ? filesize($path) : 0;
+            $fileSizeHuman = $fileSize > 0 ? $this->formatBytes($fileSize) : 'Unknown';
+
+            // Log backup download
+            Activity::logSystemManagement(
+                'Backup Downloaded',
+                'Downloaded backup file: ' . $filename . ' (' . $fileSizeHuman . ')',
+                'backups',
+                $filename,
+                [
+                    'filename' => $filename,
+                    'size_bytes' => $fileSize,
+                    'size_human' => $fileSizeHuman,
+                    'downloaded_by' => auth()->user()->name
+                ],
+                null,
+                'Backup'
+            );
+
         } catch (\RuntimeException $exception) {
+            // Log failed download attempt
+            Activity::logSystemManagement(
+                'Backup Download Failed',
+                'Failed to download backup file: ' . $filename . ' - ' . $exception->getMessage(),
+                'backups',
+                $filename,
+                null,
+                ['error' => $exception->getMessage(), 'filename' => $filename],
+                'Backup'
+            );
+            
             abort(404, $exception->getMessage());
         }
 
@@ -96,7 +174,29 @@ class BackupController extends Controller
             ]);
 
             try {
+                // Get backup file info before restore
+                $backupPath = $this->backupService->getBackupAbsolutePath($filename);
+                $fileSize = file_exists($backupPath) ? filesize($backupPath) : 0;
+                $fileSizeHuman = $fileSize > 0 ? $this->formatBytes($fileSize) : 'Unknown';
+
                 $this->backupService->restoreFromExisting($filename);
+
+                // Log successful restore
+                Activity::logSystemManagement(
+                    'Database Restored',
+                    'Restored database from backup: ' . $filename . ' (' . $fileSizeHuman . ')',
+                    'backups',
+                    $filename,
+                    [
+                        'filename' => $filename,
+                        'size_bytes' => $fileSize,
+                        'size_human' => $fileSizeHuman,
+                        'restored_by' => auth()->user()->name,
+                        'restore_type' => 'existing'
+                    ],
+                    null,
+                    'Backup'
+                );
 
                 return response()->json([
                     'success' => true,
@@ -105,6 +205,17 @@ class BackupController extends Controller
 
             } catch (\Exception $e) {
                 Log::error('Restore failed: ' . $e->getMessage());
+
+                // Log failed restore attempt
+                Activity::logSystemManagement(
+                    'Database Restore Failed',
+                    'Failed to restore database from backup: ' . $filename . ' - ' . $e->getMessage(),
+                    'backups',
+                    $filename,
+                    null,
+                    ['error' => $e->getMessage(), 'filename' => $filename, 'restore_type' => 'existing'],
+                    'Backup'
+                );
 
                 return response()->json([
                     'success' => false,
@@ -119,7 +230,28 @@ class BackupController extends Controller
 
         try {
             $file = $request->file('backup_file');
+            $fileSize = $file->getSize();
+            $fileSizeHuman = $this->formatBytes($fileSize);
+            $originalName = $file->getClientOriginalName();
+
             $this->backupService->restoreFromUploadedFile($file->getRealPath());
+
+            // Log successful restore from uploaded file
+            Activity::logSystemManagement(
+                'Database Restored',
+                'Restored database from uploaded file: ' . $originalName . ' (' . $fileSizeHuman . ')',
+                'backups',
+                $originalName,
+                [
+                    'filename' => $originalName,
+                    'size_bytes' => $fileSize,
+                    'size_human' => $fileSizeHuman,
+                    'restored_by' => auth()->user()->name,
+                    'restore_type' => 'uploaded'
+                ],
+                null,
+                'Backup'
+            );
 
             return response()->json([
                 'success' => true,
@@ -128,6 +260,17 @@ class BackupController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Restore failed: ' . $e->getMessage());
+
+            // Log failed restore attempt from uploaded file
+            Activity::logSystemManagement(
+                'Database Restore Failed',
+                'Failed to restore database from uploaded file: ' . ($file->getClientOriginalName() ?? 'Unknown') . ' - ' . $e->getMessage(),
+                'backups',
+                $file->getClientOriginalName() ?? 'Unknown',
+                null,
+                ['error' => $e->getMessage(), 'filename' => $file->getClientOriginalName() ?? 'Unknown', 'restore_type' => 'uploaded'],
+                'Backup'
+            );
 
             return response()->json([
                 'success' => false,
@@ -147,11 +290,45 @@ class BackupController extends Controller
 
         try {
             $filename = basename($filename);
+            
+            // Get backup file info before deletion
+            $backupPath = $this->backupService->getBackupAbsolutePath($filename);
+            $fileSize = file_exists($backupPath) ? filesize($backupPath) : 0;
+            $fileSizeHuman = $fileSize > 0 ? $this->formatBytes($fileSize) : 'Unknown';
+            
             $this->backupService->deleteBackup($filename);
 
+            // Log successful backup deletion
+            Activity::logSystemManagement(
+                'Backup Deleted',
+                'Deleted backup file: ' . $filename . ' (' . $fileSizeHuman . ')',
+                'backups',
+                $filename,
+                null,
+                [
+                    'filename' => $filename,
+                    'size_bytes' => $fileSize,
+                    'size_human' => $fileSizeHuman,
+                    'deleted_by' => auth()->user()->name
+                ],
+                'Backup'
+            );
+
             return response()->json(['success' => true, 'message' => 'Backup deleted successfully']);
+            
         } catch (\Throwable $e) {
             Log::error('Failed to delete backup: ' . $e->getMessage());
+
+            // Log failed deletion attempt
+            Activity::logSystemManagement(
+                'Backup Deletion Failed',
+                'Failed to delete backup file: ' . $filename . ' - ' . $e->getMessage(),
+                'backups',
+                $filename,
+                null,
+                ['error' => $e->getMessage(), 'filename' => $filename],
+                'Backup'
+            );
 
             return response()->json(['error' => 'Failed to delete backup'], 500);
         }

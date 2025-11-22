@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\Activity;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Auth\Events\Lockout;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Support\Facades\Log;
 
 class AdminLoginController extends Controller
 {
@@ -162,15 +164,11 @@ class AdminLoginController extends Controller
                 // Log successful login
                 Log::info('Admin logged in', [
                     'email' => $user->email,
-                    'roles' => $user->roles->pluck('name')->toArray()
+                    'role' => $user->role ? $user->role->name : null
                 ]);
 
-                // Log to activity table
-                \App\Models\Activity::create([
-                    'user_id' => $user->id,
-                    'action' => 'Login',
-                    'description' => 'Admin logged into the system'
-                ]);
+                // Log to activity table using new method
+                Activity::logUserLogin($user);
 
                 // Redirect to admin QR scanner
                 return redirect()->intended(route('admin.qr-scanner'));
@@ -210,6 +208,14 @@ class AdminLoginController extends Controller
      */
     public function logout(Request $request)
     {
+        // Get the current user before logout
+        $user = Auth::user();
+
+        // Log logout before actually logging out
+        if ($user) {
+            Activity::logUserLogout($user);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>@yield('title', auth('technician')->check() || auth('staff')->check() || auth()->check() ? ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->is_admin ? 'SDMD Admin' : ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->hasRole('technician') ? 'SDMD Technician' : ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->hasRole('staff') ? 'SDMD Staff' : 'SDMD'))) : 'SDMD Login')</title>
+    <title>@yield('title', auth('technician')->check() || auth('staff')->check() || auth()->check() ? ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->is_admin ? 'SDMD Admin' : ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->role?->name === 'technician' ? 'SDMD Technician' : ((auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())->role?->name === 'staff' ? 'SDMD Staff' : 'SDMD'))) : 'SDMD Login')</title>
     <link rel="icon" href="{{ asset('images/SDMDlogo.png') }}" sizes="any">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +22,8 @@
     <link href="{{ asset('css/animations.css') }}" rel="stylesheet">
     <link href="{{ asset('css/toast.css') }}" rel="stylesheet">
     <link href="{{ asset('css/profile-dropdown.css') }}" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     @stack('styles')
 </head>
 
@@ -73,7 +75,7 @@
             <a class="brand" href="javascript:window.location.reload();">
                 <img src="{{ asset('images/SDMDlogo.png') }}" alt="SDMD logo">
                 <div class="tt">
-                    <p class="user-info">{{  (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())?->roles?->first()?->name ?? 'No Role' }}</p></div>
+                    <p class="user-info">{{  (auth('technician')->user() ?? auth('staff')->user() ?? auth()->user())?->role?->name ?? 'No Role' }}</p></div>
             </a>
         <hr>
 
@@ -103,6 +105,7 @@
                 @endif
                 @endif
 
+                
                 <!-- Equipment - available to all user types -->
                 @if($currentUser && $currentUser->hasPermissionTo('equipment.view'))
                 <a href="{{ route($prefix . '.equipment.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.equipment') || request()->routeIs('technician.equipment.*') || request()->routeIs('staff.equipment.*') ? 'active' : '' }}">
@@ -234,6 +237,8 @@
     <!-- jQuery and Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     @stack('scripts')
 
@@ -263,9 +268,9 @@
     </script>
     <script src="{{ asset('js/auth-prevention.js') }}"></script>
 
-    <!-- Toast Notification System -->
+    <!-- SweetAlert Notification System -->
     <script>
-        // Set global session messages for toast system
+        // Set global session messages for SweetAlert system
         window.sessionMessages = {!! json_encode([
             'success' => session('success'),
             'error' => session('error'),
@@ -273,7 +278,8 @@
             'info' => session('info')
         ]) !!};
     </script>
-    <script src="{{ asset('js/toast-system.js') }}"></script>
+    <script src="{{ asset('js/sweetalert-system.js') }}"></script>
+    <script src="{{ asset('js/ajax-sweetalert-helper.js') }}"></script>
     <script src="{{ asset('js/ui-functionality.js') }}"></script>
 
     @if($isAuthenticated)

@@ -3,7 +3,7 @@
 @section('title', 'View Equipment')
 
 @php
-    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 'technician' ? 'technician' : 'staff');
 @endphp
 
 @section('breadcrumbs')
@@ -57,13 +57,11 @@
                 @endcan
 
                 @can('equipment.delete')
-                <form action="{{ route($prefix . '.equipment.destroy', $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this equipment?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-primary" title="Delete Equipment">
-                        <i class='bx bx-trash-alt'></i> DELETE
-                    </button>
-                </form>
+                <button type="button" class="btn btn-primary ajax-delete" 
+                        data-url="{{ route($prefix . '.equipment.destroy', $equipment) }}" 
+                        title="Delete Equipment">
+                    <i class='bx bx-trash-alt'></i> DELETE
+                </button>
                 @endcan
 
                 <a href="{{ route($prefix . '.equipment.download-qrcode', $equipment) }}"
@@ -75,6 +73,10 @@
                         class="btn btn-primary">
                     <i class='bx bx-printer me-1'></i> Print QR Code
                 </a>
+
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#printQrcodesModal">
+                    <i class='bx bx-printer me-1'></i> Print Multiple QR
+                </button>
             </div>
         </div>
     </div>
@@ -243,7 +245,20 @@
     </div>
 </div>
 
-
+<!-- Print QR Codes Modal -->
+<div class="modal fade" id="printQrcodesModal" tabindex="-1" aria-labelledby="printQrcodesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @include('equipment.print-qrcodes_modal', [
+                'equipment' => $equipmentCollection ?? collect([$equipment]),
+                'campuses' => $campuses,
+                'routePrefix' => $prefix,
+                'selectedOfficeId' => $selectedOfficeId ?? 'all',
+                'printPdfRoute' => route($prefix . '.equipment.print-qrcodes-pdf')
+            ])
+        </div>
+    </div>
+</div>
 
 @push('scripts')
 <script src="{{ asset('js/equipment-show.js') }}"></script>

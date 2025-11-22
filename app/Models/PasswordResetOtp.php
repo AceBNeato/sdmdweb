@@ -16,9 +16,12 @@ class PasswordResetOtp extends Model
      */
     protected $fillable = [
         'email',
+        'user_id',
         'token',
         'otp',
         'expires_at',
+        'is_used',
+        'used_at',
     ];
 
     /**
@@ -28,6 +31,8 @@ class PasswordResetOtp extends Model
      */
     protected $casts = [
         'expires_at' => 'datetime',
+        'used_at' => 'datetime',
+        'is_used' => 'boolean',
     ];
 
     /**
@@ -39,6 +44,9 @@ class PasswordResetOtp extends Model
      */
     public static function createOtp($email, $token = null)
     {
+        // Find user by email (optional - for user_id reference)
+        $user = \App\Models\User::where('email', $email)->first();
+
         // Delete any existing OTPs for this email
         self::where('email', $email)->delete();
 
@@ -51,6 +59,7 @@ class PasswordResetOtp extends Model
         // Create the OTP record with the expires_at timestamp
         $otpRecord = self::create([
             'email' => $email,
+            'user_id' => $user ? $user->id : null, // Store user_id if user exists
             'token' => $token,
             'otp' => $otp,
             'expires_at' => $expiresAt,
@@ -75,6 +84,7 @@ class PasswordResetOtp extends Model
         $record = self::where('email', $email)
             ->where('otp', $otp)
             ->where('expires_at', '>', now())
+            ->where('is_used', false)
             ->first();
 
         return $record !== null;
@@ -92,6 +102,7 @@ class PasswordResetOtp extends Model
         $record = self::where('email', $email)
             ->where('otp', $otp)
             ->where('expires_at', '>', now())
+            ->where('is_used', false)
             ->first();
 
         return $record ? $record->token : null;

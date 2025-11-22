@@ -30,14 +30,14 @@ class RoleController extends Controller
             ->latest()
             ->get();
 
-        return view('admin.rbac.roles.index', compact('roles'));
+        return view('accounts.rbac.roles.index', compact('roles'));
     }
 
     public function edit(Role $role)
     {
         $permissions = Permission::all();
         $role->load('permissions');
-        return view('admin.rbac.roles.edit', compact('role', 'permissions'));
+        return view('accounts.rbac.roles.edit', compact('role', 'permissions'));
     }
 
     public function update(Request $request, Role $role)
@@ -71,20 +71,20 @@ class RoleController extends Controller
     {
         $roles = Role::with('permissions')->get();
         $permissions = Permission::orderBy('group')->orderBy('name')->get();
-        return view('admin.rbac.roles.permissions', compact('roles', 'permissions'));
+        return view('accounts.rbac.roles.permissions', compact('roles', 'permissions'));
     }
 
     public function updatePermissions(Request $request)
     {
         $request->validate([
-            'role_permissions' => 'required|array',
-            'role_permissions.*' => 'array',
-            'role_permissions.*.*' => 'exists:permissions,id',
+            'permissions' => 'required|array',
+            'permissions.*' => 'array',
+            'permissions.*.*' => 'exists:permissions,id',
         ]);
 
         DB::beginTransaction();
         try {
-            foreach ($request->role_permissions as $roleId => $permissionIds) {
+            foreach ($request->permissions as $roleId => $permissionIds) {
                 $role = Role::find($roleId);
                 if ($role) {
                     // Sync permissions - add checked, remove unchecked
@@ -93,10 +93,30 @@ class RoleController extends Controller
             }
 
             DB::commit();
+            
+            // Return JSON response for AJAX requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Role permissions updated successfully'
+                ]);
+            }
+            
+            // Regular redirect for non-AJAX requests
             return redirect()->route('admin.rbac.roles.permissions')
                 ->with('success', 'Role permissions updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Return JSON response for AJAX requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error updating role permissions: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            // Regular redirect for non-AJAX requests
             return back()->with('error', 'Error updating role permissions: ' . $e->getMessage());
         }
     }

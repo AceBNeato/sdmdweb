@@ -10,23 +10,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * Trait HasRolesAndPermissions
  * 
  * This trait provides role and permission functionality to the User model.
+ * Updated for single role system.
  */
 trait HasRolesAndPermissions
 {
     /**
-     * A user may have multiple roles.
+     * Get all permissions for the user through their role.
      */
-    public function roles(): BelongsToMany
+    public function getAllPermissions()
     {
-        return $this->belongsToMany(Role::class, 'role_user');
-    }
+        if (!$this->role) {
+            return collect();
+        }
 
-    /**
-     * A user may have multiple permissions.
-     */
-    public function permissions(): BelongsToMany
-    {
-        return $this->belongsToMany(Permission::class, 'permission_user');
+        return $this->role->permissions;
     }
 
     /**
@@ -35,14 +32,14 @@ trait HasRolesAndPermissions
     public function hasRole($role): bool
     {
         if (is_string($role)) {
-            return $this->roles->contains('name', $role);
+            return $this->role?->name === $role;
         }
 
         if ($role instanceof Role) {
-            return $this->roles->contains('id', $role->id);
+            return $this->role_id === $role->id;
         }
 
-        return (bool) $role->intersect($this->roles)->count();
+        return false;
     }
 
     /**
@@ -78,25 +75,20 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * Check if the user has the given permission through their roles.
+     * Check if the user has the given permission through their role.
      */
     public function hasPermissionTo($permission): bool
     {
         if (is_string($permission)) {
-            return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
-                $query->where('name', $permission);
-            })->exists();
+            return $this->getAllPermissions()->contains('name', $permission);
         }
 
         if ($permission instanceof Permission) {
-            return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
-                $query->where('id', $permission->id);
-            })->exists();
+            return $this->getAllPermissions()->contains('id', $permission->id);
         }
 
         return false;
     }
-
 
     /**
      * Assign the given role to the user.
@@ -107,7 +99,8 @@ trait HasRolesAndPermissions
             $role = Role::where('name', $role)->firstOrFail();
         }
 
-        $this->roles()->syncWithoutDetaching([$role->id]);
+        $this->role_id = $role->id;
+        $this->save();
         
         return $this;
     }
@@ -120,8 +113,11 @@ trait HasRolesAndPermissions
         if (is_string($role)) {
             $role = Role::where('name', $role)->firstOrFail();
         }
-        
-        $this->roles()->detach($role);
+
+        if ($this->role_id === $role->id) {
+            $this->role_id = null;
+            $this->save();
+        }
         
         return $this;
     }
@@ -131,44 +127,12 @@ trait HasRolesAndPermissions
      */
     public function syncRoles(array $roles): self
     {
-        $roleIds = [];
-        
-        foreach ($roles as $role) {
-            if (is_string($role)) {
-                $role = Role::where('name', $role)->firstOrFail();
-            }
-            $roleIds[] = $role->id;
+        // For single role system, only take the first role
+        if (!empty($roles)) {
+            $roleId = is_array($roles[0]) ? $roles[0]['id'] : $roles[0];
+            $this->role_id = $roleId;
+            $this->save();
         }
-        
-        $this->roles()->sync($roleIds);
-        
-        return $this;
-    }
-
-    /**
-     * Give the given permission to the user.
-     */
-    public function givePermissionTo($permission): self
-    {
-        if (is_string($permission)) {
-            $permission = Permission::where('name', $permission)->firstOrFail();
-        }
-
-        $this->permissions()->syncWithoutDetaching([$permission->id => ['is_active' => true]]);
-        
-        return $this;
-    }
-
-    /**
-     * Revoke the given permission from the user.
-     */
-    public function revokePermissionTo($permission): self
-    {
-        if (is_string($permission)) {
-            $permission = Permission::where('name', $permission)->firstOrFail();
-        }
-
-        $this->permissions()->detach($permission);
         
         return $this;
     }

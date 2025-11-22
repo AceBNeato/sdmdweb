@@ -18,9 +18,10 @@
                     @php
                         $user = auth()->user();
                         $prefix = '';
-                        if ($user->hasRole('technician')) {
-                            $prefix = 'technician';
-                        } elseif ($user->hasRole('staff')) {
+                        if ($user->role?->name === 'technician') {
+                            $roleName = 'Technician';
+                            $loginUrl = route('technician.login');
+                        } elseif ($user->role?->name === 'staff') {
                             $prefix = 'staff';
                         } elseif ($user->is_admin) {
                             $prefix = 'admin';

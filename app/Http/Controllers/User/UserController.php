@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Permission;
+use App\Models\Activity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -40,15 +41,15 @@ class UserController extends Controller
         $roleFilter = $request->get('role_id');
         $statusFilter = $request->get('status');
 
-        $usersQuery = User::with(['roles', 'campus', 'office'])
+        $usersQuery = User::with(['role', 'campus', 'office'])
             ->when(!auth()->user()->is_admin, function($query) {
                 // Non-admin users can only see non-admin users
-                return $query->whereDoesntHave('roles', function($q) {
-                    $q->where('name', 'admin');
+                return $query->whereHas('role', function($q) {
+                    $q->where('name', '!=', 'admin');
                 });
             })
-            ->whereDoesntHave('roles', function($q) {
-                $q->where('name', 'super-admin');
+            ->whereHas('role', function($q) {
+                $q->where('name', '!=', 'super-admin');
             });
 
         // Restrict staff users to only see users from their own office
@@ -79,7 +80,7 @@ class UserController extends Controller
 
         // Apply role filter
         if ($roleFilter) {
-            $usersQuery->whereHas('roles', function($query) use ($roleFilter) {
+            $usersQuery->whereHas('role', function($query) use ($roleFilter) {
                 $query->where('roles.id', $roleFilter);
             });
         }
@@ -98,14 +99,14 @@ class UserController extends Controller
         if (str_contains($routeName, 'staff.')) {
             $staffRole = Role::where('name', 'staff')->first();
             if ($staffRole) {
-                $usersQuery->whereHas('roles', function($query) use ($staffRole) {
+                $usersQuery->whereHas('role', function($query) use ($staffRole) {
                     $query->where('role_id', $staffRole->id);
                 });
             }
         } elseif (str_contains($routeName, 'technicians.')) {
             $technicianRole = Role::where('name', 'technician')->first();
             if ($technicianRole) {
-                $usersQuery->whereHas('roles', function($query) use ($technicianRole) {
+                $usersQuery->whereHas('role', function($query) use ($technicianRole) {
                     $query->where('role_id', $technicianRole->id);
                 });
             }
@@ -214,8 +215,11 @@ class UserController extends Controller
         $office = \App\Models\Office::find($validated['office_id']);
         $campus_id = $office ? $office->campus_id : null;
 
-        // Prepare data for stored procedure
-        $userData = [
+        // Generate email verification token first
+        $verificationToken = Str::random(64);
+        
+        // Create user directly with Eloquent including verification token
+        $user = User::create([
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
@@ -224,45 +228,16 @@ class UserController extends Controller
             'position' => $validated['position'],
             'office_id' => $validated['office_id'],
             'campus_id' => $campus_id,
-            'role_ids' => [$validated['roles']], // Single role as array
-            'created_by_id' => auth()->id()
-        ];
-
-        // Use stored procedure to create user with roles
-        $userId = $this->storedProcedureService->createUserWithRoles($userData);
-
-        if (!$userId) {
-            return redirect()->back()
-                ->with('error', 'Failed to create user. Please try again.')
-                ->withInput();
-        }
-
-        \Illuminate\Support\Facades\Log::info('User created with ID: ' . $userId);
-
-        // Get the created user
-        $user = User::find($userId);
+            'role_id' => $validated['roles'], // Single role
+            'is_active' => true,
+            'email_verified_at' => null,
+            'email_verification_token' => $verificationToken,
+            'email_verification_token_expires_at' => Carbon::now()->addHours(24),
+        ]);
 
         if (!$user) {
-            \Illuminate\Support\Facades\Log::error('User not found after creation, ID: ' . $userId);
             return redirect()->back()
-                ->with('error', 'User was created but could not be retrieved. Please contact administrator.')
-                ->withInput();
-        }
-
-        \Illuminate\Support\Facades\Log::info('User found: ' . $user->id . ' - ' . $user->email);
-
-        // Generate email verification token
-        $verificationToken = Str::random(64);
-        $user->email_verification_token = $verificationToken;
-        $user->email_verification_token_expires_at = Carbon::now()->addHours(24);
-
-        try {
-            $user->save();
-            \Illuminate\Support\Facades\Log::info('User saved with verification token');
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to save user with verification token: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'User created but failed to set up email verification.')
+                ->with('error', 'Failed to create user. Please try again.')
                 ->withInput();
         }
 
@@ -270,14 +245,14 @@ class UserController extends Controller
         $verificationUrl = route('email.verify', ['token' => $verificationToken]);
         \Illuminate\Support\Facades\Log::info('Verification URL generated: ' . $verificationUrl);
 
-        // Send verification email
+        // Send verification email (optional - don't fail if email is not configured)
         try {
             $user->notify(new EmailVerificationNotification($verificationUrl, $user));
             \Illuminate\Support\Facades\Log::info('Email verification notification sent successfully');
             $emailSent = true;
         } catch (\Exception $e) {
             // Log the error but don't fail the user creation
-            \Illuminate\Support\Facades\Log::error('Email verification failed during user creation', [
+            \Illuminate\Support\Facades\Log::warning('Email verification failed during user creation (email may not be configured)', [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'error' => $e->getMessage()
@@ -285,11 +260,14 @@ class UserController extends Controller
             $emailSent = false;
         }
 
+        // Log user creation to activities table
+        Activity::logUserCreation($user);
+
         $message = 'User created successfully.';
         if ($emailSent) {
             $message .= ' Verification email sent to ' . $user->email . '.';
         } else {
-            $message .= ' However, failed to send verification email.';
+            $message .= ' User can login with their credentials. (Email verification skipped - email not configured)';
         }
 
         \Illuminate\Support\Facades\Log::info('User creation completed: ' . $message);
@@ -298,7 +276,7 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'redirect' => route('admin.accounts.index'),
+                'redirect' => route('accounts.index'),
                 'user' => [
                     'id' => $user->id,
                     'first_name' => $user->first_name,
@@ -310,7 +288,7 @@ class UserController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.accounts.index')
+        return redirect()->route('accounts.index')
             ->with('success', $message);
     }
 
@@ -341,9 +319,10 @@ class UserController extends Controller
 
         // Update user roles
         // Log role change
-        $oldRole = $user->roles->first();
+        $oldRole = $user->role;
         $newRole = Role::find($validated['roles']);
 
+        // Log to Laravel log (existing)
         \Illuminate\Support\Facades\Log::info('User role updated via updateRoles method', [
             'admin_user_id' => auth()->id(),
             'admin_user_email' => auth()->user()->email,
@@ -357,7 +336,11 @@ class UserController extends Controller
             'user_agent' => request()->userAgent()
         ]);
 
-        $user->roles()->sync([$validated['roles']]);
+        // Log to activities table
+        Activity::logUserRoleChange($user, $oldRole, $newRole);
+
+        $user->role_id = $validated['roles'];
+        $user->save();
 
         // Force logout if this user is currently logged in
         $this->forceUserLogout($user);
@@ -366,52 +349,7 @@ class UserController extends Controller
             ->with('success', 'User roles and permissions updated successfully. User has been automatically logged out for security.');
     }
 
-    /**
-     * Remove the specified user from storage.
-     */
-    public function destroy(Request $request, User $user)
-    {
-        // Prevent non-admins from deleting admin users
-        if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('admin.accounts.index')
-                ->with('error', 'You do not have permission to delete admin users.');
-        }
-
-        // Prevent users from deleting themselves
-        if ($user->id === auth()->user()->id) {
-            return redirect()->route('admin.accounts.index')
-                ->with('error', 'You cannot delete your own account.');
-        }
-
-        // Require current password confirmation
-        $request->validate([
-            'password' => ['required', 'string'],
-        ]);
-
-        if (!Hash::check($request->input('password'), auth()->user()->password)) {
-            return redirect()->route('admin.accounts.index')
-                ->with('error', 'Password confirmation failed. User was not deleted.');
-        }
-
-        try {
-            DB::transaction(function () use ($user) {
-                // Detach related data before permanent deletion
-                $user->roles()->detach();
-                $user->permissions()->detach();
-
-                // Permanently remove the user
-                $user->forceDelete();
-            });
-
-            return redirect()->route('admin.accounts.index')
-                ->with('success', 'User deleted successfully.');
-
-        } catch (\Exception $e) {
-            return redirect()->route('admin.accounts.index')
-                ->with('error', 'An error occurred while deleting the user.');
-        }
-    }
-
+    
     /**
      * Display the specified user information.
      */
@@ -468,7 +406,7 @@ class UserController extends Controller
             ->get();
 
         $offices = \App\Models\Office::where('is_active', true)->orderBy('name')->get();
-        $userRoles = $user->roles->pluck('id')->toArray();
+        $userRoles = $user->role_id ? [$user->role_id] : [];
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
         // For staff users, restrict office options to their campus/office
@@ -540,6 +478,10 @@ class UserController extends Controller
         $office = \App\Models\Office::find($validated['office_id']);
         $campus_id = $office ? $office->campus_id : null;
 
+        // Track changes for logging
+        $originalData = $user->getOriginal();
+        $changes = [];
+
         // Update user with all information
         $user->update([
             'first_name' => $validated['first_name'],
@@ -551,9 +493,29 @@ class UserController extends Controller
             'campus_id' => $campus_id,
         ]);
 
+        // Track field changes
+        foreach (['first_name', 'last_name', 'email', 'phone', 'position', 'office_id'] as $field) {
+            if ($originalData[$field] != $user->$field) {
+                $oldValue = $originalData[$field];
+                $newValue = $user->$field;
+                
+                if ($field === 'office_id') {
+                    $oldOffice = \App\Models\Office::find($oldValue);
+                    $newOffice = \App\Models\Office::find($newValue);
+                    $changes[$field] = [
+                        $oldOffice?->name ?? 'Unknown',
+                        $newOffice?->name ?? 'Unknown'
+                    ];
+                } else {
+                    $changes[$field] = [$oldValue, $newValue];
+                }
+            }
+        }
+
         // Update password if provided
         if (!empty($validated['password'])) {
             $user->update(['password' => Hash::make($validated['password'])]);
+            $changes['password'] = ['[old password]', '[new password]'];
         }
 
         // Update roles if provided and user is superadmin
@@ -578,13 +540,14 @@ class UserController extends Controller
             $currentlyHasTechnicianRole = $user->hasRole('technician');
 
             // Check if role actually changed
-            $currentRoleId = $user->roles->first()?->id;
+            $currentRoleId = $user->role_id;
             $roleChanged = $currentRoleId != $validated['roles'];
 
             // Log role change
-            $oldRole = $user->roles->first();
+            $oldRole = $user->role;
             $newRole = Role::find($validated['roles']);
 
+            // Log to Laravel log (existing)
             \Illuminate\Support\Facades\Log::info('User role updated', [
                 'admin_user_id' => auth()->id(),
                 'admin_user_email' => auth()->user()->email,
@@ -598,7 +561,11 @@ class UserController extends Controller
                 'user_agent' => request()->userAgent()
             ]);
 
-            $user->roles()->sync([$validated['roles']]);
+            // Log to activities table
+            Activity::logUserRoleChange($user, $oldRole, $newRole);
+
+            $user->role_id = $validated['roles'];
+        $user->save();
 
             // Force logout and redirect if this user is currently logged in and role changed
             if ($roleChanged) {
@@ -613,6 +580,11 @@ class UserController extends Controller
 
         // Check if this is the current user who had their role changed
         $currentUserRoleChanged = $roleChanged && auth()->check() && auth()->id() === $user->id;
+
+        // Log user update to activities table (only if there were changes)
+        if (!empty($changes)) {
+            Activity::logUserUpdate($user, $changes);
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             if ($currentUserRoleChanged) {
@@ -637,7 +609,7 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully.',
-                'redirect' => route('admin.accounts.index'),
+                'redirect' => route('accounts.index'),
                 'user' => [
                     'id' => $user->id,
                     'first_name' => $user->first_name,
@@ -697,6 +669,9 @@ class UserController extends Controller
         }
 
         $user->update(['is_active' => !$user->is_active]);
+
+        // Log status toggle to activities table
+        Activity::logUserStatusToggle($user);
 
         $status = $user->is_active ? 'activated' : 'deactivated';
         return redirect()->back()->with('success', "User {$status} successfully.");

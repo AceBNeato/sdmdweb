@@ -79,7 +79,8 @@ class StaffController extends Controller
         // Assign staff role
         $staffRole = Role::where('name', 'staff')->first();
         if ($staffRole) {
-            $user->roles()->attach($staffRole->id);
+            $user->role_id = $staffRole->id;
+            $user->save();
         }
 
         return redirect()->route('admin.staff.index')

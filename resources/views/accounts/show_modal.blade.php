@@ -27,13 +27,11 @@
                 <i class='bx bx-shield'></i>
                 Assigned Roles
             </h6>
-            @if($user->roles->count() > 0)
+            @if($user->role)
                 <div class="info-value d-flex flex-wrap gap-2">
-                    @foreach($user->roles as $role)
-                        <span class="role-badge">
-                            <i class='bx bx-shield-check'></i> {{ $role->display_name ?? $role->name }}
-                        </span>
-                    @endforeach
+                    <span class="role-badge">
+                        <i class='bx bx-shield-check'></i> {{ $user->role->display_name ?? $user->role->name }}
+                    </span>
                 </div>
             @else
                 <div class="info-value text-muted">No roles assigned</div>

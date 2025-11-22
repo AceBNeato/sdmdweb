@@ -52,6 +52,7 @@ return new class extends Migration
             'roles' => 'Role Management',
             'equipment' => 'Equipment Management',
             'maintenance' => 'Maintenance Management',
+            'history' => 'Equipment History',
             'reports' => 'Reports',
             'settings' => 'System Settings',
         ];
@@ -87,6 +88,12 @@ return new class extends Migration
             'maintenance.delete' => 'Delete Maintenance Logs',
             'maintenance.assign' => 'Assign Maintenance Tasks',
             'maintenance.complete' => 'Complete Maintenance Tasks',
+            
+            // History permissions
+            'history.create' => 'Create History Records',
+            'history.store' => 'Store History Records',
+            'history.edit' => 'Edit History Records',
+            'history.delete' => 'Delete History Records',
             
             // Report permissions
             'reports.view' => 'View Reports',

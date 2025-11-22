@@ -157,26 +157,10 @@ $(document).ready(function() {
         $('#viewEquipmentModal').modal('hide');
 
         // Show loading spinner
-        content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-
-        // Load content via AJAX
-        $.ajax({
-            url: url,
-            type: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function(response) {
-                content.html(response);
-            },
-            error: function(xhr, status, error) {
-                console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                content.html('<div class="alert alert-danger">Failed to load equipment form. Error: ' + xhr.status + ' - ' + error + '</div>');
-            }
+        // Use AJAX Helper to load modal content
+        window.AjaxHelper.loadModal(url, '#editEquipmentModal', '#editEquipmentContent', {
+            errorMessage: 'Failed to load equipment form. Please try again.'
         });
-
-        // Show modal
-        modal.modal('show');
     });
 
     // Handle form submission within edit modal
@@ -185,30 +169,22 @@ $(document).ready(function() {
         var form = $(this);
         var formData = new FormData(this);
 
-        $.ajax({
-            url: form.attr('action'),
-            type: form.attr('method'),
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                // Close modal and reload page
-                $('#editEquipmentModal').modal('hide');
-                location.reload();
-            },
-            error: function(xhr) {
-                // Handle errors - show validation errors
-                if (xhr.status === 422) {
+        // Use AJAX Helper with SweetAlert
+        window.AjaxHelper.submitForm(this, {
+            loadingMessage: 'Updating equipment...',
+            successMessage: 'Equipment updated successfully!',
+            errorMessage: 'Failed to update equipment. Please try again.',
+            reloadOnSuccess: true,
+            onError: function(xhr) {
+                // Handle validation errors specifically
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     var errors = xhr.responseJSON.errors;
-                    // Display validation errors
                     var errorHtml = '<div class="alert alert-danger"><ul>';
                     for (var field in errors) {
                         errorHtml += '<li>' + errors[field][0] + '</li>';
                     }
                     errorHtml += '</ul></div>';
                     $('#editEquipmentContent').prepend(errorHtml);
-                } else {
-                    $('#editEquipmentContent').prepend('<div class="alert alert-danger">An error occurred. Please try again.</div>');
                 }
             }
         });

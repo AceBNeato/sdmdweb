@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('role_id')->nullable()->constrained()->onDelete('set null');
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
@@ -37,6 +38,7 @@ return new class extends Migration
             $table->index(['is_active']);
             $table->index('office_id');
             $table->index('campus_id');
+            $table->index('role_id');
             $table->index(['is_available']);
             $table->index('specialization');
         });

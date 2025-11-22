@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+    $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 'technician' ? 'technician' : 'staff');
 @endphp
 
 @section('page_title', 'Equipment History')
@@ -14,16 +14,9 @@
 @section('title', 'Equipment History - ' . ($equipment->model_number ?? 'SDMD'))
 
 @section('content')
-@if(!auth()->user()->hasPermissionTo('reports.view'))
+@if(!auth()->user()->hasPermissionTo('reports.generate'))
     @php abort(403) @endphp
 @else
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
 
 <div class="history-dashboard">
     <!-- Header Actions -->
@@ -122,7 +115,7 @@
                                 <i class='bx bx-user-circle'></i>
                                 <span>{{ $history->responsible_person }}</span>
                                 @if($history->user)
-                                    <span class="user-role">({{ $history->user->roles->first()->display_name ?? $history->user->roles->first()->name ?? 'Staff' }})</span>
+                                    <span class="user-role">({{ $history->user->role?->display_name ?? $history->user->role?->name ?? 'Staff' }})</span>
                                 @endif
                             </div>
                         </div>

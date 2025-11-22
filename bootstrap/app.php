@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'rbac.verify' => \App\Http\Middleware\RbacVerification::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

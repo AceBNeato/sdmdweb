@@ -8,7 +8,6 @@ body {
     flex-direction: column;
     justify-content: space-between;
     position: relative;
-    overflow: hidden;
 }
 
 #particles-js {
@@ -215,6 +214,7 @@ footer a {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    
     .container {
         flex-direction: column;
         padding: 10px;

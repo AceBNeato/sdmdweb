@@ -13,6 +13,8 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons/css/boxicons.min.css" rel="stylesheet" />
     <link href="{{ asset('css/login.css') }}" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -83,34 +85,43 @@
                 @endif
             </form>
 
-                @if(session('lockout'))
-                <!-- Lockout message with countdown -->
-                <div class="mt-4 text-center">
-                    <div id="lockout-message" class="bg-red-100 border-2 border-red-500 text-red-800 px-4 py-3 rounded-lg relative shadow-lg animate-pulse">
-                        <div class="flex items-center justify-center mb-2">
-                            <span class="text-2xl mr-2">🚨</span>
-                            <strong class="font-bold text-red-900 text-lg">ACCOUNT LOCKED!</strong>
-                            <span class="text-2xl ml-2">🚨</span>
-                        </div>
-                        <span class="block text-red-700 font-semibold">Too many failed login attempts. Please wait <span id="countdown" class="font-bold text-red-900 text-xl">{{ session('remaining_seconds', 60) }}</span> seconds before trying again.</span>
-                    </div>
-                </div>
-                @endif
+            <script>
+            // Show lockout warning as SweetAlert if present
+            @if(session('lockout'))
+                Swal.fire({
+                    title: '🚨 ACCOUNT LOCKED! 🚨',
+                    html: 'Too many failed login attempts.<br><br>Please wait <strong><span id="swal-countdown">{{ session('remaining_seconds', 60) }}</span></strong> seconds before trying again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545',
+                    backdrop: 'rgba(0,0,0,0.5)',
+                    didOpen: () => {
+                        const countdownEl = document.getElementById('swal-countdown');
+                        let seconds = {{ session('remaining_seconds', 60) }};
+                        const timer = setInterval(() => {
+                            seconds--;
+                            if (seconds > 0) {
+                                countdownEl.textContent = seconds;
+                            } else {
+                                clearInterval(timer);
+                            }
+                        }, 1000);
+                    }
+                });
+            @endif
 
-                @if($errors->has('email') && !session('lockout'))
-                <!-- Wrong credentials alarm -->
-                <div class="mt-4 text-center">
-                    <div class="bg-red-100 border-2 border-red-500 text-red-800 px-4 py-3 rounded-lg relative shadow-lg">
-                        <div class="flex items-center justify-center mb-2">
-                            <span class="text-2xl mr-2">⚠️</span>
-                            <strong class="font-bold text-red-900 text-lg">INVALID CREDENTIALS</strong>
-                            <span class="text-2xl ml-2">⚠️</span>
-                        </div>
-                        <span class="block text-red-700 font-semibold">{{ $errors->first('email') }}</span>
-                        <span class="block text-red-600 text-sm mt-1">Attempts remaining: <span class="attempts-counter">{{ session('remaining_attempts', 3) }}/3</span></span>
-                    </div>
-                </div>
-                @endif
+            // Show invalid credentials warning as SweetAlert if present
+            @if($errors->has('email') && !session('lockout'))
+                Swal.fire({
+                    title: '⚠️ INVALID CREDENTIALS ⚠️',
+                    html: '{{ $errors->first('email') }}<br><br><small>Attempts remaining: <strong>{{ session('remaining_attempts', 3) }}/3</strong></small>',
+                    icon: 'warning',
+                    confirmButtonText: 'Try Again',
+                    confirmButtonColor: '#ffc107',
+                    backdrop: 'rgba(0,0,0,0.5)'
+                });
+            @endif
+            </script>
 
         </div>
     </div>

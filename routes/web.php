@@ -318,6 +318,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // Admin Accounts
     Route::get('/accounts', [\App\Http\Controllers\Admin\AdminController::class, 'accounts'])
         ->name('accounts');
+    
+    // Account management routes
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        Route::post('/{user}/toggle-status', [\App\Http\Controllers\User\UserController::class, 'toggleStatus'])
+            ->name('toggle-status')
+            ->middleware('permission:users.edit');
+    });
 });
 
     Route::middleware(['auth:staff'])
@@ -427,8 +434,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
         Route::post('/store', [UserController::class, 'store'])->name('store')->middleware('permission:users.create');
         Route::put('/{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
-    });
+        Route::patch('/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status')->middleware('permission:users.edit');
+            });
 });
 
 /*
@@ -610,25 +617,10 @@ Route::middleware(['auth'])
             Route::middleware(['rbac.verify'])->group(function () {
                 Route::resource('rbac/roles', RoleController::class)
                     ->only(['index', 'edit', 'update'])->names('rbac.roles');
-                Route::resource('rbac/permissions', PermissionController::class)
-                    ->only(['index'])->names('rbac.permissions');
 
                 // Role Permissions Management
                 Route::get('rbac/roles/permissions', [RoleController::class, 'permissions'])->name('rbac.roles.permissions');
                 Route::post('rbac/roles/permissions', [RoleController::class, 'updatePermissions'])->name('rbac.roles.update-permissions');
-
-                // RBAC User Management
-                Route::prefix('rbac/users')->name('rbac.users.')->group(function () {
-                    Route::get('/', [UserController::class, 'index'])->name('index');
-                    Route::get('create', [UserController::class, 'create'])->name('create');
-                    Route::post('/', [UserController::class, 'store'])->name('store');
-                    Route::get('{user}', [UserController::class, 'show'])->name('show');
-                    Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit');
-                    Route::put('{user}', [UserController::class, 'update'])->name('update');
-                    Route::get('{user}/edit-roles', [UserController::class, 'editRoles'])->name('edit-roles');
-                    Route::put('{user}/update-roles', [UserController::class, 'updateRoles'])->name('update-roles');
-                    Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy');
-                });
             });
 
             // Office Management

@@ -78,12 +78,8 @@ class TechnicianLoginController extends Controller
                 'employee_id' => $technician->employee_id
             ]);
 
-            // Log to activity table
-            \App\Models\Activity::create([
-                'user_id' => $technician->id,
-                'action' => 'Login',
-                'description' => 'Technician logged into the system'
-            ]);
+            // Log to activity table using new method
+            Activity::logUserLogin($technician);
 
             return redirect(route('technician.qr-scanner'));
         }
@@ -101,6 +97,14 @@ class TechnicianLoginController extends Controller
      */
     public function logout(Request $request)
     {
+        // Get the current user before logout
+        $user = Auth::guard('technician')->user();
+
+        // Log logout before actually logging out
+        if ($user) {
+            Activity::logUserLogout($user);
+        }
+
         // Fast logout - just log out the technician guard
         Auth::guard('technician')->logout();
 

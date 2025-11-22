@@ -139,12 +139,8 @@ class EquipmentController extends Controller
 
         $equipment = Equipment::create($validated);
 
-        // Log the activity
-        Activity::create([
-            'user_id' => auth()->id(),
-            'action' => 'equipment.store',
-            'description' => "Created new equipment: {$equipment->model_number} ({$equipment->serial_number})"
-        ]);
+        // Log the activity using new method
+        Activity::logEquipmentCreation($equipment);
 
         // Generate and save QR code using optimized service
         $qrData = [
@@ -273,6 +269,10 @@ class EquipmentController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        // Track changes for logging
+        $originalData = $equipment->getOriginal();
+        $changes = [];
+
         // Auto-set condition based on status if not provided and status is set
         if (empty($validated['condition']) && isset($validated['status']) && !is_null($validated['status'])) {
             $validated['condition'] = $validated['status'] === 'serviceable' ? 'good' : 'not_working';
@@ -280,12 +280,41 @@ class EquipmentController extends Controller
 
         $equipment->update($validated);
 
-        // Log the activity
-        Activity::create([
-            'user_id' => auth()->id(),
-            'action' => 'equipment.update',
-            'description' => "Updated equipment: {$equipment->equipment_model} ({$equipment->serial_number})"
-        ]);
+        // Track field changes
+        foreach (['brand', 'model_number', 'serial_number', 'equipment_type_id', 'description', 'purchase_date', 'cost_of_purchase', 'office_id', 'category_id', 'status', 'condition', 'notes'] as $field) {
+            if ($originalData[$field] != $equipment->$field) {
+                $oldValue = $originalData[$field];
+                $newValue = $equipment->$field;
+                
+                if ($field === 'office_id') {
+                    $oldOffice = \App\Models\Office::find($oldValue);
+                    $newOffice = \App\Models\Office::find($newValue);
+                    $changes[$field] = [
+                        $oldOffice?->name ?? 'Unknown',
+                        $newOffice?->name ?? 'Unknown'
+                    ];
+                } elseif ($field === 'category_id') {
+                    $oldCategory = \App\Models\Category::find($oldValue);
+                    $newCategory = \App\Models\Category::find($newValue);
+                    $changes[$field] = [
+                        $oldCategory?->name ?? 'Unknown',
+                        $newCategory?->name ?? 'Unknown'
+                    ];
+                } elseif ($field === 'equipment_type_id') {
+                    $oldType = \App\Models\EquipmentType::find($oldValue);
+                    $newType = \App\Models\EquipmentType::find($newValue);
+                    $changes[$field] = [
+                        $oldType?->name ?? 'Unknown',
+                        $newType?->name ?? 'Unknown'
+                    ];
+                } else {
+                    $changes[$field] = [$oldValue, $newValue];
+                }
+            }
+        }
+
+        // Log the activity using new method
+        Activity::logEquipmentUpdate($equipment, $changes);
 
         $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 
@@ -303,12 +332,8 @@ class EquipmentController extends Controller
 
     public function destroy(Equipment $equipment)
     {
-        // Log the activity before deletion
-        Activity::create([
-            'user_id' => auth()->id(),
-            'action' => 'equipment.destroy',
-            'description' => "Deleted equipment: {$equipment->equipment_model} ({$equipment->serial_number})"
-        ]);
+        // Log the activity before deletion using new method
+        Activity::logEquipmentDeletion($equipment);
 
         $equipment->forceDelete();
 
@@ -340,12 +365,8 @@ class EquipmentController extends Controller
             'status' => $request->status
         ]);
 
-        // Log the activity
-        Activity::create([
-            'user_id' => auth()->id(),
-            'action' => 'status.update',
-            'description' => "Updated equipment status to {$request->status}: {$equipment->equipment_model} ({$equipment->serial_number})"
-        ]);
+        // Log the activity using new method
+        Activity::logEquipmentUpdate($equipment, ['status' => [$equipment->getOriginal('status'), $request->status]]);
 
         return response()->json([
             'success' => true,
@@ -471,6 +492,9 @@ class EquipmentController extends Controller
 
             $history->save();
 
+            // Log maintenance creation
+            Activity::logMaintenanceCreation($history, $user);
+
             // Update equipment status
             $updateData = [
                 'status' => $validated['equipment_status'],
@@ -484,7 +508,13 @@ class EquipmentController extends Controller
                 $updateData['condition'] = 'not_working';
             }
 
+            $oldStatus = $equipment->status;
             $equipment->update($updateData);
+
+            // Log equipment status change
+            if ($oldStatus !== $validated['equipment_status']) {
+                Activity::logEquipmentUpdate($equipment, ['status' => [$oldStatus, $validated['equipment_status']]], $user);
+            }
 
             DB::commit();
 
@@ -852,6 +882,10 @@ class EquipmentController extends Controller
             'equipment_status' => 'required|in:serviceable,for_repair,defective',
         ]);
 
+        // Track changes for logging
+        $originalData = $history->getOriginal();
+        $changes = [];
+
         try {
             DB::beginTransaction();
 
@@ -861,8 +895,19 @@ class EquipmentController extends Controller
                 'remarks' => $request->input('remarks') ?: $this->getRemarksFromStatus($validated['equipment_status']),
             ]);
 
+            // Track history changes
+            foreach (['action_taken', 'remarks'] as $field) {
+                if ($originalData[$field] != $history->$field) {
+                    $changes[$field] = [$originalData[$field], $history->$field];
+                }
+            }
+
+            // Log maintenance update
+            Activity::logMaintenanceUpdate($history, $changes);
+
             // Update equipment status if provided
             if (isset($validated['equipment_status'])) {
+                $oldStatus = $equipment->status;
                 $updateData = [
                     'status' => $validated['equipment_status'],
                 ];
@@ -875,6 +920,11 @@ class EquipmentController extends Controller
                 }
 
                 $equipment->update($updateData);
+
+                // Log equipment status change
+                if ($oldStatus !== $validated['equipment_status']) {
+                    Activity::logEquipmentUpdate($equipment, ['status' => [$oldStatus, $validated['equipment_status']]]);
+                }
             }
 
             DB::commit();

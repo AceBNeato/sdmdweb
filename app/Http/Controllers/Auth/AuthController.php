@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Models\User;
 use App\Models\Staff;
 use App\Models\Technician;
+use App\Models\Activity;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -212,17 +213,17 @@ class AuthController extends Controller
                 if ($user->is_technician && !$user->is_available) {
                     Auth::guard($guard)->logout();
                     return back()->withErrors([
-                        'email' => 'Your technician account has been deactivated. Please contact the administrator.',
+                        'email' => 'Account has been disabled. Please contact the SDMD administrator.',
                     ])->withInput($request->only('email'));
                 } elseif ($user->is_staff && !$user->is_active) {
                     Auth::guard($guard)->logout();
                     return back()->withErrors([
-                        'email' => 'Your staff account has been deactivated. Please contact the administrator.',
+                        'email' => 'Account has been disabled. Please contact the SDMD administrator.',
                     ])->withInput($request->only('email'));
                 } elseif (($user->is_admin) && !$user->is_active) {
                     Auth::guard($guard)->logout();
                     return back()->withErrors([
-                        'email' => 'Your admin account has been deactivated. Please contact the administrator.',
+                        'email' => 'Account has been disabled. Please contact the SDMD administrator.',
                     ])->withInput($request->only('email'));
                 }
 
@@ -230,15 +231,11 @@ class AuthController extends Controller
                 Log::info('User logged in', [
                     'email' => $user->email,
                     'guard' => $guard,
-                    'roles' => $user->roles->pluck('name')->toArray()
+                    'role' => $user->role ? $user->role->name : null
                 ]);
 
-                // Log to activity table
-                \App\Models\Activity::create([
-                    'user_id' => $user->id,
-                    'action' => 'Login',
-                    'description' => 'User logged into the system'
-                ]);
+                // Log to activity table using new method
+                Activity::logUserLogin($user);
 
                 // Redirect based on user roles
                 if ($user->is_admin) {
@@ -305,8 +302,22 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Fast logout - only logout authenticated guards
+        // Get the current user before logout
+        $user = null;
         $guards = ['web', 'staff', 'technician'];
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                break;
+            }
+        }
+
+        // Log logout before actually logging out
+        if ($user) {
+            Activity::logUserLogout($user);
+        }
+
+        // Fast logout - only logout authenticated guards
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 Auth::guard($guard)->logout();

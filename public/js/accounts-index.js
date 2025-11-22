@@ -20,7 +20,6 @@ $(document).ready(function() {
             success: function(response) {
                 content.html(response);
                 bindEditButtons();
-                bindDeleteButtons();
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
@@ -41,6 +40,12 @@ $(document).ready(function() {
             var url = $(this).data('url');
             var modal = $('#editUserModal');
             var content = $('#editUserContent');
+            var viewModal = $('#viewUserModal');
+
+            // Close the view modal if it's open
+            if (viewModal.hasClass('show')) {
+                viewModal.modal('hide');
+            }
 
             content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
 
@@ -66,79 +71,79 @@ $(document).ready(function() {
         });
     }
 
-    var deleteModal = $('#deleteUserModal');
-    var deleteUserName = $('#deleteUserName');
-    var deleteUserPasswordInput = $('#deleteUserPassword');
-    var deleteUserError = $('#deleteUserError');
-    var currentDeleteForm = null;
-    var deletePasswordToggle = $('#deleteUserPasswordToggle');
-    var deletePasswordIcon = deletePasswordToggle.find('i');
-    var deleteSubmitButton = $('#confirmDeleteUserBtn');
-    var deleteSubmitSpinner = $('#deleteUserLoadingSpinner');
-    var deleteSubmitLabel = deleteSubmitButton.find('.btn-label');
-
-    function bindDeleteButtons() {
-        $('.delete-user-btn').off('click').on('click', function() {
-            currentDeleteForm = $(this).closest('form');
-            var userName = $(this).data('user-name');
-
-            deleteUserName.text(userName);
-            deleteUserPasswordInput.val('');
-            deleteUserError.addClass('d-none').text('');
-
-            if (!deleteModal.parent().is('body')) {
-                deleteModal.appendTo('body');
-            }
-
-            deleteModal.modal('show');
-        });
-    }
-
-    $('#confirmDeleteUserBtn').on('click', function() {
-        if (!currentDeleteForm) {
-            return;
-        }
-
-        var passwordVal = deleteUserPasswordInput.val().trim();
-
-        if (!passwordVal.length) {
-            deleteUserError.removeClass('d-none').text('Please enter your password to confirm deletion.');
-            deleteUserPasswordInput.trigger('focus');
-            return;
-        }
-
-        deleteSubmitButton.prop('disabled', true);
-        deleteSubmitSpinner.removeClass('d-none');
-        deleteSubmitLabel.addClass('visually-hidden');
-
-        currentDeleteForm.find('.delete-user-password-input').val(passwordVal);
-        deleteModal.modal('hide');
-        currentDeleteForm.trigger('submit');
-    });
-
-    deleteModal.on('shown.bs.modal', function() {
-        deleteUserPasswordInput.trigger('focus');
-    });
-
-    deleteModal.on('hidden.bs.modal', function() {
-        deleteUserPasswordInput.val('');
-        deleteUserError.addClass('d-none').text('');
-        currentDeleteForm = null;
-        deleteSubmitSpinner.addClass('d-none');
-        deleteSubmitLabel.removeClass('visually-hidden');
-        deleteSubmitButton.prop('disabled', false);
-        deleteUserPasswordInput.attr('type', 'password');
-        deletePasswordIcon.removeClass('bx-hide').addClass('bx-show-alt');
-    });
-
-    deletePasswordToggle.on('click', function() {
-        var isPassword = deleteUserPasswordInput.attr('type') === 'password';
-        deleteUserPasswordInput.attr('type', isPassword ? 'text' : 'password');
-        deletePasswordIcon.toggleClass('bx-show-alt', !isPassword);
-        deletePasswordIcon.toggleClass('bx-hide', isPassword);
-        deleteUserPasswordInput.trigger('focus');
-    });
-
     bindEditButtons();
-    bindDeleteButtons();
+    
+    // Handle toggle status button clicks
+    $('.toggle-status-btn').on('click', function() {
+        var button = $(this);
+        var userId = button.data('user-id');
+        var url = button.data('url');
+        var userName = button.closest('tr').find('td:first-child').text().trim();
+        var isCurrentlyActive = button.hasClass('btn-outline-warning');
+        
+        var action = isCurrentlyActive ? 'deactivate' : 'activate';
+        var confirmMessage = 'Are you sure you want to ' + action + ' the account for "' + userName + '"?';
+        
+        // Use SweetAlert for confirmation
+        Swal.fire({
+            title: 'Confirm ' + action.charAt(0).toUpperCase() + action.slice(1),
+            text: confirmMessage,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: isCurrentlyActive ? '#dc3545' : '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, ' + action + ' account',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                // Show loading state
+                var originalHtml = button.html();
+                button.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin"></i>');
+                
+                // Send AJAX request
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        // Show success message before reloading
+                        var action = isCurrentlyActive ? 'deactivated' : 'activated';
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'User account has been ' + action + ' successfully.',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#28a745',
+                            timer: 2000,
+                            timerProgressBar: true,
+                            showConfirmButton: true
+                        }).then(() => {
+                            // Reload page to show updated status
+                            window.location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        // Restore button
+                        button.prop('disabled', false).html(originalHtml);
+                        
+                        // Show error message
+                        var errorMessage = 'An error occurred while updating the user status.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        // Show error using SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMessage
+                        });
+                    }
+                });
+            }
+        });
+    });
 });

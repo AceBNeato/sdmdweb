@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-$prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+$prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 'technician' ? 'technician' : 'staff');
 $scanRoute = route($prefix . '.equipment.scan');
 $viewUrl = '/' . $prefix . '/equipment';
 $historyUrl = '/' . $prefix . '/equipment';

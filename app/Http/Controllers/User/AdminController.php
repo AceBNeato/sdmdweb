@@ -21,12 +21,25 @@ class AdminController extends Controller
      *
      * @return \Illuminate\View\View
      */
+    public function dashboard()
+    {
+        // Redirect admin directly to QR scanner
+        return redirect()->route('admin.qr-scanner');
+    }
+
+    /**
+     * Show the admin dashboard.
+     *
+     * @return \Illuminate\View\View
+     */
     public function accounts(Request $request)
     {
-        $query = User::with(['roles', 'office', 'campus'])
-            ->withCount('roles')
-            ->whereDoesntHave('roles', function($q) {
-                $q->where('name', 'super-admin');
+        $query = User::with(['role', 'office', 'campus'])
+            ->where(function($q) {
+                $q->whereNull('role_id')
+                  ->orWhereHas('role', function($r) {
+                      $r->where('name', '!=', 'super-admin');
+                  });
             })
             ->latest();
 
@@ -44,7 +57,7 @@ class AdminController extends Controller
 
         // Filter by role
         if ($request->has('role') && $request->role !== 'all') {
-            $query->whereHas('roles', function($q) use ($request) {
+            $query->whereHas('role', function($q) use ($request) {
                 $q->where('name', $request->role);
             });
         }

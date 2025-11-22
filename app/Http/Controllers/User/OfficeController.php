@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Routing\Controller as BaseController;
 use App\Models\Office;
 use App\Models\Campus;
+use App\Models\Activity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -68,7 +69,9 @@ class OfficeController extends BaseController
     public function create()
     {
         $campuses = Campus::where('is_active', true)->get();
-        return view('offices.create', compact('campuses'));
+        
+        // Always return modal content
+        return view('offices.form-modal', compact('campuses'));
     }
 
     /**
@@ -90,6 +93,10 @@ class OfficeController extends BaseController
 
         try {
             $office = Office::create($validated);
+            
+            // Log office creation
+            Activity::logOfficeCreation($office);
+            
             return redirect()
                 ->route('admin.offices.index')
                 ->with('success', 'Office created successfully.');
@@ -106,6 +113,13 @@ class OfficeController extends BaseController
     public function show(Office $office)
     {
         $office->load('campus');
+        
+        // Check if AJAX request
+        if (request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            // Return only the modal content
+            return view('offices.show-modal', compact('office'));
+        }
+        
         return view('offices.show', compact('office'));
     }
 
@@ -115,6 +129,13 @@ class OfficeController extends BaseController
     public function edit(Office $office)
     {
         $campuses = Campus::where('is_active', true)->get();
+        
+        // Check if AJAX request
+        if (request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            // Return only the modal content
+            return view('offices.edit-modal', compact('office', 'campuses'));
+        }
+        
         return view('offices.edit', compact('office', 'campuses'));
     }
 
@@ -132,11 +153,38 @@ class OfficeController extends BaseController
             'is_active' => 'sometimes|boolean',
         ]);
 
+        // Track changes for logging
+        $originalData = $office->getOriginal();
+        $changes = [];
+
         // Ensure is_active is set
         $validated['is_active'] = $request->has('is_active');
 
         try {
             $office->update($validated);
+
+            // Track field changes
+            foreach (['name', 'campus_id', 'address', 'contact_number', 'email', 'is_active'] as $field) {
+                if ($originalData[$field] != $office->$field) {
+                    $oldValue = $originalData[$field];
+                    $newValue = $office->$field;
+                    
+                    if ($field === 'campus_id') {
+                        $oldCampus = \App\Models\Campus::find($oldValue);
+                        $newCampus = \App\Models\Campus::find($newValue);
+                        $changes[$field] = [
+                            $oldCampus?->name ?? 'Unknown',
+                            $newCampus?->name ?? 'Unknown'
+                        ];
+                    } else {
+                        $changes[$field] = [$oldValue, $newValue];
+                    }
+                }
+            }
+
+            // Log office update
+            Activity::logOfficeUpdate($office, $changes);
+            
             return redirect()
                 ->route('admin.offices.index')
                 ->with('success', 'Office updated successfully.');
@@ -159,6 +207,9 @@ class OfficeController extends BaseController
                     ->route('admin.offices.index')
                     ->with('error', 'Cannot delete office with assigned staff members. Please reassign or delete the staff members first.');
             }
+
+            // Log office deletion before actual deletion
+            Activity::logOfficeDeletion($office);
 
             $office->delete();
 

@@ -20,7 +20,7 @@ use Illuminate\Auth\Passwords\CanResetPassword;
 class User extends Authenticatable
 {
     use CanResetPassword;
-    use HasFactory, Notifiable, HasRolesAndPermissions, \Illuminate\Database\Eloquent\SoftDeletes;
+    use HasFactory, Notifiable, \Illuminate\Database\Eloquent\SoftDeletes;
 
     /**
      * The "booting" method of the model.
@@ -79,6 +79,7 @@ class User extends Authenticatable
         'position',
         'office_id',
         'campus_id',
+        'role_id',
         'last_login_at',
         'last_login_ip',
         'qr_code_image_path',
@@ -140,19 +141,19 @@ class User extends Authenticatable
     ];
 
     /**
-     * The roles that belong to the user.
+     * Get the role that belongs to the user.
      */
-    public function roles(): BelongsToMany
+    public function role()
     {
-        return $this->belongsToMany(Role::class)->withTimestamps();
+        return $this->belongsTo(Role::class);
     }
 
     /**
-     * The permissions that belong to the user.
+     * Get all permissions for the user through their role.
      */
-    public function permissions(): BelongsToMany
+    public function permissions()
     {
-        return $this->belongsToMany(Permission::class)->withPivot('is_active')->withTimestamps();
+        return $this->role ? $this->role->permissions() : collect();
     }
 
     /**
@@ -180,41 +181,51 @@ class User extends Authenticatable
             $role = Role::where('name', $role)->firstOrFail();
         }
 
-        $this->roles()->syncWithoutDetaching([$role->id]);
+        $this->role_id = $role->id;
+        $this->save();
         return $this;
     }
 
     /**
-     * Remove a role from the user.
+     * Remove the role from the user.
      */
-    public function removeRole($role): self
+    public function removeRole(): self
+    {
+        $this->role_id = null;
+        $this->save();
+        return $this;
+    }
+
+    /**
+     * Check if the user has the given role.
+     */
+    public function hasRole($role): bool
     {
         if (is_string($role)) {
-            $role = Role::where('name', $role)->firstOrFail();
+            return $this->role && $this->role->name === $role;
         }
 
-        $this->roles()->detach($role->id);
-        return $this;
-    }
-
-    /**
-     * Check if the user has a specific role.
-     */
-    public function hasRole($roles): bool
-    {
-        if (is_string($roles)) {
-            return $this->roles->contains('name', $roles);
+        if ($role instanceof Role) {
+            return $this->role_id === $role->id;
         }
 
-        if ($roles instanceof Role) {
-            return $this->roles->contains('id', $roles->id);
-        }
-
-        if (is_array($roles)) {
-            return $this->roles->whereIn('name', $roles)->isNotEmpty();
+        if (is_array($role)) {
+            foreach ($role as $r) {
+                if ($this->hasRole($r)) {
+                    return true;
+                }
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Check if the user has any of the given roles.
+     */
+    public function hasAnyRole($roles): bool
+    {
+        return $this->hasRole($roles);
     }
 
     /**
@@ -226,24 +237,36 @@ class User extends Authenticatable
             return $this->hasRole($roles);
         }
 
-        $roleNames = $roles instanceof Collection
-            ? $roles->pluck('name')->toArray()
-            : $roles;
+        if (is_array($roles)) {
+            foreach ($roles as $role) {
+                if (!$this->hasRole($role)) {
+                    return false;
+                }
+            }
+            return true;
+        }
 
-        return $this->roles->whereIn('name', $roleNames)->count() === count($roleNames);
+        return false;
     }
 
     /**
-     * Revoke a permission from the user.
+     * Check if the user has the given permission through their role.
      */
-    public function revokePermissionTo($permission): self
+    public function hasPermissionTo($permission): bool
     {
-        if (is_string($permission)) {
-            $permission = Permission::where('name', $permission)->firstOrFail();
+        if (!$this->role) {
+            return false;
         }
 
-        $this->permissions()->detach($permission->id);
-        return $this;
+        if (is_string($permission)) {
+            return $this->role->permissions()->where('name', $permission)->exists();
+        }
+
+        if ($permission instanceof Permission) {
+            return $this->role->permissions()->where('id', $permission->id)->exists();
+        }
+
+        return false;
     }
 
     /**
@@ -283,7 +306,7 @@ class User extends Authenticatable
      */
     public function getRoleNamesAttribute()
     {
-        return $this->roles->pluck('name');
+        return $this->role ? $this->role->name : null;
     }
 
     /**
@@ -307,7 +330,7 @@ class User extends Authenticatable
      */
     public function getAllPermissions()
     {
-        return $this->permissions;
+        return $this->role ? $this->role->permissions : collect();
     }
 
     /**

@@ -214,28 +214,24 @@ class RbacSeeder extends Seeder
             'name' => 'super-admin',
             'display_name' => 'Super Administrator',
             'description' => 'Super administrator with ultimate system access',
-            'is_default' => false,
         ]);
 
         $adminRole = Role::create([
             'name' => 'admin',
             'display_name' => 'Administrator',
             'description' => 'System administrator with full access',
-            'is_default' => false,
         ]);
 
         $technicianRole = Role::create([
             'name' => 'technician',
             'display_name' => 'Technician',
             'description' => 'Technical staff with limited access',
-            'is_default' => true,
         ]);
 
         $staffRole = Role::create([
             'name' => 'staff',
             'display_name' => 'Staff',
             'description' => 'Regular staff with basic access',
-            'is_default' => true,
         ]);
 
         // Assign all permissions to super admin and admin roles
@@ -260,10 +256,5 @@ class RbacSeeder extends Seeder
             'profile.view', 'profile.update',
         ])->get();
         $staffRole->permissions()->attach($staffPermissions);
-
-        // Assign admin role to the first user (usually the super admin)
-        if ($user = User::first()) {
-            $user->roles()->sync([$adminRole->id]);
-        }
     }
 }

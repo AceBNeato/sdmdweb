@@ -492,6 +492,7 @@ hr{
   background: var(--primary-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow);
+  color: #fff !important;
 }
 
 .btn:active {

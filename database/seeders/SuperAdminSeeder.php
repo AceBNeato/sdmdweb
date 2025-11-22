@@ -101,25 +101,16 @@ class SuperAdminSeeder extends Seeder
         $superAdminRole = Role::where('name', 'super-admin')->first();
         $adminRole = Role::where('name', 'admin')->first();
 
-        // Assign roles
+        // Assign single roles using role_id
         if ($superAdminRole) {
-            $superAdmin->roles()->sync([$superAdminRole->id]);
-            $superAdmin2->roles()->sync([$superAdminRole->id]);
+            $superAdmin->role_id = $superAdminRole->id;
+            $superAdmin->save();
+            $superAdmin2->role_id = $superAdminRole->id;
+            $superAdmin2->save();
         }
         if ($adminRole) {
-            $admin->roles()->sync([$adminRole->id]);
-        }
-
-        // Attach role permissions as direct permissions for users with roles
-        $users = [$superAdmin, $superAdmin2, $admin];
-        foreach ($users as $user) {
-            if ($user->roles->isNotEmpty()) {
-                foreach ($user->roles as $role) {
-                    foreach ($role->permissions as $permission) {
-                        $user->permissions()->syncWithoutDetaching([$permission->id => ['is_active' => true]]);
-                    }
-                }
-            }
+            $admin->role_id = $adminRole->id;
+            $admin->save();
         }
 
         // Output summary

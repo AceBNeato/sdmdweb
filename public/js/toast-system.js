@@ -1,5 +1,12 @@
-// Toast notification system
+// Toast notification system - Now using SweetAlert2
 function showToast(message, type = 'success') {
+    // Use SweetAlert if available, fallback to original toast if not
+    if (window.Swal && window.SweetAlert) {
+        window.SweetAlert.toast(type, message);
+        return;
+    }
+    
+    // Fallback to original toast system
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
         // Create toast container if it doesn't exist (fallback for technician pages)

@@ -77,7 +77,7 @@ class SystemLogController extends BaseController
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('action', 'like', "%{$search}%")
+                $q->where('type', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhereHas('user', function ($userQuery) use ($search) {
                       $userQuery->where('first_name', 'like', "%{$search}%")
@@ -92,9 +92,9 @@ class SystemLogController extends BaseController
             $query->where('user_id', $request->user_id);
         }
 
-        // Apply action filter
-        if ($request->filled('action') && $request->action !== 'all') {
-            $query->where('action', $request->action);
+        // Apply type filter
+        if ($request->filled('type') && $request->type !== 'all') {
+            $query->where('type', $request->type);
         }
 
         // Apply date range filter
@@ -106,11 +106,11 @@ class SystemLogController extends BaseController
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Get unique actions for filter dropdown
-        $actions = Activity::select('action')
+        // Get unique types for filter dropdown
+        $actions = Activity::select('type')
             ->distinct()
-            ->orderBy('action')
-            ->pluck('action');
+            ->orderBy('type')
+            ->pluck('type');
 
         // Get users for filter dropdown
         $users = \App\Models\User::select('id', 'first_name', 'last_name', 'email')
@@ -151,7 +151,7 @@ class SystemLogController extends BaseController
 
                 $query->where(function ($q) use ($accountsKeywords) {
                     foreach ($accountsKeywords as $keyword) {
-                        $q->orWhere('action', 'like', "%{$keyword}%")
+                        $q->orWhere('type', 'like', "%{$keyword}%")
                           ->orWhere('description', 'like', "%{$keyword}%");
                     }
                 });
@@ -183,7 +183,7 @@ class SystemLogController extends BaseController
 
                 $query->where(function ($q) use ($equipmentKeywords) {
                     foreach ($equipmentKeywords as $keyword) {
-                        $q->orWhere('action', 'like', "%{$keyword}%")
+                        $q->orWhere('type', 'like', "%{$keyword}%")
                           ->orWhere('description', 'like', "%{$keyword}%");
                     }
                 });
@@ -200,7 +200,7 @@ class SystemLogController extends BaseController
 
                 $query->where(function ($q) use ($authKeywords) {
                     foreach ($authKeywords as $keyword) {
-                        $q->orWhere('action', 'like', "%{$keyword}%")
+                        $q->orWhere('type', 'like', "%{$keyword}%")
                           ->orWhere('description', 'like', "%{$keyword}%");
                     }
                 });
@@ -263,7 +263,7 @@ class SystemLogController extends BaseController
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
-                    $q->where('action', 'like', "%{$search}%")
+                    $q->where('type', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%")
                       ->orWhereHas('user', function ($userQuery) use ($search) {
                           $userQuery->where('name', 'like', "%{$search}%")
@@ -276,8 +276,8 @@ class SystemLogController extends BaseController
                 $query->where('user_id', $request->user_id);
             }
 
-            if ($request->filled('action') && $request->action !== 'all') {
-                $query->where('action', $request->action);
+            if ($request->filled('type') && $request->type !== 'all') {
+                $query->where('type', $request->type);
             }
 
             if ($request->filled('date_from')) {
@@ -297,7 +297,7 @@ class SystemLogController extends BaseController
                     $activity->id,
                     $activity->user->name ?? 'N/A',
                     $activity->user->email ?? 'N/A',
-                    $activity->action,
+                    $activity->type,
                     $activity->description ?? '',
                     $activity->created_at->timezone(config('app.timezone'))->format('Y-m-d H:i:s')
                 ]);

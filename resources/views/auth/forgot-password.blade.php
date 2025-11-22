@@ -53,18 +53,6 @@
                 <p>No worries! Enter your email and we'll send you a link to reset your password.</p>
             </div>
 
-            @if (session('status'))
-                <div class="alert alert-success animate-slide-in" role="alert">
-                    <div class="alert-icon">
-                        <i class='bx bx-check-circle'></i>
-                    </div>
-                    <div class="alert-content">
-                        <strong>Success!</strong>
-                        <p>{{ session('status') }}</p>
-                    </div>
-                </div>
-            @endif
-
             <form action="{{ route('password.email') }}" method="POST" class="enhanced-form" id="forgotPasswordForm">
                 @csrf
                 <div class="form-group text-center">

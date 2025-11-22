@@ -3,7 +3,7 @@
 @section('title', 'Add User')
 
 @section('breadcrumbs')
-    <a href="{{ route('admin.accounts.index') }}">Accounts</a>
+    <a href="{{ route('accounts.index') }}">Accounts</a>
     <span class="separator">/</span>
     <span class="current">Add User</span>
 @endsection
@@ -21,7 +21,7 @@
 <div class="content">
     <div class="action-buttons">
       
-        <a href="{{ route('admin.accounts.index') }}" class="btn btn-outline-secondary" style="margin: 0 1rem">
+        <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary" style="margin: 0 1rem">
             <i class='bx bx-arrow-back me-1'></i> Back to Users
         </a>
     </div>
@@ -41,7 +41,7 @@
     <div class="form-card">
 
 
-        <form action="{{ route('admin.accounts.store') }}" method="POST" class="needs-validation" novalidate>
+        <form action="{{ route('accounts.store') }}" method="POST" class="needs-validation" novalidate>
             @csrf
 
             <div class="form-body">
@@ -305,7 +305,7 @@ function selectRole(roleId) {
     updateRoleSelection();
 }
 
-// Form validation
+// Form validation and SweetAlert integration
 (function () {
     'use strict'
 
@@ -316,7 +316,20 @@ function selectRole(roleId) {
             if (!form.checkValidity()) {
                 event.preventDefault()
                 event.stopPropagation()
+                return;
             }
+
+            // Show loading SweetAlert
+            Swal.fire({
+                title: 'Creating User...',
+                text: 'Please wait while we create the user account.',
+                icon: 'info',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
             form.classList.add('was-validated')
         }, false)

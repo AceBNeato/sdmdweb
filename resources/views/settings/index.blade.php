@@ -73,12 +73,6 @@
             <!-- Settings Grid -->
             <div class="settings-grid">
 
-                @if(session('success'))
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-                        <span class="font-semibold">{{ session('success') }}</span>
-                    </div>
-                @endif
-
                 <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6">
                     @csrf
                     <input type="hidden" name="section" value="session">
@@ -533,27 +527,88 @@
 
         if (manualBackupBtn) {
             manualBackupBtn.addEventListener('click', () => {
-                setButtonLoading(manualBackupBtn, true, '<i class="fas fa-cloud-download-alt mr-2"></i> Create Backup', '<i class="fas fa-spinner fa-spin mr-2"></i> Creating...');
-
-                fetch('{{ route('admin.backup.create') }}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast('success', data.message);
+                // SweetAlert confirmation for backup creation
+                Swal.fire({
+                    title: 'Create Database Backup?',
+                    html: `
+                        <div class="text-left">
+                            <p class="mb-3">This will create a complete backup of the database including:</p>
+                            <ul class="text-sm text-gray-600 mb-3">
+                                <li>Equipment records and history</li>
+                                <li>User accounts and permissions</li>
+                                <li>System settings and configurations</li>
+                                <li>All related data</li>
+                            </ul>
+                            <p class="text-sm text-blue-600">
+                                <i class="fas fa-info-circle"></i> The process may take a few minutes depending on data size.
+                            </p>
+                        </div>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: '<i class="fas fa-download mr-2"></i>Create Backup',
+                    cancelButtonText: 'Cancel',
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        return fetch('{{ route('admin.backup.create') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                                'X-SweetAlert': 'true'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error.message}`);
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (result.value.success) {
+                            Swal.fire({
+                                title: 'Backup Created Successfully!',
+                                html: `
+                                    <div class="text-left">
+                                        <p class="mb-2"><i class="fas fa-check-circle text-green-500 mr-2"></i>Database backup completed successfully.</p>
+                                        <div class="bg-gray-50 p-3 rounded text-sm">
+                                            <strong>Backup Details:</strong><br>
+                                            File: ${result.value.filename || 'N/A'}<br>
+                                            Size: ${result.value.size_human || 'N/A'}<br>
+                                            Created: ${new Date().toLocaleString()}
+                                        </div>
+                                    </div>
+                                `,
+                                icon: 'success',
+                                confirmButtonColor: '#10b981',
+                                confirmButtonText: '<i class="fas fa-check mr-2"></i>Great!'
+                            });
                             refreshBackupTable();
                         } else {
-                            showToast('error', data.message || 'Backup failed.');
+                            Swal.fire({
+                                title: 'Backup Failed!',
+                                html: `
+                                    <div class="text-left">
+                                        <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Failed to create database backup.</p>
+                                        <p class="text-sm text-gray-600">${result.value.message || 'An unknown error occurred.'}</p>
+                                    </div>
+                                `,
+                                icon: 'error',
+                                confirmButtonColor: '#ef4444',
+                                confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
+                            });
                         }
-                    })
-                    .catch(() => showToast('error', 'An error occurred while creating the backup.'))
-                    .finally(() => setButtonLoading(manualBackupBtn, false, '<i class="fas fa-cloud-download-alt mr-2"></i> Create Backup', '<i class="fas fa-spinner fa-spin mr-2"></i> Creating...'));
+                    }
+                });
             });
         }
 
@@ -561,36 +616,144 @@
             restoreBtn.addEventListener('click', () => {
                 const filename = restoreSelect.value;
                 if (!filename) {
-                    showToast('error', 'Please choose a backup file to restore.');
+                    Swal.fire({
+                        title: 'No Backup Selected',
+                        html: `
+                            <div class="text-left">
+                                <p class="mb-3"><i class="fas fa-exclamation-circle text-yellow-500 mr-2"></i>Please select a backup file from the dropdown list before proceeding.</p>
+                                <p class="text-sm text-gray-600">Choose a backup from the "Select a backup" dropdown above.</p>
+                            </div>
+                        `,
+                        icon: 'warning',
+                        confirmButtonColor: '#f59e0b',
+                        confirmButtonText: '<i class="fas fa-check mr-2"></i>I Understand'
+                    });
                     return;
                 }
 
-                if (!confirm('Restoring will overwrite all data. Continue?')) {
-                    return;
-                }
-
-                setButtonLoading(restoreBtn, true, '<i class="fas fa-history mr-2"></i> Restore Selected Backup', '<i class="fas fa-spinner fa-spin mr-2"></i> Restoring...');
-
-                fetch(`{{ route('admin.backup.restore') }}`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                // SweetAlert confirmation for restore
+                Swal.fire({
+                    title: '⚠️ DANGER: Restore Database?',
+                    html: `
+                        <div class="text-left">
+                            <div class="bg-red-50 border border-red-200 p-3 rounded mb-3">
+                                <p class="text-red-800 font-semibold mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>WARNING: This action is irreversible!
+                                </p>
+                                <p class="text-red-700 text-sm">
+                                    Restoring will <strong>PERMANENTLY OVERWRITE</strong> all current data with the backup from:
+                                </p>
+                                <p class="bg-white p-2 rounded text-sm font-mono mt-2">${filename}</p>
+                            </div>
+                            
+                            <p class="mb-3"><strong>This will overwrite:</strong></p>
+                            <ul class="text-sm text-gray-600 mb-3">
+                                <li>✓ All equipment records and maintenance history</li>
+                                <li>✓ User accounts, roles, and permissions</li>
+                                <li>✓ System settings and configurations</li>
+                                <li>✓ All current data in the database</li>
+                            </ul>
+                            
+                            <div class="bg-yellow-50 border border-yellow-200 p-3 rounded">
+                                <p class="text-yellow-800 text-sm">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    <strong>Recommendation:</strong> Create a backup of the current data before restoring.
+                                </p>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: '<i class="fas fa-history mr-2"></i>Yes, Restore Anyway',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        return fetch(`{{ route('admin.backup.restore') }}`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-SweetAlert': 'true'
+                            },
+                            body: JSON.stringify({ filename })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error.message}`);
+                        });
                     },
-                    body: JSON.stringify({ filename })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast('success', data.message);
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (result.value.success) {
+                            Swal.fire({
+                                title: 'Database Restored Successfully!',
+                                html: `
+                                    <div class="text-left">
+                                        <p class="mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Database has been restored from backup.</p>
+                                        <div class="bg-green-50 border border-green-200 p-3 rounded mb-3">
+                                            <p class="text-green-800 text-sm">
+                                                <strong>Restoration Details:</strong><br>
+                                                Source: ${filename}<br>
+                                                Completed: ${new Date().toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 p-3 rounded">
+                                            <p class="text-blue-800 text-sm">
+                                                <i class="fas fa-info-circle mr-2"></i>
+                                                <strong>Next Steps:</strong><br>
+                                                • Refresh the page to see restored data<br>
+                                                • Verify all data is correct<br>
+                                                • Create a new backup if needed
+                                            </p>
+                                        </div>
+                                    </div>
+                                `,
+                                icon: 'success',
+                                confirmButtonColor: '#10b981',
+                                confirmButtonText: '<i class="fas fa-check mr-2"></i>Got it!',
+                                allowOutsideClick: false
+                            }).then(() => {
+                                // Optionally refresh the page after success
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            });
                         } else {
-                            showToast('error', data.message || 'Restore failed.');
+                            Swal.fire({
+                                title: 'Restore Failed!',
+                                html: `
+                                    <div class="text-left">
+                                        <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Failed to restore database from backup.</p>
+                                        <div class="bg-red-50 border border-red-200 p-3 rounded">
+                                            <p class="text-red-800 text-sm">
+                                                <strong>Error Details:</strong><br>
+                                                ${result.value.message || 'An unknown error occurred during restoration.'}
+                                            </p>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mt-3">
+                                            <i class="fas fa-lightbulb mr-1"></i>
+                                            Try selecting a different backup file or contact support if the issue persists.
+                                        </p>
+                                    </div>
+                                `,
+                                icon: 'error',
+                                confirmButtonColor: '#ef4444',
+                                confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
+                            });
                         }
-                    })
-                    .catch(() => showToast('error', 'An error occurred while restoring the database.'))
-                    .finally(() => setButtonLoading(restoreBtn, false, '<i class="fas fa-history mr-2"></i> Restore Selected Backup', '<i class="fas fa-spinner fa-spin mr-2"></i> Restoring...'));
+                    }
+                });
             });
         }
 

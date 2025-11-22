@@ -109,10 +109,26 @@
             if (data.success) {
                 hideLockModal();
                 resetLockoutTimer();
-                try {
-                    showToast('Session unlocked successfully!', 'success');
-                } catch (e) {
-                    console.error('Toast error:', e);
+                
+                // Show SweetAlert success message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Session Unlocked!',
+                        text: 'Welcome back! Your session has been unlocked successfully.',
+                        confirmButtonText: 'Continue',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+                } else {
+                    // Fallback to toast if SweetAlert not available
+                    try {
+                        showToast('Session unlocked successfully!', 'success');
+                    } catch (e) {
+                        console.error('Toast error:', e);
+                    }
                 }
             } else {
                 showUnlockError(data.message || 'Invalid password. Please try again.');

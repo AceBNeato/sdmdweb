@@ -25,10 +25,10 @@ class ReportController extends BaseController
 
     public function index(Request $request)
     {
-        $query = \App\Models\EquipmentHistory::with(['equipment', 'user.roles']);
+        $query = \App\Models\EquipmentHistory::with(['equipment', 'user.role']);
 
-        // Filter by office for staff users
-        if (Auth::user()->is_staff) {
+        // Filter by office for staff users only (not admins or super admins)
+        if (Auth::user()->is_staff && !Auth::user()->is_admin) {
             $query->whereHas('equipment', function($q) {
                 $q->where('office_id', Auth::user()->office_id);
             });
@@ -69,7 +69,8 @@ class ReportController extends BaseController
         }])->findOrFail($id);
 
         // Check if user is staff and equipment belongs to a different office
-        if (Auth::user()->is_staff && $equipment->office_id !== Auth::user()->office_id) {
+        // Super admins and admins can access all equipment history
+        if (Auth::user()->is_staff && !Auth::user()->is_admin && $equipment->office_id !== Auth::user()->office_id) {
             abort(403, 'You do not have permission to access reports for this equipment.');
         }
         
@@ -85,7 +86,8 @@ class ReportController extends BaseController
     public function equipmentHistory(Equipment $equipment)
     {
         // Check if user is staff and equipment belongs to a different office
-        if (Auth::user()->is_staff && $equipment->office_id !== Auth::user()->office_id) {
+        // Super admins and admins can access all equipment history
+        if (Auth::user()->is_staff && !Auth::user()->is_admin && $equipment->office_id !== Auth::user()->office_id) {
             abort(403, 'You do not have permission to access reports for this equipment.');
         }
 
@@ -112,7 +114,8 @@ class ReportController extends BaseController
     public function exportEquipmentHistory(Equipment $equipment)
     {
         // Check if user is staff and equipment belongs to a different office
-        if (Auth::user()->is_staff && $equipment->office_id !== Auth::user()->office_id) {
+        // Super admins and admins can access all equipment history
+        if (Auth::user()->is_staff && !Auth::user()->is_admin && $equipment->office_id !== Auth::user()->office_id) {
             abort(403, 'You do not have permission to access reports for this equipment.');
         }
 
@@ -178,7 +181,8 @@ class ReportController extends BaseController
         $equipment = Equipment::with(['office', 'maintenanceLogs'])->findOrFail($request->equipment_id);
 
         // Check if user is staff and equipment belongs to a different office
-        if (Auth::user()->is_staff && $equipment->office_id !== Auth::user()->office_id) {
+        // Super admins and admins can access all equipment history
+        if (Auth::user()->is_staff && !Auth::user()->is_admin && $equipment->office_id !== Auth::user()->office_id) {
             abort(403, 'You do not have permission to access reports for this equipment.');
         }
 

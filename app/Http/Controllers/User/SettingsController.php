@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Models\Setting;
 use App\Models\Category;
 use App\Models\EquipmentType;
@@ -36,17 +37,32 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $section = $request->input('section', 'session');
+        $oldValues = [];
+        $newValues = [];
 
         if ($section === 'session') {
             $request->validate([
                 'session_lockout_minutes' => 'required|integer|min:1|max:60',
             ]);
 
+            // Get old value for logging
+            $oldValues['session_lockout_minutes'] = Setting::getValue('session_lockout_minutes', Setting::getSessionTimeoutMinutes());
+            $newValues['session_lockout_minutes'] = $request->session_lockout_minutes;
+
             Setting::setValue(
                 'session_lockout_minutes',
                 $request->session_lockout_minutes,
                 'integer',
                 'Session lockout in minutes for screen lock'
+            );
+
+            // Log session settings update
+            Activity::logSettingsUpdate(
+                'Session Settings',
+                'Updated session lockout duration',
+                $oldValues,
+                $newValues,
+                'Session lockout changed from ' . $oldValues['session_lockout_minutes'] . ' to ' . $newValues['session_lockout_minutes'] . ' minutes'
             );
 
         } elseif ($section === 'backup') {
@@ -56,11 +72,50 @@ class SettingsController extends Controller
                 'backup_auto_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             ]);
 
+            // Get old backup settings for logging
+            $oldBackupSettings = Setting::getBackupSettings();
+            
             $enabled = $request->boolean('backup_auto_enabled');
             $time = $request->input('backup_auto_time', '02:00');
             $days = array_map('strtolower', (array) $request->input('backup_auto_days', []));
 
+            $oldValues = [
+                'backup_auto_enabled' => $oldBackupSettings['enabled'] ?? false,
+                'backup_auto_time' => $oldBackupSettings['time'] ?? '02:00',
+                'backup_auto_days' => implode(', ', $oldBackupSettings['days'] ?? [])
+            ];
+
+            $newValues = [
+                'backup_auto_enabled' => $enabled,
+                'backup_auto_time' => $time,
+                'backup_auto_days' => implode(', ', $days)
+            ];
+
             Setting::setBackupSettings($enabled, $time, $days);
+
+            // Log backup settings update
+            $description = 'Updated automatic backup settings';
+            $details = [];
+            
+            if ($oldValues['backup_auto_enabled'] !== $newValues['backup_auto_enabled']) {
+                $details[] = 'Automatic backup ' . ($newValues['backup_auto_enabled'] ? 'enabled' : 'disabled');
+            }
+            
+            if ($oldValues['backup_auto_time'] !== $newValues['backup_auto_time']) {
+                $details[] = 'Backup time changed from ' . $oldValues['backup_auto_time'] . ' to ' . $newValues['backup_auto_time'];
+            }
+            
+            if ($oldValues['backup_auto_days'] !== $newValues['backup_auto_days']) {
+                $details[] = 'Backup days changed from "' . $oldValues['backup_auto_days'] . '" to "' . $newValues['backup_auto_days'] . '"';
+            }
+
+            Activity::logSettingsUpdate(
+                'Backup Settings',
+                $description,
+                $oldValues,
+                $newValues,
+                implode('; ', $details)
+            );
         }
 
         return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
@@ -126,7 +181,18 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
-        Category::create($request->only(['name']));
+        $category = Category::create($request->only(['name']));
+
+        // Log category creation
+        Activity::logSystemManagement(
+            'Category Created',
+            'Created new category: ' . $category->name,
+            'categories',
+            $category->id,
+            ['name' => $category->name],
+            null,
+            'Category'
+        );
 
         return redirect()->route('admin.settings.system.categories.index')
             ->with('success', 'Category created successfully.');
@@ -155,7 +221,22 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
+        // Store old values for logging
+        $oldValues = ['name' => $category->name];
+        $newValues = ['name' => $request->name];
+
         $category->update($request->only(['name']));
+
+        // Log category update
+        Activity::logSystemManagement(
+            'Category Updated',
+            'Updated category from "' . $oldValues['name'] . '" to "' . $newValues['name'] . '"',
+            'categories',
+            $category->id,
+            $newValues,
+            $oldValues,
+            'Category'
+        );
 
         return redirect()->route('admin.settings.system.categories.index')
             ->with('success', 'Category updated successfully.');
@@ -172,7 +253,22 @@ class SettingsController extends Controller
                 ->with('error', 'Cannot delete category that contains equipment. Please reassign or remove all equipment first.');
         }
 
+        // Store values for logging
+        $categoryData = ['name' => $category->name];
+        $equipmentCount = $category->equipment()->count();
+
         $category->delete();
+
+        // Log category deletion
+        Activity::logSystemManagement(
+            'Category Deleted',
+            'Deleted category: ' . $categoryData['name'] . ' (had ' . $equipmentCount . ' equipment items)',
+            'categories',
+            $category->id,
+            null,
+            $categoryData,
+            'Category'
+        );
 
         return redirect()->route('admin.settings.system.categories.index')
             ->with('success', 'Category deleted successfully.');
@@ -226,7 +322,18 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
-        EquipmentType::create($request->only(['name']));
+        $equipmentType = EquipmentType::create($request->only(['name']));
+
+        // Log equipment type creation
+        Activity::logSystemManagement(
+            'Equipment Type Created',
+            'Created new equipment type: ' . $equipmentType->name,
+            'equipment_types',
+            $equipmentType->id,
+            ['name' => $equipmentType->name],
+            null,
+            'Equipment Type'
+        );
 
         return redirect()->route('admin.settings.system.equipment-types.index')
             ->with('success', 'Equipment type created successfully.');
@@ -255,7 +362,22 @@ class SettingsController extends Controller
                 ->withInput();
         }
 
+        // Store old values for logging
+        $oldValues = ['name' => $equipmentType->name];
+        $newValues = ['name' => $request->name];
+
         $equipmentType->update($request->only(['name']));
+
+        // Log equipment type update
+        Activity::logSystemManagement(
+            'Equipment Type Updated',
+            'Updated equipment type from "' . $oldValues['name'] . '" to "' . $newValues['name'] . '"',
+            'equipment_types',
+            $equipmentType->id,
+            $newValues,
+            $oldValues,
+            'Equipment Type'
+        );
 
         return redirect()->route('admin.settings.system.equipment-types.index')
             ->with('success', 'Equipment type updated successfully.');
@@ -272,7 +394,22 @@ class SettingsController extends Controller
                 ->with('error', 'Cannot delete equipment type that contains equipment. Please reassign or remove all equipment first.');
         }
 
+        // Store values for logging
+        $equipmentTypeData = ['name' => $equipmentType->name];
+        $equipmentCount = $equipmentType->equipment()->count();
+
         $equipmentType->delete();
+
+        // Log equipment type deletion
+        Activity::logSystemManagement(
+            'Equipment Type Deleted',
+            'Deleted equipment type: ' . $equipmentTypeData['name'] . ' (had ' . $equipmentCount . ' equipment items)',
+            'equipment_types',
+            $equipmentType->id,
+            null,
+            $equipmentTypeData,
+            'Equipment Type'
+        );
 
         return redirect()->route('admin.settings.system.equipment-types.index')
             ->with('success', 'Equipment type deleted successfully.');

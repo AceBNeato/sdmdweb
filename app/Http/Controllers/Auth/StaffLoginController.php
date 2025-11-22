@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
+use App\Models\Activity;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Staff;
@@ -78,12 +79,8 @@ public function login(Request $request)
             'is_admin' => $staff->is_admin
         ]);
 
-        // Log to activity table
-        \App\Models\Activity::create([
-            'user_id' => $staff->id,
-            'action' => 'Login',
-            'description' => 'Staff logged into the system'
-        ]);
+        // Log to activity table using new method
+        Activity::logUserLogin($staff);
 
         return redirect(route('staff.equipment.index'));
     }
@@ -101,6 +98,14 @@ public function login(Request $request)
      */
     public function logout(Request $request)
     {
+        // Get the current user before logout
+        $user = Auth::guard('staff')->user();
+
+        // Log logout before actually logging out
+        if ($user) {
+            Activity::logUserLogout($user);
+        }
+
         Auth::guard('staff')->logout();
 
         // Invalidate and regenerate session

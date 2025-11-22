@@ -27,14 +27,6 @@ class Permission extends Model
     }
 
     /**
-     * The users that have this permission.
-     */
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'permission_user')->withPivot('is_active')->withTimestamps();
-    }
-
-    /**
      * Scope a query to only include active permissions.
      */
     public function scopeActive($query)

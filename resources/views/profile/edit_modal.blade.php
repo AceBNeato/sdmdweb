@@ -78,6 +78,13 @@
 </form>
 
 <script>
+// Check if SweetAlert is available, if not add it
+if (typeof Swal === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+    document.head.appendChild(script);
+}
+
 (function(){
     const input = document.getElementById('profileImageInput');
     const preview = document.getElementById('profileImagePreview');
@@ -88,6 +95,115 @@
             const reader = new FileReader();
             reader.onload = function(evt){ preview.src = evt.target.result; };
             reader.readAsDataURL(file);
+        });
+    }
+
+    // Handle form submission with SweetAlert
+    const form = document.getElementById('profileEditForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Saving...';
+            
+            // Create FormData for file upload
+            const formData = new FormData(form);
+            
+            // Submit via fetch
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="_token"]')?.value
+                }
+            })
+            .then(response => {
+                // Check if response is JSON or redirect
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(data => ({ type: 'json', data }));
+                } else {
+                    // It's a redirect response, treat as success
+                    return response.text().then(html => ({ type: 'redirect', html }));
+                }
+            })
+            .then(result => {
+                if (result.type === 'json') {
+                    const data = result.data;
+                    if (data.success) {
+                        // Show success SweetAlert
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Profile Updated!',
+                            text: data.message || 'Your profile has been updated successfully.',
+                            confirmButtonText: 'Great!',
+                            confirmButtonColor: '#28a745',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            showConfirmButton: true
+                        }).then(() => {
+                            // Close modal and reload page to show updated profile
+                            const modal = form.closest('.modal');
+                            if (modal) {
+                                const bsModal = bootstrap.Modal.getInstance(modal);
+                                if (bsModal) bsModal.hide();
+                            }
+                            window.location.reload();
+                        });
+                    } else {
+                        // Show error SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Update Failed',
+                            text: data.message || 'There was an error updating your profile. Please try again.',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                } else if (result.type === 'redirect') {
+                    // Redirect response means success
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Profile Updated!',
+                        text: 'Your profile has been updated successfully.',
+                        confirmButtonText: 'Great!',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    }).then(() => {
+                        // Close modal and reload page
+                        const modal = form.closest('.modal');
+                        if (modal) {
+                            const bsModal = bootstrap.Modal.getInstance(modal);
+                            if (bsModal) bsModal.hide();
+                        }
+                        window.location.reload();
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Profile update error:', error);
+                // Show error SweetAlert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: 'There was an error updating your profile. Please try again.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545'
+                });
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
         });
     }
 })();
