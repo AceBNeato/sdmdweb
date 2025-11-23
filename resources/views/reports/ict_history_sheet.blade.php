@@ -259,9 +259,15 @@
                 <tr>
                     <td>{{ $entry->created_at ? $entry->created_at->format('m/d/Y') : '' }}</td>
                     <td>{{ $entry->jo_number ?? '' }}</td>
-                    <td class="text-left">{{ $entry->action_taken ?? '' }}</td>
-                    <td class="text-left">{{ $entry->remarks ?? '' }}</td>
-                    <td>{{ $entry->responsible_person ?? ($entry->user ? $entry->user->name : '') }}</td>
+                    <td class="text-left">
+                        {{ $entry->action_taken ?? '' }}
+                    </td>
+                    <td class="text-left">
+                        {{ $entry->remarks ?? '' }}
+                    </td>
+                    <td>
+                        {{ $entry->responsible_person ?? ($entry->user ? $entry->user->name : '') }}
+                    </td>
                 </tr>
                 @endforeach
                 @for($i = $history->count(); $i < 20; $i++)

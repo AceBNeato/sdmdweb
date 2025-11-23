@@ -153,14 +153,34 @@ $(document).ready(function() {
         var modal = $('#editEquipmentModal');
         var content = $('#editEquipmentContent');
 
-        // Close the view modal if it's open
-        $('#viewEquipmentModal').modal('hide');
+        // Clear any existing session messages and SweetAlert instances
+        if (window.sessionMessages) {
+            window.sessionMessages = {};
+        }
+        
+        // Close any existing SweetAlert instances immediately
+        if (window.Swal) {
+            Swal.close();
+        }
+        
+        // Clear any pending toast notifications
+        if (window.SweetAlert && window.SweetAlert.clearToasts) {
+            window.SweetAlert.clearToasts();
+        }
+        
+        // Add a small delay to ensure all notifications are cleared
+        setTimeout(function() {
+            // Close the view modal if it's open
+            $('#viewEquipmentModal').modal('hide');
 
-        // Show loading spinner
-        // Use AJAX Helper to load modal content
-        window.AjaxHelper.loadModal(url, '#editEquipmentModal', '#editEquipmentContent', {
-            errorMessage: 'Failed to load equipment form. Please try again.'
-        });
+            // Show loading spinner
+            // Use AJAX Helper to load modal content
+            window.AjaxHelper.loadModal(url, '#editEquipmentModal', '#editEquipmentContent', {
+                errorMessage: 'Failed to load equipment form. Please try again.',
+                showSuccessAlert: false,
+                showErrorAlert: false
+            });
+        }, 100);
     });
 
     // Handle form submission within edit modal

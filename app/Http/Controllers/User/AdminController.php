@@ -265,6 +265,9 @@ class AdminController extends Controller
                     'password_changed_at' => now(),
                 ]);
                 
+                // Clear the password change session flag
+                session()->forget('must_change_password');
+                
                 // Log password change
                 Activity::logPasswordChange($user);
             }

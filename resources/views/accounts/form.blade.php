@@ -331,6 +331,62 @@ function selectRole(roleId) {
                 }
             });
 
+            // Prevent default form submission to handle via AJAX
+            event.preventDefault();
+            
+            // Submit form via AJAX
+            var formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success SweetAlert
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Account Successfully Created!',
+                        text: data.message,
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    }).then(() => {
+                        // Redirect to accounts index
+                        window.location.href = data.redirect || '{{ route("accounts.index") }}';
+                    });
+                } else {
+                    // Show error message
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'An error occurred while creating the user.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // If it's not a JSON response, it might be a validation error redirect
+                if (error.message.includes('Unexpected token')) {
+                    // Reload the page to show validation errors
+                    window.location.reload();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An unexpected error occurred. Please try again.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            });
+
             form.classList.add('was-validated')
         }, false)
     })

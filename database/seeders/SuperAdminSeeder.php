@@ -17,9 +17,8 @@ class SuperAdminSeeder extends Seeder
     {
         // Get or create campuses (assuming they exist)
         $tagumCampus = \App\Models\Campus::firstOrCreate(
-            ['code' => 'TAGUM'],
+            ['name' => 'Tagum'],
             [
-                'name' => 'Tagum',
                 'address' => 'Tagum City, Davao del Norte',
                 'contact_number' => '(084) 216-2374',
                 'email' => 'tagum@sdmd.ph',
@@ -29,10 +28,9 @@ class SuperAdminSeeder extends Seeder
 
         // Get or create offices (assuming they exist)
         $sdmdOffice = \App\Models\Office::firstOrCreate(
-            ['code' => 'SDMD'],
+            ['name' => 'SDMD Office'],
             [
-                'name' => 'SDMD Office',
-                'address' => '2nd Floor, Admin Office',
+                'location' => '2nd Floor, Admin Office',
                 'contact_number' => '(084) 216-2374',
                 'email' => 'admin@sdmd.ph',
                 'campus_id' => $tagumCampus->id,

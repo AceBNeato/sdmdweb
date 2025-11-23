@@ -90,8 +90,8 @@
                             @if($history->jo_number)
                             <div class="record-secondary">
                                 <span class="jo-number">JO #{{ $history->jo_number }}</span>
-                                @if(auth()->user()->is_admin || (auth()->guard('technician')->check() && $history->user_id == auth('technician')->user()->user_id))
-                                    <a href="#" class="btn btn-sm btn-outline-primary edit-history-btn ms-2"
+                                @if(auth()->user()->hasPermissionTo('history.edit'))
+                                    <a href="#" class="btn btn-sm btn-outline-secondary edit-history-btn ms-2"
                                        data-history-id="{{ $history->id }}"
                                        data-url="{{ route($prefix . '.equipment.history.edit', [$equipment, $history]) }}"
                                        title="Edit History Entry">

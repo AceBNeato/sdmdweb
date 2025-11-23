@@ -217,6 +217,7 @@ class BackupService
             $sql .= '-- Generated on ' . now() . "\n\n";
             $sql .= "SET FOREIGN_KEY_CHECKS = 0;\n\n";
 
+            // Get all tables first
             $tables = $pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN);
 
             foreach ($tables as $table) {
@@ -227,37 +228,63 @@ class BackupService
                     continue;
                 }
 
-                $sql .= "-- Table structure for `$table`\n";
-                $sql .= "DROP TABLE IF EXISTS `$table`;\n";
+                // Check if it's a view, skip views to avoid reference issues
+                $isView = false;
+                try {
+                    $result = $pdo->query("SHOW CREATE TABLE `$table`")->fetch(\PDO::FETCH_ASSOC);
+                    if ($result && isset($result['Create Table'])) {
+                        $createView = $result['Create Table'] ?? '';
+                        if (stripos($createView, 'CREATE VIEW') === 0) {
+                            $isView = true;
+                            $sql .= "-- Skipping view: `$table`\n\n";
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // If we can't check if it's a view, assume it's a table and continue
+                    Log::warning("Could not determine if `$table` is a view: " . $e->getMessage());
+                }
 
-                $createTable = $pdo->query("SHOW CREATE TABLE `$table`")->fetch(\PDO::FETCH_ASSOC);
-                $createSql = array_values($createTable)[1] ?? null;
-
-                if (!$createSql) {
-                    $sql .= "-- Failed to retrieve CREATE statement for `$table`\n\n";
+                if ($isView) {
                     continue;
                 }
 
-                $sql .= $createSql . ";\n\n";
+                $sql .= "-- Table structure for `$table`\n";
+                $sql .= "DROP TABLE IF EXISTS `$table`;\n";
 
-                $rows = $pdo->query("SELECT * FROM `$table`")->fetchAll(\PDO::FETCH_ASSOC);
+                try {
+                    $createTable = $pdo->query("SHOW CREATE TABLE `$table`")->fetch(\PDO::FETCH_ASSOC);
+                    $createSql = array_values($createTable)[1] ?? null;
 
-                if (!empty($rows)) {
-                    $sql .= "-- Data for `$table`\n";
-                    $sql .= 'INSERT INTO `' . $table . '` (`' . implode('`, `', array_keys($rows[0])) . '`) VALUES' . "\n";
-
-                    $valueLines = [];
-                    foreach ($rows as $row) {
-                        $values = [];
-                        foreach ($row as $value) {
-                            $values[] = $value === null ? 'NULL' : $pdo->quote($value);
-                        }
-                        $valueLines[] = '(' . implode(', ', $values) . ')';
+                    if (!$createSql) {
+                        $sql .= "-- Failed to retrieve CREATE statement for `$table`\n\n";
+                        continue;
                     }
 
-                    $sql .= implode(",\n", $valueLines) . ";\n\n";
-                } else {
-                    $sql .= "\n";
+                    $sql .= $createSql . ";\n\n";
+
+                    $rows = $pdo->query("SELECT * FROM `$table`")->fetchAll(\PDO::FETCH_ASSOC);
+
+                    if (!empty($rows)) {
+                        $sql .= "-- Data for `$table`\n";
+                        $sql .= 'INSERT INTO `' . $table . '` (`' . implode('`, `', array_keys($rows[0])) . '`) VALUES' . "\n";
+
+                        $valueLines = [];
+                        foreach ($rows as $row) {
+                            $values = [];
+                            foreach ($row as $value) {
+                                $values[] = $value === null ? 'NULL' : $pdo->quote($value);
+                            }
+                            $valueLines[] = '(' . implode(', ', $values) . ')';
+                        }
+
+                        $sql .= implode(",\n", $valueLines) . ";\n\n";
+                    } else {
+                        $sql .= "\n";
+                    }
+                } catch (\Exception $e) {
+                    $sql .= "-- Failed to backup table `$table`: " . $e->getMessage() . "\n\n";
+                    Log::warning("Failed to backup table `$table`: " . $e->getMessage());
+                    continue;
                 }
             }
 

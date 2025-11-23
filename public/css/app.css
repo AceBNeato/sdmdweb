@@ -535,6 +535,22 @@ hr{
   background: #b71c1c;
 }
 
+
+.btn-outline-secondary {
+    color: rgb(74, 85, 104);
+    background-color: white;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: rgb(187, 198, 213) !important;
+    border-image: initial !important;
+}
+
+.btn-outline-secondary:hover {
+    color: rgb(74, 85, 104) !important;
+    background-color: rgb(243, 244, 246) !important;
+    border-color: rgb(187, 198, 213) !important;
+}
+
 .btn-outline {
   background: transparent;
   border: 1px solid var(--border);

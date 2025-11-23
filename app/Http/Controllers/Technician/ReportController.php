@@ -92,9 +92,17 @@ class ReportController extends Controller
         $technician = auth('technician')->user();
 
         // Technicians have access to all equipment across all offices
-        $equipment->load(['office', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
-        }, 'history.user']);
+        $equipment->load([
+            'office', 
+            'history' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }, 
+            'history.user',
+            'history.corrections' => function($query) {
+                $query->where('type', 'equipment_history_corrected')
+                      ->with('user');
+            }
+        ]);
 
         return view('reports.ict_history_sheet', [
             'equipment' => $equipment,
@@ -113,9 +121,17 @@ class ReportController extends Controller
         $technician = auth('technician')->user();
 
         // Technicians have access to all equipment across all offices
-        $equipment->load(['office', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
-        }, 'history.user']);
+        $equipment->load([
+            'office', 
+            'history' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }, 
+            'history.user',
+            'history.corrections' => function($query) {
+                $query->where('type', 'equipment_history_corrected')
+                      ->with('user');
+            }
+        ]);
 
         $pdf = Pdf::loadView('reports.ict_history_sheet', [
             'equipment' => $equipment,

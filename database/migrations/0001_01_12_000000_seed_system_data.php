@@ -18,7 +18,6 @@ return new class extends Migration
     {
         // Create campuses
         $tagumCampus = Campus::create([
-            'code' => 'TAGUM',
             'name' => 'Tagum',
             'address' => 'Tagum City, Davao del Norte',
             'contact_number' => '(084) 216-2374',
@@ -28,7 +27,6 @@ return new class extends Migration
 
         // Create offices
         $sdmdOffice = Office::create([
-            'code' => 'SDMD',
             'name' => 'SDMD Office',
             'location' => '2nd Floor, Admin Office',
             'contact_number' => '(084) 216-2374',

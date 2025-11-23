@@ -14,7 +14,6 @@ return new class extends Migration
         // Campuses table
         Schema::create('campuses', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->string('name');
             $table->text('address');
             $table->string('contact_number')->nullable();
@@ -23,13 +22,11 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
             $table->index(['is_active']);
-            $table->index(['code']);
         });
 
         // Offices table
         Schema::create('offices', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->string('name');
             $table->text('location');
             $table->string('contact_number')->nullable();
@@ -40,7 +37,6 @@ return new class extends Migration
             $table->softDeletes();
             $table->index(['is_active']);
             $table->index(['campus_id']);
-            $table->index(['code']);
         });
     }
 

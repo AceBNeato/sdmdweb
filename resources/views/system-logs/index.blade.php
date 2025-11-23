@@ -277,12 +277,21 @@
                 </table>
             </div>
 
-            @else
-                <div class="logs-empty">
-                    <i class='bx bx-history'></i>
-                    <h3 class="fw-semibold">No {{ $typeLabel }} Yet</h3>
-                    <p class="mb-0">We're not seeing any {{ strtolower($typeLabel) }} right now. As soon as activity happens, it will appear here automatically.</p>
+            @if($activities->hasPages())
+                <div class="pagination-section">
+                    <div class="pagination-info">
+                        Showing {{ $activities->firstItem() }} to {{ $activities->lastItem() }} of {{ $activities->total() }} results
+                    </div>
+                    {{ $activities->appends(request()->query())->links('pagination.admin') }}
                 </div>
+            @endif
+
+        @else
+            <div class="logs-empty">
+                <i class='bx bx-history'></i>
+                <h3 class="fw-semibold">No {{ $typeLabel }} Yet</h3>
+                <p class="mb-0">We're not seeing any {{ strtolower($typeLabel) }} right now. As soon as activity happens, it will appear here automatically.</p>
+            </div>
         @endif
     </div>
 </div>

@@ -266,10 +266,10 @@ Route::middleware(['auth:technician'])
                     ->name('equipment.history.store');
                     
                 Route::get('/history/{history}/edit', [\App\Http\Controllers\Technician\EquipmentController::class, 'editHistory'])
-                    ->name('equipment.history.edit');
+                    ->name('equipment.history.edit')->middleware('permission:history.edit');
                     
                 Route::put('/history/{history}', [\App\Http\Controllers\Technician\EquipmentController::class, 'updateHistory'])
-                    ->name('equipment.history.update');
+                    ->name('equipment.history.update')->middleware('permission:history.edit');
                     
                 Route::post('/generate-jo', [\App\Http\Controllers\Technician\EquipmentController::class, 'generateJONumber'])
                     ->name('equipment.generate-jo');

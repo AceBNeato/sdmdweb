@@ -14,6 +14,7 @@ class Activity extends Model
         'user_id',
         'type',
         'description',
+        'equipment_history_id',
     ];
 
     /**
@@ -22,6 +23,14 @@ class Activity extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the equipment history entry related to this activity.
+     */
+    public function equipmentHistory(): BelongsTo
+    {
+        return $this->belongsTo(EquipmentHistory::class);
     }
 
     /**
@@ -689,6 +698,54 @@ class Activity extends Model
             'user_id' => $actor?->id,
             'type' => 'equipment_history_updated',
             'description' => $description,
+        ]);
+    }
+
+    /**
+     * Log equipment history correction activity (admin correcting technician's entry)
+     */
+    public static function logEquipmentHistoryCorrection($history, $originalData, $changes = [], $correctedBy = null)
+    {
+        $actor = $correctedBy ?? auth()->user();
+        
+        $description = sprintf(
+            'Corrected history entry for equipment: %s (JO: %s) - Original technician: %s',
+            $history->equipment?->serial_number ?? 'Unknown',
+            $history->jo_number ?? 'No JO',
+            $history->user?->name ?? 'Unknown'
+        );
+
+        // Add original technician's input details
+        $originalDetails = [];
+        if (isset($originalData['action_taken'])) {
+            $originalDetails[] = "Original action: " . $originalData['action_taken'];
+        }
+        if (isset($originalData['remarks'])) {
+            $originalDetails[] = "Original remarks: " . $originalData['remarks'];
+        }
+
+        if (!empty($originalDetails)) {
+            $description .= ' - [' . implode(', ', $originalDetails) . ']';
+        }
+
+        // Add correction details
+        if (!empty($changes)) {
+            $changeDetails = [];
+            foreach ($changes as $field => $change) {
+                if (is_array($change)) {
+                    $changeDetails[] = "{$field}: '" . $change[0] . "' → '" . $change[1] . "'";
+                } else {
+                    $changeDetails[] = "{$field}: {$change}";
+                }
+            }
+            $description .= ' - Corrections: ' . implode(', ', $changeDetails);
+        }
+
+        return self::create([
+            'user_id' => $actor?->id,
+            'type' => 'equipment_history_corrected',
+            'description' => $description,
+            'equipment_history_id' => $history->id,
         ]);
     }
 

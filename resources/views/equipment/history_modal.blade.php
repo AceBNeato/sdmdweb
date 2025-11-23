@@ -222,22 +222,23 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Close modal first
+                    const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
                     // Show success SweetAlert
                     Swal.fire({
-                        title: 'Success!',
-                        text: data.message,
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                        allowOutsideClick: false
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Close modal and redirect
-                            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
-                            if (modal) {
-                                modal.hide();
-                            }
-                            window.location.href = data.redirect;
-                        }
+                        title: data.sweetalert_config?.title || 'Success!',
+                        text: data.sweetalert_config?.text || data.message,
+                        icon: data.sweetalert_config?.icon || 'success',
+                        timer: data.sweetalert_config?.timer || 3000,
+                        timerProgressBar: data.sweetalert_config?.timerProgressBar || true,
+                        showConfirmButton: data.sweetalert_config?.showConfirmButton !== false
+                    }).then(() => {
+                        // Redirect after SweetAlert closes or timer ends
+                        window.location.href = data.redirect;
                     });
                 } else {
                     // Show error SweetAlert

@@ -27,7 +27,7 @@
                     <select class="form-select" id="create_campus_id" name="campus_id" required>
                         <option value="" disabled selected>Select Campus</option>
                         @foreach($campuses as $campus)
-                            <option value="{{ $campus->id }}">{{ $campus->name }} ({{ $campus->code }})</option>
+                            <option value="{{ $campus->id }}">{{ $campus->name }} </option>
                         @endforeach
                     </select>
                     <small class="text-muted">Select the campus where this office is located</small>

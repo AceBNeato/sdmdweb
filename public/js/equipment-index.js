@@ -282,6 +282,11 @@ $(document).ready(function() {
         var modal = $('#editEquipmentModal');
         var content = $('#editEquipmentContent');
 
+        // Clear any existing session messages to prevent unwanted alerts
+        if (window.sessionMessages) {
+            window.sessionMessages = {};
+        }
+
         // Close the view modal if it's open
         $('#viewEquipmentModal').modal('hide');
 

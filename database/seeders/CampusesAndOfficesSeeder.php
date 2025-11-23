@@ -13,7 +13,6 @@ class CampusesAndOfficesSeeder extends Seeder
         $campuses = [
             [
                 'name' => 'Tagum',
-                'code' => 'TAGUM',
                 'address' => 'Apokon, Tagum City',
                 'contact_number' => '084-655-0452',
                 'email' => 'tagum@dnsc.edu.ph',
@@ -23,7 +22,6 @@ class CampusesAndOfficesSeeder extends Seeder
             ],
             [
                 'name' => 'Mabini',
-                'code' => 'MABINI',
                 'address' => 'Mabini, Davao de Oro',
                 'contact_number' => '084-655-0452',
                 'email' => 'mabini@dnsc.edu.ph',
@@ -54,7 +52,6 @@ class CampusesAndOfficesSeeder extends Seeder
             // SDMD Office - Tagum Campus
             [
                 'name' => 'SDMD Office',
-                'code' => 'SDMD',
                 'campus_id' => $tagumId,
                 'location' => 'SDMD Building, Tagum Campus',
                 'contact_number' => '084-655-0452',
@@ -66,7 +63,6 @@ class CampusesAndOfficesSeeder extends Seeder
             // OSAS Office - Tagum Campus
             [
                 'name' => 'OSAS Office',
-                'code' => 'OSAS',
                 'campus_id' => $tagumId,
                 'location' => 'PECC Gym, Tagum Campus',
                 'contact_number' => '084-655-0452',
@@ -78,7 +74,6 @@ class CampusesAndOfficesSeeder extends Seeder
             // College of Agriculture - Mabini Campus
             [
                 'name' => 'College of Agriculture',
-                'code' => 'COA',
                 'campus_id' => $mabiniId,
                 'location' => 'Agriculture Building, Mabini Campus',
                 'contact_number' => '084-655-0452',

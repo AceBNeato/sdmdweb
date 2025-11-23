@@ -886,6 +886,14 @@ class EquipmentController extends Controller
         // Track changes for logging
         $originalData = $history->getOriginal();
         $changes = [];
+        $isCorrection = false;
+
+        // Check if this is a correction (admin editing technician's entry)
+        $currentUser = auth()->user();
+        $originalUser = $history->user;
+        if ($currentUser && $originalUser && $currentUser->id !== $originalUser->id) {
+            $isCorrection = true;
+        }
 
         try {
             DB::beginTransaction();
@@ -903,8 +911,14 @@ class EquipmentController extends Controller
                 }
             }
 
-            // Log maintenance update
-            Activity::logMaintenanceUpdate($history, $changes);
+            // Use appropriate logging method based on whether this is a correction
+            if ($isCorrection) {
+                // Log correction with original technician's data preserved
+                Activity::logEquipmentHistoryCorrection($history, $originalData, $changes);
+            } else {
+                // Regular update logging
+                Activity::logMaintenanceUpdate($history, $changes);
+            }
 
             // Update equipment status if provided
             if (isset($validated['equipment_status'])) {

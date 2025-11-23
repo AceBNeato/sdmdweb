@@ -49,7 +49,6 @@ return new class extends Migration
                 CREATE VIEW office_summary_view AS
                 SELECT 
                     o.id,
-                    o.code,
                     o.name,
                     o.location,
                     o.contact_number,
@@ -65,7 +64,7 @@ return new class extends Migration
                 LEFT JOIN users u ON u.office_id = o.id AND u.deleted_at IS NULL
                 LEFT JOIN equipment e ON e.office_id = o.id AND e.deleted_at IS NULL
                 WHERE o.deleted_at IS NULL
-                GROUP BY o.id, o.code, o.name, o.location, o.contact_number, o.email, 
+                GROUP BY o.id, o.name, o.location, o.contact_number, o.email, 
                          o.is_active, c.name, o.created_at
             ");
         }

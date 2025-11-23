@@ -1192,6 +1192,23 @@ class EquipmentController extends BaseController
                 $successMessage .= ' Equipment condition set to ' . $conditionText . '.';
             }
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMessage,
+                    'redirect' => route('technician.equipment.index'),
+                    'show_sweetalert' => true,
+                    'sweetalert_config' => [
+                        'title' => 'History Entry Saved!',
+                        'text' => $successMessage,
+                        'icon' => 'success',
+                        'timer' => 3000,
+                        'timerProgressBar' => true,
+                        'showConfirmButton' => false
+                    ]
+                ]);
+            }
+
             return redirect()
                 ->route('technician.equipment.index')
                 ->with('success', $successMessage);
@@ -1230,12 +1247,7 @@ class EquipmentController extends BaseController
                 ->with('error', 'History entry does not belong to this equipment.');
         }
 
-        // Check if technician created this history entry
-        $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
-        if ($history->user_id !== $userId) {
-            return redirect()->route('technician.equipment.show', $equipment)
-                ->with('error', 'You can only edit history entries you created.');
-        }
+        // Permission check is handled by middleware - technicians with history.edit can edit any entry
 
         if (request()->ajax()) {
             return view('equipment.history_edit_modal', compact('equipment', 'history'));
@@ -1265,12 +1277,7 @@ class EquipmentController extends BaseController
                 ->with('error', 'History entry does not belong to this equipment.');
         }
 
-        // Check if technician created this history entry
-        $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
-        if ($history->user_id !== $userId) {
-            return redirect()->route('technician.equipment.show', $equipment)
-                ->with('error', 'You can only edit history entries you created.');
-        }
+        // Permission check is handled by middleware - technicians with history.edit can edit any entry
 
         $validated = $request->validate([
             'action_taken' => 'required|string|max:1000',

@@ -32,10 +32,17 @@ return new class extends Migration
         // Add foreign key constraints to activities (only if they don't exist)
         $activitiesFks = DB::select("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'activities' AND CONSTRAINT_NAME != 'PRIMARY'");
         $hasActivitiesUserFk = collect($activitiesFks)->pluck('CONSTRAINT_NAME')->contains('activities_user_id_foreign');
+        $hasActivitiesEquipmentHistoryFk = collect($activitiesFks)->pluck('CONSTRAINT_NAME')->contains('activities_equipment_history_id_foreign');
         
         if (!$hasActivitiesUserFk) {
             Schema::table('activities', function (Blueprint $table) {
                 $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
+
+        if (!$hasActivitiesEquipmentHistoryFk) {
+            Schema::table('activities', function (Blueprint $table) {
+                $table->foreign('equipment_history_id')->references('id')->on('equipment_history')->onDelete('cascade');
             });
         }
 
@@ -64,6 +71,7 @@ return new class extends Migration
 
         Schema::table('activities', function (Blueprint $table) {
             $table->dropForeign(['user_id']);
+            $table->dropForeign(['equipment_history_id']);
         });
 
         Schema::table('password_reset_otps', function (Blueprint $table) {

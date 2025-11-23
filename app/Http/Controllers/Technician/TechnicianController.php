@@ -203,6 +203,9 @@ class TechnicianController extends Controller
                 $updateData['must_change_password'] = false;
                 $updateData['password_changed_at'] = now();
                 
+                // Clear the password change session flag
+                session()->forget('must_change_password');
+                
                 // Log password change
                 Activity::logPasswordChange($user);
             }
