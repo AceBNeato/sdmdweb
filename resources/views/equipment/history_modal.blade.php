@@ -120,8 +120,8 @@
             <div class="mb-3">
                 <label for="date" class="form-label">Date & Time <span class="text-danger">*</span></label>
                 <input type="datetime-local" class="form-control @error('date') is-invalid @enderror"
-                       id="date" name="date" value="{{ now()->format('Y-m-d\TH:i') }}" readonly required>
-                <div class="form-text">Date and time are automatically set when the history entry is created</div>
+                       id="date" name="date" value="{{ now()->format('Y-m-d\TH:i') }}" required>
+                <div class="form-text">Date and time of the maintenance activity</div>
                 @error('date')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -174,17 +174,7 @@
         </div>
     </div>
 
-    <div class="mb-3">
-        <label for="remarks" class="form-label">Remarks</label>
-        <textarea class="form-control @error('remarks') is-invalid @enderror"
-                  id="remarks" name="remarks" rows="3"
-                  placeholder="Remarks will be auto-generated based on equipment status" readonly>{{ old('remarks') }}</textarea>
-        <div class="form-text">Remarks are automatically generated based on the selected equipment status</div>
-        @error('remarks')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-
+    
     <div class="d-flex gap-3">
         <button type="submit" class="btn btn-primary">
             <i class='bx bx-save me-1'></i> Save History Entry
@@ -201,29 +191,75 @@
     const dateInput = document.getElementById('date');
     const joNumberDisplay = document.getElementById('jo_number_display');
     const joNumberHidden = document.getElementById('jo_number');
-    const statusSelect = document.getElementById('equipment_status');
-    const remarksTextarea = document.getElementById('remarks');
+    const form = document.querySelector('form');
 
-    // Function to update remarks based on status
-    function updateRemarks() {
-        const selectedStatus = statusSelect.value;
-        let remarksText = '';
+    // Handle form submission with AJAX and SweetAlert
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading SweetAlert
+            Swal.fire({
+                title: 'Saving...',
+                text: 'Please wait while we save the history entry.',
+                icon: 'info',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
-        switch(selectedStatus) {
-            case 'serviceable':
-                remarksText = 'Serviceable';
-                break;
-            case 'for_repair':
-                remarksText = 'For Repair';
-                break;
-            case 'defective':
-                remarksText = 'Defective';
-                break;
-            default:
-                remarksText = '';
-        }
-
-        remarksTextarea.value = remarksText;
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success SweetAlert
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Close modal and redirect
+                            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                            if (modal) {
+                                modal.hide();
+                            }
+                            window.location.href = data.redirect;
+                        }
+                    });
+                } else {
+                    // Show error SweetAlert
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message || 'Failed to save history entry. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error SweetAlert
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An unexpected error occurred. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
+        });
     }
 
     // Auto-generate JO number when page loads (date is fixed to current time)
@@ -267,23 +303,11 @@
     // Generate JO number immediately since date is fixed
     generateJONumber();
 
-    // Update remarks when status changes
-    statusSelect.addEventListener('change', updateRemarks);
-
-    // Initialize remarks based on current status
-    updateRemarks();
-
     // Handle old input for JO number field
     const oldJONumber = "{{ old('jo_number') }}";
     if (oldJONumber) {
         joNumberDisplay.value = oldJONumber;
         joNumberHidden.value = oldJONumber;
-    }
-
-    // Handle old input for remarks
-    const oldRemarks = "{{ old('remarks') }}";
-    if (oldRemarks) {
-        remarksTextarea.value = oldRemarks;
     }
 
 })();

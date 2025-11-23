@@ -2,7 +2,7 @@
 
 @php
 $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 'technician' ? 'technician' : 'staff');
-$scanRoute = route($prefix . '.equipment.scan');
+$scanRoute = route($prefix . '.equipment.scan.process');
 $viewUrl = '/' . $prefix . '/equipment';
 $historyUrl = '/' . $prefix . '/equipment';
 $isStaff = $prefix === 'staff';
@@ -34,6 +34,10 @@ $isStaff = $prefix === 'staff';
             'history' => $historyUrl,
             'isStaff' => $isStaff,
         ]) !!};
+        
+        // Debug: Log the routes
+        console.log('QR Scanner Routes:', window.qrScannerRoutes);
+        console.log('Current user prefix:', '{!! $prefix !!}');
     </script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="{{ asset('js/qr-scanner.js') }}"></script>

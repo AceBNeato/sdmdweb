@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\User\AdminController;
 use App\Http\Controllers\User\EquipmentController;
 use App\Http\Controllers\User\RepairController;
-use App\Http\Controllers\User\MaintenanceController;
 use App\Http\Controllers\User\ReportController;
 use App\Http\Controllers\User\OfficeController;
 use App\Http\Controllers\User\UserController;
@@ -146,9 +145,19 @@ Route::post('/staff/unlock-session', [\App\Http\Controllers\Auth\AuthController:
     ->name('staff.unlock.session')
     ->middleware('auth:staff');
 
+// Staff session settings
+Route::get('/staff/session-settings', [\App\Http\Controllers\Auth\AuthController::class, 'getSessionSettings'])
+    ->name('staff.session.settings')
+    ->middleware('auth:staff');
+
 // Technician unlock session
 Route::post('/technician/unlock-session', [AuthController::class, 'unlockSessionTechnician'])
     ->name('technician.unlock.session')
+    ->middleware('auth:technician');
+
+// Technician session settings
+Route::get('/technician/session-settings', [\App\Http\Controllers\Auth\AuthController::class, 'getSessionSettings'])
+    ->name('technician.session.settings')
     ->middleware('auth:technician');
 
 // Technician Login
@@ -238,7 +247,7 @@ Route::middleware(['auth:technician'])
             Route::get('/scan', [\App\Http\Controllers\Technician\EquipmentController::class, 'scanView'])
                 ->name('equipment.scan.view');
             Route::post('/scan', [\App\Http\Controllers\Technician\EquipmentController::class, 'scanQrCode'])
-                ->name('equipment.scan');
+                ->name('equipment.scan.process');
             Route::post('/decode-qr', [\App\Http\Controllers\Technician\EquipmentController::class, 'decodeQrCode'])
                 ->name('equipment.decode-qr');
             
@@ -276,9 +285,7 @@ Route::middleware(['auth:technician'])
             });
         });
         
-        // Maintenance Logs
-        Route::resource('maintenance-logs', \App\Http\Controllers\Technician\MaintenanceLogController::class);
-        
+                
         // Profile
         Route::get('/profile', [\App\Http\Controllers\Technician\TechnicianController::class, 'profile'])->name('profile');
         Route::get('/profile/edit', [\App\Http\Controllers\Technician\TechnicianController::class, 'editProfile'])->name('profile.edit');
@@ -288,7 +295,6 @@ Route::middleware(['auth:technician'])
         Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
             Route::get('/', [\App\Http\Controllers\Technician\ReportController::class, 'index'])->name('index');
             Route::get('/equipment-history', [\App\Http\Controllers\Technician\ReportController::class, 'equipmentHistory'])->name('equipment-history');
-            Route::get('/maintenance', [\App\Http\Controllers\Technician\ReportController::class, 'maintenanceReport'])->name('maintenance');
             Route::get('/history/{equipment}', [\App\Http\Controllers\Technician\ReportController::class, 'history'])->name('history');
             
             // Equipment History Export Route
@@ -374,9 +380,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
                 // QR Scanner
                 Route::get('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanView'])
-                    ->name('scan');
+                    ->name('scan.view');
                 Route::post('scan', [\App\Http\Controllers\Staff\EquipmentController::class, 'scanQrCode'])
-                    ->name('scan');
+                    ->name('scan.process');
 
                 // Parameter routes (must come after specific routes)
                 Route::get('{equipment}', [\App\Http\Controllers\Staff\EquipmentController::class, 'show'])
@@ -426,6 +432,10 @@ Route::middleware(['auth'])->group(function () {
     // Unlock Session (for session lock modal) - Allow all authenticated guards
     Route::post('/unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSession'])
         ->name('unlock.session');
+
+// Session settings (for dynamic updates) - Allow all authenticated guards
+    Route::get('/session-settings', [\App\Http\Controllers\Auth\AuthController::class, 'getSessionSettings'])
+        ->name('session.settings');
 
     // Unified Accounts Routes
     Route::prefix('accounts')->name('accounts.')->group(function () {
@@ -559,8 +569,8 @@ Route::middleware(['auth'])
                 Route::get('{equipment}/print-qrcode', [EquipmentController::class, 'qrCode'])->name('print-qrcode');
 
                 // QR Scanner
-                Route::get('scan', [EquipmentController::class, 'scanView'])->name('scan');
-                Route::post('scan', [EquipmentController::class, 'scanQrCode'])->name('scan')->middleware('permission:equipment.view');
+                Route::get('scan', [EquipmentController::class, 'scanView'])->name('scan.view');
+                Route::post('scan', [EquipmentController::class, 'scanQrCode'])->name('scan.process')->middleware('permission:equipment.view');
 
                 // History Management
                 Route::prefix('{equipment}')->group(function () {
@@ -580,12 +590,8 @@ Route::middleware(['auth'])
             });
 
             // ============================================================================
-            // MAINTENANCE & REPAIRS
+            // REPAIRS
             // ============================================================================
-
-            Route::prefix('maintenance')->name('maintenance.')->middleware('permission:equipment.view')->group(function () {
-                Route::get('/', [MaintenanceController::class, 'index'])->name('index');
-            });
 
             Route::prefix('repairs')->name('repairs.')->middleware('permission:equipment.view')->group(function () {
                 Route::get('/', [RepairController::class, 'index'])->name('index');

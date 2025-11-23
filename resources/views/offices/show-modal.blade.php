@@ -18,8 +18,8 @@
         </div>
         <div class="col-12">
             <div class="field-container">
-                <label class="form-label text-muted">Address</label>
-                <div class="fw-semibold">{{ $office->address ?? 'N/A' }}</div>
+                <label class="form-label text-muted">Location</label>
+                <div class="fw-semibold">{{ $office->location ?? 'N/A' }}</div>
             </div>
         </div>
         <div class="col-md-6">

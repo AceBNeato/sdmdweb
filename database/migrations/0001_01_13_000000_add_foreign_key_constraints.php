@@ -12,22 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add foreign key constraints to maintenance_logs (only if they don't exist)
-        $maintenanceLogFks = DB::select("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'maintenance_logs' AND CONSTRAINT_NAME != 'PRIMARY'");
-        $hasEquipmentFk = collect($maintenanceLogFks)->pluck('CONSTRAINT_NAME')->contains('maintenance_logs_equipment_id_foreign');
-        $hasUserFk = collect($maintenanceLogFks)->pluck('CONSTRAINT_NAME')->contains('maintenance_logs_user_id_foreign');
         
-        if (!$hasEquipmentFk) {
-            Schema::table('maintenance_logs', function (Blueprint $table) {
-                $table->foreign('equipment_id')->references('id')->on('equipment')->onDelete('cascade');
-            });
-        }
-        if (!$hasUserFk) {
-            Schema::table('maintenance_logs', function (Blueprint $table) {
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            });
-        }
-
         // Add foreign key constraints to equipment_history (only if they don't exist)
         $equipmentHistoryFks = DB::select("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'equipment_history' AND CONSTRAINT_NAME != 'PRIMARY'");
         $hasEquipmentHistoryEquipmentFk = collect($equipmentHistoryFks)->pluck('CONSTRAINT_NAME')->contains('equipment_history_equipment_id_foreign');
@@ -71,10 +56,6 @@ return new class extends Migration
     public function down(): void
     {
         // Drop foreign key constraints
-        Schema::table('maintenance_logs', function (Blueprint $table) {
-            $table->dropForeign(['equipment_id']);
-            $table->dropForeign(['user_id']);
-        });
 
         Schema::table('equipment_history', function (Blueprint $table) {
             $table->dropForeign(['equipment_id']);

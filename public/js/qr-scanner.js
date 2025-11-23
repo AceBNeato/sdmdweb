@@ -47,7 +47,12 @@ function processScannedQrCode(qrData) {
         },
         body: JSON.stringify({ qr_data: qrData })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Display equipment details
@@ -61,12 +66,12 @@ function processScannedQrCode(qrData) {
                     <p class="mb-0"><strong>Office:</strong> ${data.equipment.office || 'N/A'}</p>
                     <hr>
                     <div class="qr-actions">
-                    <a href="${window.qrScannerRoutes.view}?view_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
+                    <button onclick="viewEquipmentDetails(${data.equipment.id})" class="btn btn-outline-secondary btn-sm">
                             <i class="bx bx-show me-1"></i>View Details
-                        </a>
-                        ${!window.qrScannerRoutes.isStaff ? `<a href="${window.qrScannerRoutes.view}?history_equipment=${data.equipment.id}" class="btn btn-outline-secondary btn-sm">
+                        </button>
+                        ${!window.qrScannerRoutes.isStaff ? `<button onclick="addHistorySheet(${data.equipment.id})" class="btn btn-outline-secondary btn-sm">
                             <i class="bx bx-plus me-1"></i>Add History Sheet
-                        </a>` : ''}
+                        </button>` : ''}
                         <button onclick="resetScanner()" class="btn btn-outline-secondary btn-sm">
                             <i class="bx bx-qr-scan me-1"></i>Scan Another
                         </button>
@@ -86,10 +91,14 @@ function processScannedQrCode(qrData) {
     })
     .catch(error => {
         console.error('Error processing QR code:', error);
+        console.error('Error message:', error.message);
+        console.error('Scan route:', window.qrScannerRoutes.scan);
         document.getElementById('my-qr-reader').innerHTML = `
             <div class="alert alert-danger">
                 <h5 class="alert-heading">Error</h5>
                 <p>An error occurred while processing the QR code.</p>
+                <p><small>Debug: ${error.message}</small></p>
+                <p><small>Route: ${window.qrScannerRoutes.scan}</small></p>
                 <button onclick="resetScanner()" class="btn btn-primary btn-sm qr-btn">Try Again</button>
             </div>
         `;
@@ -99,6 +108,134 @@ function processScannedQrCode(qrData) {
 // Function to reset scanner for another scan
 function resetScanner() {
     location.reload(); // Simple reload to restart scanner
+}
+
+// Function to view equipment details directly
+function viewEquipmentDetails(equipmentId) {
+    // Determine the correct route prefix based on current user
+    let prefix = 'admin';
+    if (window.qrScannerRoutes.isStaff) {
+        prefix = 'staff';
+    } else if (window.location.pathname.includes('/technician/')) {
+        prefix = 'technician';
+    }
+
+    // Create modal if it doesn't exist
+    if (!$('#viewEquipmentModal').length) {
+        $('body').append(`
+            <div class="modal fade" id="viewEquipmentModal" tabindex="-1" aria-labelledby="viewEquipmentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="viewEquipmentModalLabel">Equipment Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="viewEquipmentContent">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    const modal = $('#viewEquipmentModal');
+    const content = $('#viewEquipmentContent');
+
+    // Show loading spinner
+    content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+
+    // Load content via AJAX
+    $.ajax({
+        url: `/${prefix}/equipment/${equipmentId}`,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            content.html(response);
+            
+            // Initialize Bootstrap modal
+            const bootstrapModal = new bootstrap.Modal(document.getElementById('viewEquipmentModal'));
+            bootstrapModal.show();
+        },
+        error: function(xhr, status, error) {
+            console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+            content.html('<div class="alert alert-danger">Failed to load equipment details. Error: ' + xhr.status + ' - ' + error + '</div>');
+            
+            // Still show the modal with error message
+            const bootstrapModal = new bootstrap.Modal(document.getElementById('viewEquipmentModal'));
+            bootstrapModal.show();
+        }
+    });
+}
+
+// Function to add history sheet directly
+function addHistorySheet(equipmentId) {
+    // Determine the correct route prefix based on current user
+    let prefix = 'admin';
+    if (window.qrScannerRoutes.isStaff) {
+        prefix = 'staff';
+    } else if (window.location.pathname.includes('/technician/')) {
+        prefix = 'technician';
+    }
+
+    // Create modal if it doesn't exist
+    if (!$('#historyEquipmentModal').length) {
+        $('body').append(`
+            <div class="modal fade" id="historyEquipmentModal" tabindex="-1" aria-labelledby="historyEquipmentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="historyEquipmentModalLabel">Add History Sheet</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="historyEquipmentContent">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    const modal = $('#historyEquipmentModal');
+    const content = $('#historyEquipmentContent');
+
+    // Show loading spinner
+    content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+
+    // Load content via AJAX
+    $.ajax({
+        url: `/${prefix}/equipment/${equipmentId}/history/create`,
+        type: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            content.html(response);
+            
+            // Initialize Bootstrap modal
+            const bootstrapModal = new bootstrap.Modal(document.getElementById('historyEquipmentModal'));
+            bootstrapModal.show();
+        },
+        error: function(xhr, status, error) {
+            console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+            content.html('<div class="alert alert-danger">Failed to load history form. Error: ' + xhr.status + ' - ' + error + '</div>');
+            
+            // Still show the modal with error message
+            const bootstrapModal = new bootstrap.Modal(document.getElementById('historyEquipmentModal'));
+            bootstrapModal.show();
+        }
+    });
 }
 
 // Helper function for status colors

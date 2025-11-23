@@ -15,7 +15,7 @@ class Office extends Model
         'name',
         'code',
         'campus_id',
-        'address',
+        'location',
         'contact_number',
         'email',
         'is_active',

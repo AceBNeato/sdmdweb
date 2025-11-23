@@ -412,74 +412,48 @@ class EquipmentController extends Controller
 
     public function storeHistory(Request $request, Equipment $equipment)
     {
-        // Permission check
-        if (!auth()->user()->hasPermissionTo('history.store')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'date' => 'required|date',
-            'action_taken' => 'required|string|max:1000',
-            'remarks' => 'nullable|string|max:1000',
-            'equipment_status' => 'required|in:serviceable,for_repair,defective',
-        ]);
-
-        // JO number is now auto-generated and validated
-
         try {
+            // Permission check
+            if (!auth()->user()->hasPermissionTo('history.store')) {
+                abort(403);
+            }
+
+            $validated = $request->validate([
+                'date' => 'required|date',
+                'action_taken' => 'required|string|max:1000',
+                'equipment_status' => 'required|in:serviceable,for_repair,defective',
+            ]);
+
+            // Auto-generate remarks based on equipment status
+            $statusRemarks = [
+                'serviceable' => 'Serviceable',
+                'for_repair' => 'Repair',
+                'defective' => 'Defective'
+            ];
+            $validated['remarks'] = $statusRemarks[$validated['equipment_status']] ?? '';
+
             $user = auth()->user();
             $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
 
             DB::beginTransaction();
 
-            // Generate unique JO number for this date with retry logic for concurrency
+            // Generate unique JO number for this date
             $date = $validated['date'];
-            $yearMonth = date('y-m', strtotime($date)); // YY-MM format
+            $yearMonth = date('y-m', strtotime($date));
 
-            // Retry logic for handling concurrent requests
-            $maxRetries = 5;
-            $retryCount = 0;
-            $joNumber = null;
+            $latestJO = \App\Models\EquipmentHistory::where('jo_number', 'like', 'JO-' . $yearMonth . '-%')
+                ->orderBy('jo_number', 'desc')
+                ->first();
 
-            while ($retryCount < $maxRetries && !$joNumber) {
-                // Find the next sequence number for this month (resets monthly)
-                $latestJO = \App\Models\EquipmentHistory::where('jo_number', 'like', 'JO-' . $yearMonth . '-%')
-                    ->orderBy('jo_number', 'desc')
-                    ->first();
-
-                $sequence = 1;
-                if ($latestJO) {
-                    // Extract sequence from latest JO number (format: JO-YY-MM-XXX)
-                    $parts = explode('-', $latestJO->jo_number);
-                    if (count($parts) >= 3) {
-                        $sequence = (int) end($parts) + 1;
-                    }
-                }
-
-                // Try to find the next available sequence
-                for ($i = $sequence; $i <= 999; $i++) {
-                    $sequenceFormatted = str_pad($i, 3, '0', STR_PAD_LEFT);
-                    $candidateJONumber = 'JO-' . $yearMonth . '-' . $sequenceFormatted;
-
-                    // Check if this number is available
-                    if (!\App\Models\EquipmentHistory::where('jo_number', $candidateJONumber)->exists()) {
-                        $joNumber = $candidateJONumber;
-                        break;
-                    }
-                }
-
-                if (!$joNumber) {
-                    // No available numbers found, this shouldn't happen
-                    break;
-                }
-
-                $retryCount++;
+            $sequence = 1;
+            if ($latestJO) {
+                $lastSequence = (int) substr($latestJO->jo_number, -3);
+                $sequence = $lastSequence + 1;
             }
 
-            if (!$joNumber) {
-                throw new \Exception('Unable to generate unique JO number - all numbers for this month are taken');
-            }
+            $joNumber = 'JO-' . $yearMonth . '-' . str_pad($sequence, 3, '0', STR_PAD_LEFT);
 
+            // Create history record
             $history = new \App\Models\EquipmentHistory([
                 'equipment_id' => $equipment->id,
                 'user_id' => $user->id,
@@ -492,24 +466,21 @@ class EquipmentController extends Controller
 
             $history->save();
 
-            // Log maintenance creation
-            Activity::logMaintenanceCreation($history, $user);
+            // Log equipment history creation
+            Activity::logEquipmentHistoryCreation($history, $user);
 
-            // Update equipment status
-            $updateData = [
-                'status' => $validated['equipment_status'],
-                'assigned_by_id' => $user->id,
-            ];
-
-            // Set condition based on status
-            if ($validated['equipment_status'] === 'serviceable') {
-                $updateData['condition'] = 'good';
-            } elseif (in_array($validated['equipment_status'], ['for_repair', 'defective'])) {
-                $updateData['condition'] = 'not_working';
-            }
-
+            // Update equipment status and condition
             $oldStatus = $equipment->status;
-            $equipment->update($updateData);
+            $equipment->status = $validated['equipment_status'];
+            $equipment->assigned_by_id = $user->id;
+            
+            if ($validated['equipment_status'] === 'serviceable') {
+                $equipment->condition = 'good';
+            } else {
+                $equipment->condition = 'not_working';
+            }
+            
+            $equipment->save();
 
             // Log equipment status change
             if ($oldStatus !== $validated['equipment_status']) {
@@ -522,7 +493,6 @@ class EquipmentController extends Controller
             $statusText = ucfirst(str_replace('_', ' ', $validated['equipment_status']));
             $successMessage .= ' Equipment status updated to ' . $statusText . '.';
 
-            // Add condition update message if status was set to serviceable
             if ($validated['equipment_status'] === 'serviceable') {
                 $successMessage .= ' Equipment condition set to Good.';
             }
@@ -540,12 +510,15 @@ class EquipmentController extends Controller
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+            
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to add history entry. Please try again.'
                 ], 500);
             }
+            
             return back()
                 ->withInput()
                 ->with('error', 'Failed to add history entry. Please try again.');
@@ -772,9 +745,8 @@ class EquipmentController extends Controller
                     // Log the scan
                     Activity::create([
                         'user_id' => auth()->id(),
-                        'action' => 'scanned_qr',
+                        'type' => 'equipment_scanned',
                         'description' => "Scanned QR code for equipment: {$equipment->equipment_model}",
-                        'metadata' => ['equipment_id' => $equipment->id]
                     ]);
 
                     return response()->json([
@@ -816,9 +788,8 @@ class EquipmentController extends Controller
         // Log the scan
         Activity::create([
             'user_id' => auth()->id(),
-            'action' => 'scanned_qr',
+            'type' => 'equipment_scanned',
             'description' => "Scanned QR code for equipment: {$equipment->equipment_model}",
-            'metadata' => ['equipment_id' => $equipment->id]
         ]);
 
         return response()->json([

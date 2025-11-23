@@ -5,8 +5,8 @@
     'use strict';
 
     // Configuration - separate from session timeout
-    const lockoutTimeoutMinutes = window.sessionData?.lockoutTimeoutMinutes || 1;
-    const lockoutTimeoutMs = lockoutTimeoutMinutes * 60 * 1000;
+    let lockoutTimeoutMinutes = window.sessionData?.lockoutTimeoutMinutes || 1;
+    let lockoutTimeoutMs = lockoutTimeoutMinutes * 60 * 1000;
 
     let lastActivityTime = Date.now();
     let isLocked = false;
@@ -21,6 +21,42 @@
 
     // CSRF token for AJAX requests
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    function updateLockoutSettings() {
+        // Determine the correct session settings URL based on current user
+        let settingsUrl = '/session-settings'; // default for admin
+        
+        if (window.location.pathname.includes('/staff/')) {
+            settingsUrl = '/staff/session-settings';
+        } else if (window.location.pathname.includes('/technician/')) {
+            settingsUrl = '/technician/session-settings';
+        }
+        
+        // Fetch updated settings from server
+        fetch(settingsUrl, {
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.lockoutTimeoutMinutes !== undefined && data.lockoutTimeoutMinutes !== lockoutTimeoutMinutes) {
+                    lockoutTimeoutMinutes = data.lockoutTimeoutMinutes;
+                    lockoutTimeoutMs = lockoutTimeoutMinutes * 60 * 1000;
+                    
+                    // Reset timer with new settings
+                    if (!isLocked) {
+                        resetLockoutTimer();
+                    }
+                    
+                    console.log('Session lock timeout updated to:', lockoutTimeoutMinutes, 'minutes');
+                }
+            })
+            .catch(error => {
+                console.log('Failed to fetch updated session settings:', error);
+            });
+    }
 
     function resetLockoutTimer() {
         if (isLocked) return; // Don't reset if already locked
@@ -51,10 +87,7 @@
         // Ensure the input is accessible after modal is displayed
         setTimeout(() => {
             unlockPassword.disabled = false;
-            unlockPassword.style.pointerEvents = 'auto';
-            unlockPassword.style.zIndex = '1000001';
             unlockPassword.removeAttribute('disabled');
-            unlockPassword.setAttribute('pointer-events', 'auto');
         }, 50);
 
         // Persist lock state across page reloads
@@ -206,6 +239,9 @@
         }
 
         resetLockoutTimer();
+        
+        // Check for updated settings every 30 seconds
+        setInterval(updateLockoutSettings, 30000);
     });
 
     // Handle page visibility changes (tab switching)
@@ -213,6 +249,8 @@
         if (!document.hidden && !isLocked) {
             // Reset timer when user returns to tab
             resetLockoutTimer();
+            // Also check for updated settings
+            updateLockoutSettings();
         }
     });
 
@@ -220,6 +258,8 @@
     window.addEventListener('focus', function() {
         if (!isLocked) {
             resetLockoutTimer();
+            // Also check for updated settings
+            updateLockoutSettings();
         }
     });
 

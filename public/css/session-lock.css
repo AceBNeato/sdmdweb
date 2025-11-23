@@ -82,6 +82,8 @@ body #session-lock-modal.session-lock-overlay[style*="display: none"] {
 .session-lock-modal .modal-body {
     padding: 32px 28px;
     background: #ffffff;
+    position: relative;
+    z-index: 1000000;
 }
 
 .session-lock-modal .modal-body p {
@@ -89,6 +91,11 @@ body #session-lock-modal.session-lock-overlay[style*="display: none"] {
     font-size: 15px;
     line-height: 1.6;
     margin-bottom: 24px;
+}
+
+.session-lock-modal #unlock-form {
+    position: relative;
+    z-index: 1000001;
 }
 
 .session-lock-modal .form-label {
@@ -105,12 +112,26 @@ body #session-lock-modal.session-lock-overlay[style*="display: none"] {
     font-size: 15px;
     transition: all 0.2s ease;
     pointer-events: auto !important;
+    position: relative !important;
+    z-index: 1000001 !important;
+    background: white !important;
+    opacity: 1 !important;
 }
 
 .session-lock-modal .form-control:focus {
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     outline: none;
+}
+
+/* Ensure password input is always accessible */
+.session-lock-modal #unlock-password {
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
 }
 
 .session-lock-modal .alert-danger {

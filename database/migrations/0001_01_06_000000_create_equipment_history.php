@@ -15,18 +15,19 @@ return new class extends Migration
         Schema::create('equipment_history', function (Blueprint $table) {
             $table->id();
             $table->foreignId('equipment_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('action', ['created', 'updated', 'assigned', 'unassigned', 'maintenance', 'status_change', 'qr_generated']);
-            $table->text('description');
-            $table->json('old_values')->nullable();
-            $table->json('new_values')->nullable();
-            $table->date('date')->default(now());
+            $table->datetime('date')->nullable();
+            $table->string('jo_number', 255)->nullable()->comment('Job Order Number');
+            $table->string('action_taken', 255);
+            $table->text('remarks')->nullable();
+            $table->string('responsible_person', 255);
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
             
             // Indexes
-            $table->index(['equipment_id', 'date']);
-            $table->index(['user_id', 'date']);
-            $table->index(['action', 'date']);
+            $table->index(['equipment_id']);
+            $table->index(['user_id']);
+            $table->index(['jo_number']);
+            $table->index(['date']);
         });
     }
 

@@ -464,4 +464,33 @@ class AuthController extends Controller
         \Log::info('Password check failed for technician user ID: ' . $user->id . ', Provided password length: ' . strlen($request->password));
         return response()->json(['success' => false, 'message' => 'Invalid password.'], 401);
     }
+
+    /**
+     * Get session settings for dynamic updates.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSessionSettings(Request $request)
+    {
+        // Check if user is authenticated with any guard
+        $user = null;
+        $guards = ['web', 'staff', 'technician'];
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                break;
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['error' => 'Not authenticated'], 401);
+        }
+
+        return response()->json([
+            'lockoutTimeoutMinutes' => \App\Models\Setting::getSessionLockoutMinutes(),
+            'timeoutTimeoutMinutes' => \App\Models\Setting::getSessionTimeoutMinutes(),
+        ]);
+    }
 }

@@ -87,7 +87,7 @@ class OfficeController extends BaseController
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:offices,name',
             'campus_id' => 'required|exists:campuses,id',
-            'address' => 'nullable|string|max:500',
+            'location' => 'nullable|string|max:500',
             'contact_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255|unique:offices,email',
             'is_active' => 'sometimes|boolean',
@@ -152,7 +152,7 @@ class OfficeController extends BaseController
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:offices,name,' . $office->id,
             'campus_id' => 'required|exists:campuses,id',
-            'address' => 'nullable|string|max:500',
+            'location' => 'nullable|string|max:500',
             'contact_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255|unique:offices,email,' . $office->id,
             'is_active' => 'sometimes|boolean',
@@ -169,7 +169,7 @@ class OfficeController extends BaseController
             $office->update($validated);
 
             // Track field changes
-            foreach (['name', 'campus_id', 'address', 'contact_number', 'email', 'is_active'] as $field) {
+            foreach (['name', 'campus_id', 'location', 'contact_number', 'email', 'is_active'] as $field) {
                 if ($originalData[$field] != $office->$field) {
                     $oldValue = $originalData[$field];
                     $newValue = $office->$field;

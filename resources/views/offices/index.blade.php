@@ -58,7 +58,7 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-search'></i></span>
                         <input type="text" id="search" name="search" class="form-control"
-                               placeholder="Name, email, or address..."
+                               placeholder="Name, email, or location..."
                                value="{{ request('search') }}">
                     </div>
                 </div>
@@ -127,7 +127,7 @@
                     <th scope="col" class="d-none d-lg-table-cell">Campus</th>
                     <th scope="col">Contact</th>
                     <th scope="col" class="d-none d-md-table-cell">Email</th>
-                    <th scope="col" class="d-none d-xl-table-cell">Address</th>
+                    <th scope="col" class="d-none d-xl-table-cell">Location</th>
                     <th scope="col">Status</th>
                     <th scope="col">Actions</th>
                 </tr>
@@ -157,8 +157,8 @@
                             </div>
                         </td>
                         <td class="d-none d-xl-table-cell">
-                            <div class="text-truncate" style="max-width: 150px;" title="{{ $office->address ?? 'N/A' }}">
-                                {{ $office->address ?? 'N/A' }}
+                            <div class="text-truncate" style="max-width: 150px;" title="{{ $office->location ?? 'N/A' }}">
+                                {{ $office->location ?? 'N/A' }}
                             </div>
                         </td>
                         <td>

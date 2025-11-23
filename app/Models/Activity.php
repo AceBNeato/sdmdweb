@@ -292,6 +292,26 @@ class Activity extends Model
     }
 
     /**
+     * Log equipment history creation activity
+     */
+    public static function logEquipmentHistoryCreation($history, $createdBy = null)
+    {
+        $actor = $createdBy ?? auth()->user();
+        
+        return self::create([
+            'user_id' => $actor?->id,
+            'type' => 'equipment_history_created',
+            'description' => sprintf(
+                'Added history entry for equipment: %s - Action: %s, Status: %s, JO: %s',
+                $history->equipment?->serial_number ?? 'Unknown',
+                $history->action_taken,
+                $history->remarks ?? 'No remarks',
+                $history->jo_number ?? 'No JO number'
+            ),
+        ]);
+    }
+
+    /**
      * Log maintenance log creation activity
      */
     public static function logMaintenanceCreation($maintenance, $createdBy = null)

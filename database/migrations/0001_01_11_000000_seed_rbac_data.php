@@ -17,7 +17,7 @@ return new class extends Migration
         $roles = [
             ['name' => 'super-admin', 'display_name' => 'Super Administrator', 'description' => 'Full system access'],
             ['name' => 'admin', 'display_name' => 'Administrator', 'description' => 'System administration'],
-            ['name' => 'technician', 'display_name' => 'Technician', 'description' => 'Equipment maintenance and repair'],
+            ['name' => 'technician', 'display_name' => 'Technician', 'description' => 'Equipment management and repair'],
             ['name' => 'staff', 'display_name' => 'Staff', 'description' => 'Basic equipment access'],
         ];
 
@@ -61,12 +61,7 @@ return new class extends Migration
             'history.edit' => 'Edit History',
             'history.delete' => 'Delete History',
             
-            // Maintenance management
-            'maintenance.view' => 'View Maintenance',
-            'maintenance.create' => 'Create Maintenance',
-            'maintenance.edit' => 'Edit Maintenance',
-            'maintenance.delete' => 'Delete Maintenance',
-            
+                        
             // Reports
             'reports.view' => 'View Reports',
             'reports.generate' => 'Generate Reports',
@@ -120,7 +115,6 @@ return new class extends Migration
         $technicianPermissionIds = Permission::whereIn('name', [
             'equipment.view', 'equipment.edit', 'equipment.qr.generate',
             'history.view', 'history.create', 'history.store', 'history.edit',
-            'maintenance.view', 'maintenance.create', 'maintenance.edit',
             'reports.view', 'reports.generate',
             'activities.view'
         ])->pluck('id');

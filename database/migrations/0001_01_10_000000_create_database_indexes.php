@@ -19,33 +19,23 @@ return new class extends Migration
             $table->index(['office_id', 'status']);
             $table->index(['equipment_type_id', 'status']);
             $table->index(['category_id', 'status']);
-            $table->index(['status', 'is_available']);
-            $table->index(['office_id', 'is_available']);
             $table->index(['purchase_date', 'status']);
         });
 
         // Equipment history indexes (only add new composite indexes)
         Schema::table('equipment_history', function (Blueprint $table) {
-            $table->index(['equipment_id', 'action']);
-            $table->index(['user_id', 'action']);
+            $table->index(['equipment_id', 'action_taken']);
+            $table->index(['user_id', 'action_taken']);
             $table->index(['equipment_id', 'user_id']);
+            $table->index(['date', 'equipment_id']);
         });
 
-        // Maintenance logs indexes
-        Schema::table('maintenance_logs', function (Blueprint $table) {
-            $table->index(['equipment_id', 'status']);
-            $table->index(['user_id', 'status']);
-            $table->index(['maintenance_type', 'status']);
-            $table->index(['maintenance_date', 'status']);
-            $table->index(['next_maintenance_date']);
-        });
-
+        
         // Users indexes
         Schema::table('users', function (Blueprint $table) {
             $table->index(['role_id', 'is_active']);
             $table->index(['office_id', 'is_active']);
             $table->index(['campus_id', 'is_active']);
-            $table->index(['is_active', 'is_available']);
             $table->index(['first_name', 'last_name']);
             $table->index(['email_verified_at']);
         });
@@ -66,6 +56,16 @@ return new class extends Migration
         Schema::table('role_user', function (Blueprint $table) {
             $table->index(['user_id']);
             $table->index(['role_id']);
+        });
+
+        // Additional performance indexes
+        Schema::table('equipment', function (Blueprint $table) {
+            $table->index(['qr_code']);
+            $table->index(['assigned_to_type', 'assigned_to_id', 'assigned_at']);
+        });
+
+        Schema::table('activities', function (Blueprint $table) {
+            $table->index(['created_at', 'type']);
         });
     }
 
@@ -102,23 +102,15 @@ return new class extends Migration
             $table->dropIndex(['role_id', 'is_active']);
             $table->dropIndex(['office_id', 'is_active']);
             $table->dropIndex(['campus_id', 'is_active']);
-            $table->dropIndex(['is_active', 'is_available']);
             $table->dropIndex(['first_name', 'last_name']);
             $table->dropIndex(['email_verified_at']);
         });
 
-        Schema::table('maintenance_logs', function (Blueprint $table) {
-            $table->dropIndex(['equipment_id', 'status']);
-            $table->dropIndex(['user_id', 'status']);
-            $table->dropIndex(['maintenance_type', 'status']);
-            $table->dropIndex(['maintenance_date', 'status']);
-            $table->dropIndex(['next_maintenance_date']);
-        });
-
+        
         Schema::table('equipment_history', function (Blueprint $table) {
-            $table->dropIndex(['equipment_id', 'action']);
-            $table->dropIndex(['user_id', 'action']);
-            $table->dropIndex(['action', 'date']);
+            $table->dropIndex(['equipment_id', 'action_taken']);
+            $table->dropIndex(['user_id', 'action_taken']);
+            $table->dropIndex(['date', 'equipment_id']);
             $table->dropIndex(['equipment_id', 'user_id']);
         });
 
@@ -126,9 +118,10 @@ return new class extends Migration
             $table->dropIndex(['office_id', 'status']);
             $table->dropIndex(['equipment_type_id', 'status']);
             $table->dropIndex(['category_id', 'status']);
-            $table->dropIndex(['status', 'is_available']);
-            $table->dropIndex(['office_id', 'is_available']);
-            $table->dropIndex(['purchase_date', 'status']);
+        });
+
+        Schema::table('activities', function (Blueprint $table) {
+            $table->dropIndex(['created_at', 'type']);
         });
     }
 };

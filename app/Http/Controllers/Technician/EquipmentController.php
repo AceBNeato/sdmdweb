@@ -979,6 +979,14 @@ class EquipmentController extends BaseController
      */
     public function storeHistory(Request $request, Equipment $equipment)
     {
+        // Debug: Log that the method was called
+        \Log::info('storeHistory method called', [
+            'method' => request()->method(),
+            'url' => request()->fullUrl(),
+            'equipment_id' => $equipment->id,
+            'request_data' => $request->all()
+        ]);
+
         $user = Auth::guard('technician')->user();
         // Resolve the underlying users.id and responsible name
         $userId = $user->user_id ?? ($user->id ?? optional($user->user)->id);
@@ -1000,9 +1008,16 @@ class EquipmentController extends BaseController
         $validated = $request->validate([
             'date' => 'required|date',
             'action_taken' => 'required|string|max:1000',
-            'remarks' => 'nullable|string|max:1000',
             'equipment_status' => 'required|in:serviceable,for_repair,defective',
         ]);
+
+        // Auto-generate remarks based on equipment status
+        $statusRemarks = [
+            'serviceable' => 'Equipment marked as serviceable',
+            'for_repair' => 'repair',
+            'defective' => 'Equipment marked as defective'
+        ];
+        $validated['remarks'] = $statusRemarks[$validated['equipment_status']] ?? '';
 
         // Debug: Log all incoming data
         \Log::info('History form submission', [
@@ -1078,8 +1093,8 @@ class EquipmentController extends BaseController
 
             $history->save();
 
-            // Log maintenance creation
-            Activity::logMaintenanceCreation($history, $user);
+            // Log equipment history creation
+            Activity::logEquipmentHistoryCreation($history, $user);
 
             // Update equipment status (now always required)
             \Log::info('Equipment status update triggered', [

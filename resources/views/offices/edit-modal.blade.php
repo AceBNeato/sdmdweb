@@ -76,8 +76,8 @@
         <div class="row g-3">
             <div class="col-12">
                 <div class="field-container">
-                    <label for="edit_address" class="form-label">Address</label>
-                    <textarea class="form-control" id="edit_address" name="address" rows="3" maxlength="500" placeholder="Enter complete office address...">{{ old('address', $office->address) }}</textarea>
+                    <label for="edit_location" class="form-label">Location</label>
+                    <textarea class="form-control" id="edit_location" name="location" rows="3" maxlength="500" placeholder="Enter complete office location...">{{ old('location', $office->location) }}</textarea>
                 </div>
             </div>
         </div>

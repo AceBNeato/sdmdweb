@@ -73,8 +73,8 @@
         <div class="row g-3">
             <div class="col-12">
                 <div class="field-container">
-                    <label for="create_address" class="form-label">Address</label>
-                    <textarea class="form-control" id="create_address" name="address" rows="3" maxlength="500" placeholder="Enter complete office address..."></textarea>
+                    <label for="create_location" class="form-label">Location</label>
+                    <textarea class="form-control" id="create_location" name="location" rows="3" maxlength="500" placeholder="Enter complete office location..."></textarea>
                 </div>
             </div>
         </div>

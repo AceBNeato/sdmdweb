@@ -104,14 +104,14 @@
                     Contact Information
                 </h5>
 
-                @if($office->address)
+                @if($office->location)
                 <div class="detail-item">
                     <div class="detail-icon">
                         <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="detail-content">
-                        <div class="detail-label">Address</div>
-                        <div class="detail-value">{{ $office->address }}</div>
+                        <div class="detail-label">Location</div>
+                        <div class="detail-value">{{ $office->location }}</div>
                     </div>
                 </div>
                 @endif
@@ -148,7 +148,7 @@
                 </div>
                 @endif
 
-                @if(!$office->address && !$office->contact_number && !$office->email)
+                @if(!$office->location && !$office->contact_number && !$office->email)
                 <div class="text-center py-4">
                     <i class='bx bx-info-circle' style="font-size: 2rem; color: #cbd5e0;"></i>
                     <p class="text-muted mt-2 mb-0">No contact information available</p>

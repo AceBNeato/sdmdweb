@@ -128,11 +128,7 @@
                     </div>
                     <h3>No History Records</h3>
                     <p>This equipment doesn't have any service history records yet.</p>
-                    <div class="empty-actions">
-                        <a href="{{ route($prefix . '.equipment.show', $equipment) }}" class="btn btn-primary">
-                            <i class='bx bx-plus'></i> Add First Record
-                        </a>
-                    </div>
+                    
                 </div>
             @endif
         </div>

@@ -31,7 +31,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->string('name');
-            $table->text('address');
+            $table->text('location');
             $table->string('contact_number')->nullable();
             $table->string('email')->nullable();
             $table->foreignId('campus_id')->constrained()->onDelete('cascade');
