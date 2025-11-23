@@ -264,6 +264,9 @@ class AdminController extends Controller
                     'must_change_password' => false,
                     'password_changed_at' => now(),
                 ]);
+                
+                // Log password change
+                Activity::logPasswordChange($user);
             }
 
             // Log the activity

@@ -202,6 +202,9 @@ class TechnicianController extends Controller
                 $updateData['password'] = Hash::make($validated['new_password']);
                 $updateData['must_change_password'] = false;
                 $updateData['password_changed_at'] = now();
+                
+                // Log password change
+                Activity::logPasswordChange($user);
             }
 
             // Filter out null values but always keep employee_id and profile_photo keys
@@ -218,7 +221,7 @@ class TechnicianController extends Controller
             // Log the activity
             Activity::create([
                 'user_id' => $user->id,
-                'action' => 'Profile Updated',
+                'type' => 'profile_updated',
                 'description' => 'Technician profile updated',
             ]);
 

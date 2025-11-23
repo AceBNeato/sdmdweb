@@ -106,7 +106,7 @@
                     @endif
                 </div>
                 <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
-                    <a href="{{ route('admin.system-logs.export', request()->query()) }}" class="btn btn-success btn-sm">
+                    <a href="{{ route('admin.system-logs.export', request()->query()) }}" class="btn-export-csv">
                         <i class='bx bx-download me-1'></i> Export CSV
                     </a>
                     @if(auth()->user()->hasPermissionTo('system.logs.manage'))
@@ -277,46 +277,7 @@
                 </table>
             </div>
 
-            <!-- Log Details Modal for Mobile -->
-            <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="logModalLabel">Log Details</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="log-detail-item">
-                                <div class="detail-label">User</div>
-                                <div class="detail-value" id="modal-user-name"></div>
-                            </div>
-                            <div class="log-detail-item">
-                                <div class="detail-label">Email</div>
-                                <div class="detail-value" id="modal-user-email"></div>
-                            </div>
-                            <div class="log-detail-item">
-                                <div class="detail-label">Action</div>
-                                <div class="detail-value">
-                                    <span class="badge" id="modal-type"></span>
-                                </div>
-                            </div>
-                            <div class="log-detail-item">
-                                <div class="detail-label">Description</div>
-                                <div class="detail-value" id="modal-description"></div>
-                            </div>
-                            <div class="log-detail-item">
-                                <div class="detail-label">Timestamp</div>
-                                <div class="detail-value" id="modal-timestamp"></div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        @else
+            @else
                 <div class="logs-empty">
                     <i class='bx bx-history'></i>
                     <h3 class="fw-semibold">No {{ $typeLabel }} Yet</h3>
@@ -329,6 +290,75 @@
 @endif
 
 @endsection
+
+@push('modals')
+<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-content-modern">
+            <div class="modal-header modal-header-modern">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="modal-icon">
+                        <i class='bx bx-file-find'></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="logModalLabel">Log Details</h5>
+                        <small class="text-muted">Activity information</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-modern" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-modern">
+                <div class="log-details-grid">
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class='bx bx-user'></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">User</div>
+                            <div class="detail-value" id="modal-user-name">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class='bx bx-envelope'></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value" id="modal-user-email">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-card detail-card-full">
+                        <div class="detail-icon">
+                            <i class='bx bx-text'></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Description</div>
+                            <div class="detail-value" id="modal-description">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class='bx bx-time'></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Timestamp</div>
+                            <div class="detail-value" id="modal-timestamp">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer modal-footer-modern">
+                <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">
+                    <i class='bx bx-x me-2'></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endpush
 
 @push('scripts')
 <script>
@@ -351,14 +381,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get data from data attributes
             const userName = logRow.dataset.userName || 'Unknown User';
             const userEmail = logRow.dataset.userEmail || 'Email not available';
-            const type = logRow.dataset.type || '';
             const description = logRow.dataset.description || 'No description available';
             const timestamp = logRow.dataset.timestamp || '';
 
             // Populate modal
             document.getElementById('modal-user-name').textContent = userName;
             document.getElementById('modal-user-email').textContent = userEmail;
-            document.getElementById('modal-type').textContent = type;
             document.getElementById('modal-description').textContent = description;
             document.getElementById('modal-timestamp').textContent = timestamp;
 
@@ -374,6 +402,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 backdrop: true,
                 keyboard: true,
                 focus: true
+            });
+
+            // Manually add modal-open class to body
+            document.body.classList.add('modal-open');
+            
+            // Add event listener to remove class when modal is hidden
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                document.body.classList.remove('modal-open');
             });
 
             modal.show();

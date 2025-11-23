@@ -251,6 +251,9 @@ class StaffController extends Controller
                 $updateData['password'] = Hash::make($validated['new_password']);
                 $updateData['must_change_password'] = false;
                 $updateData['password_changed_at'] = now();
+                
+                // Log password change
+                Activity::logPasswordChange($user);
             }
 
             // Filter out null values but keep explicit keys (employee_id, profile_photo) even if empty string
@@ -269,7 +272,7 @@ class StaffController extends Controller
             Activity::create([
                 'user_id' => $user->id,
                 'type' => 'profile_updated',
-                'description' => 'Updated personal information and contact details',
+                'description' => 'Staff profile updated',
             ]);
 
             DB::commit();

@@ -623,6 +623,76 @@ class Activity extends Model
     }
 
     /**
+     * Log password change activity
+     */
+    public static function logPasswordChange($user, $changedBy = null)
+    {
+        $actor = $changedBy ?? auth()->user();
+        
+        return self::create([
+            'user_id' => $actor?->id,
+            'type' => 'password_changed',
+            'description' => sprintf(
+                'Changed password for %s %s (%s)',
+                $user->first_name,
+                $user->last_name,
+                $user->email
+            ),
+        ]);
+    }
+
+    /**
+     * Log QR code scan activity
+     */
+    public static function logQrCodeScan($equipment, $scannedBy = null)
+    {
+        $actor = $scannedBy ?? auth()->user();
+        
+        return self::create([
+            'user_id' => $actor?->id,
+            'type' => 'equipment_scanned',
+            'description' => sprintf(
+                'Scanned QR code for equipment: %s %s (%s)',
+                $equipment->brand ?? 'Unknown',
+                $equipment->model_number ?? $equipment->equipment_model ?? 'Unknown',
+                $equipment->serial_number ?? 'Unknown'
+            ),
+        ]);
+    }
+
+    /**
+     * Log equipment history update activity
+     */
+    public static function logEquipmentHistoryUpdate($history, $changes = [], $updatedBy = null)
+    {
+        $actor = $updatedBy ?? auth()->user();
+        
+        $description = sprintf(
+            'Updated history entry for equipment: %s - Action: %s',
+            $history->equipment?->serial_number ?? 'Unknown',
+            $history->action_taken ?? 'Unknown'
+        );
+
+        if (!empty($changes)) {
+            $changeDetails = [];
+            foreach ($changes as $field => $change) {
+                if (is_array($change)) {
+                    $changeDetails[] = "{$field}: " . implode(' → ', $change);
+                } else {
+                    $changeDetails[] = "{$field}: {$change}";
+                }
+            }
+            $description .= ' - Changes: ' . implode(', ', $changeDetails);
+        }
+
+        return self::create([
+            'user_id' => $actor?->id,
+            'type' => 'equipment_history_updated',
+            'description' => $description,
+        ]);
+    }
+
+    /**
      * Log system management activity (categories, equipment types, backups, etc.)
      */
     public static function logSystemManagement($action, $description, $subjectType, $subjectId, $newValues = [], $oldValues = [], $resourceType = null, $actor = null)

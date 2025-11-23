@@ -488,6 +488,9 @@ class EquipmentController extends Controller
                             ], 403);
                         }
 
+                        // Log the QR scan
+                        Activity::logQrCodeScan($equipment, $user);
+
                         return response()->json([
                             'success' => true,
                             'equipment' => [
