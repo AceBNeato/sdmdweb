@@ -176,7 +176,7 @@ class StaffController extends Controller
         // Manually check if email is already used by another staff member
         $existingStaff = \App\Models\User::where('email', $validated['email'])
             ->where('id', '!=', $user->id)
-            ->whereHas('roles', function($q) {
+            ->whereHas('role', function ($q) {
                 $q->where('name', 'staff');
             })
             ->exists();
@@ -239,13 +239,19 @@ class StaffController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'password' => !empty($validated['new_password']) ? Hash::make($validated['new_password']) : $user->password,
                 'specialization' => $validated['specialization'] ?? null,
                 'skills' => $validated['skills'] ?? null,
                 'is_active' => $validated['is_active'] ?? $user->is_active,
                 'employee_id' => $validated['employee_id'] ?? null,
                 'profile_photo' => $validated['profile_photo'] ?? $user->profile_photo,
             ];
+
+            // If password is being changed, update password and clear must_change_password flag
+            if (!empty($validated['new_password'])) {
+                $updateData['password'] = Hash::make($validated['new_password']);
+                $updateData['must_change_password'] = false;
+                $updateData['password_changed_at'] = now();
+            }
 
             // Filter out null values but keep explicit keys (employee_id, profile_photo) even if empty string
             $updateData = array_filter($updateData, function($value, $key) {
@@ -262,7 +268,7 @@ class StaffController extends Controller
             // Log the activity
             Activity::create([
                 'user_id' => $user->id,
-                'action' => 'Profile Updated',
+                'type' => 'profile_updated',
                 'description' => 'Updated personal information and contact details',
             ]);
 

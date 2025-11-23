@@ -277,6 +277,30 @@
             'warning' => session('warning'),
             'info' => session('info')
         ]) !!};
+        
+        // Check if user needs to change password
+        @if(session('must_change_password'))
+            Swal.fire({
+                title: '🔐 Password Change Recommended',
+                html: 'For better security, we recommend changing your password from the default one provided in your email.<br><br>You can change your password anytime in your profile settings.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Go to Profile',
+                cancelButtonText: 'Maybe Later',
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#6b7280',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Trigger the profile modal instead of redirecting
+                    const profileModalTrigger = document.querySelector('.open-profile-modal');
+                    if (profileModalTrigger) {
+                        profileModalTrigger.click();
+                    }
+                }
+            });
+        @endif
     </script>
     <script src="{{ asset('js/sweetalert-system.js') }}"></script>
     <script src="{{ asset('js/ajax-sweetalert-helper.js') }}"></script>

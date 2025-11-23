@@ -259,13 +259,17 @@ class AdminController extends Controller
 
             // Update password if provided
             if (!empty($validated['new_password'])) {
-                $user->update(['password' => \Hash::make($validated['new_password'])]);
+                $user->update([
+                    'password' => \Hash::make($validated['new_password']),
+                    'must_change_password' => false,
+                    'password_changed_at' => now(),
+                ]);
             }
 
             // Log the activity
             Activity::create([
                 'user_id' => $user->id,
-                'action' => 'Profile Updated',
+                'type' => 'profile_updated',
                 'description' => 'Admin profile updated',
             ]);
 

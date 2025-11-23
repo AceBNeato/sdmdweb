@@ -9,18 +9,21 @@ class EmailVerificationNotification extends Notification
 {
     public $verificationUrl;
     public $user;
+    public $password;
 
     /**
      * Create a new notification instance.
      *
      * @param string $verificationUrl
      * @param object $user
+     * @param string|null $password
      * @return void
      */
-    public function __construct($verificationUrl, $user)
+    public function __construct($verificationUrl, $user, $password = null)
     {
         $this->verificationUrl = $verificationUrl;
         $this->user = $user;
+        $this->password = $password;
     }
 
     /**
@@ -43,6 +46,7 @@ class EmailVerificationNotification extends Notification
             ->view('emails.verification', [
                 'user' => $this->user,
                 'verificationUrl' => $this->verificationUrl,
+                'password' => $this->password,
             ]);
     }
 

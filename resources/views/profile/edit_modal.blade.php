@@ -58,15 +58,30 @@
 
         <div class="col-md-6">
             <label class="form-label">Current Password</label>
-            <input type="password" name="current_password" class="form-control">
+            <div class="input-group">
+                <input type="password" name="current_password" class="form-control" id="currentPassword">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('currentPassword')">
+                    <i class="bx bx-show" id="currentPasswordIcon"></i>
+                </button>
+            </div>
         </div>
         <div class="col-md-6">
             <label class="form-label">New Password</label>
-            <input type="password" name="new_password" class="form-control">
+            <div class="input-group">
+                <input type="password" name="new_password" class="form-control" id="newPassword">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('newPassword')">
+                    <i class="bx bx-show" id="newPasswordIcon"></i>
+                </button>
+            </div>
         </div>
         <div class="col-md-6">
             <label class="form-label">Confirm New Password</label>
-            <input type="password" name="new_password_confirmation" class="form-control">
+            <div class="input-group">
+                <input type="password" name="new_password_confirmation" class="form-control" id="confirmNewPassword">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmNewPassword')">
+                    <i class="bx bx-show" id="confirmNewPasswordIcon"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -83,6 +98,20 @@ if (typeof Swal === 'undefined') {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
     document.head.appendChild(script);
+}
+
+// Toggle password visibility function
+function togglePassword(fieldId) {
+    const passwordField = document.getElementById(fieldId);
+    const icon = document.getElementById(fieldId + 'Icon');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        icon.className = 'bx bx-hide';
+    } else {
+        passwordField.type = 'password';
+        icon.className = 'bx bx-show';
+    }
 }
 
 (function(){

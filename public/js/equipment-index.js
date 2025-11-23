@@ -27,7 +27,9 @@ $(document).ready(function() {
         } else if (options.params instanceof URLSearchParams) {
             requestData = options.params.toString();
         } else {
-            requestData = { office_id: options.officeId || $('#office_id').val() || 'all' };
+            // Get office_id from hidden element or default to 'all' for staff
+            const officeId = options.officeId || $('#office_id').val() || $('meta[name="current-office-id"]').attr('content') || 'all';
+            requestData = { office_id: officeId };
         }
 
         printQrcodesContent.html(printModalLoadingMarkup);
@@ -161,7 +163,7 @@ $(document).ready(function() {
 
     $('.print-qrcodes-btn').on('click', function() {
         const buttonUrl = $(this).data('url');
-        const officeId = $('#office_id').val() || 'all';
+        const officeId = $('#office_id').val() || $('meta[name="current-office-id"]').attr('content') || 'all';
         loadPrintQrcodesModal({ url: buttonUrl, officeId: officeId });
     });
 

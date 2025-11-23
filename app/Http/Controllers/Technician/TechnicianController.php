@@ -129,17 +129,62 @@ class TechnicianController extends Controller
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        DB::beginTransaction();
+
         try {
             // Verify current password if changing password
             if (!empty($validated['new_password'])) {
                 if (empty($validated['current_password'])) {
                     return back()->with('error', 'Current password is required when changing password.');
                 }
-                if (!\Hash::check($validated['current_password'], $user->password)) {
+                if (!Hash::check($validated['current_password'], $user->password)) {
                     return back()->with('error', 'Current password is incorrect.');
                 }
             }
 
+            // Log the incoming request data for debugging
+            Log::info('Technician profile update request data:', [
+                'user_id' => $user->id,
+                'has_file' => $request->hasFile('profile_photo'),
+                'validated_data' => $validated,
+            ]);
+
+            // Handle profile image upload
+            if ($request->hasFile('profile_photo')) {
+                Log::info('Technician profile photo file detected', [
+                    'file_name' => $request->file('profile_photo')->getClientOriginalName(),
+                    'file_size' => $request->file('profile_photo')->getSize(),
+                    'mime_type' => $request->file('profile_photo')->getMimeType(),
+                ]);
+
+                // Delete old profile image if exists
+                if ($user->profile_photo) {
+                    $oldImagePath = 'public/' . $user->profile_photo;
+                    if (Storage::exists($oldImagePath)) {
+                        Storage::delete($oldImagePath);
+                        Log::info('Deleted old technician profile photo', ['path' => $oldImagePath]);
+                    } else {
+                        Log::warning('Old technician profile photo not found', ['path' => $oldImagePath]);
+                    }
+                }
+
+                // Store new profile image directly to public/storage/profile-photos
+                $file = $request->file('profile_photo');
+                $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+
+                $destination = public_path('storage/profile-photos');
+                if (!file_exists($destination)) {
+                    mkdir($destination, 0755, true);
+                }
+
+                $file->move($destination, $filename);
+                $validated['profile_photo'] = 'profile-photos/' . $filename;
+                Log::info('New technician profile photo stored', ['path' => $filename]);
+            } else {
+                Log::info('No technician profile photo file in request');
+            }
+
+            // Build update data
             $updateData = [
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
@@ -149,36 +194,26 @@ class TechnicianController extends Controller
                 'employee_id' => $validated['employee_id'] ?? null,
                 'specialization' => $validated['specialization'] ?? null,
                 'skills' => $validated['skills'] ?? null,
+                'profile_photo' => $validated['profile_photo'] ?? $user->profile_photo,
             ];
 
-            // Handle profile photo upload
-            if ($request->hasFile('profile_photo')) {
-                try {
-                    $file = $request->file('profile_photo');
-                    $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
-                    
-                    // Save directly to public/storage/profile-photos to bypass symlink issues
-                    $destination = public_path('storage/profile-photos');
-                    if (!file_exists($destination)) {
-                        mkdir($destination, 0755, true);
-                    }
-                    
-                    $file->move($destination, $filename);
-                    $updateData['profile_photo'] = 'profile-photos/' . $filename;
-                } catch (\Exception $e) {
-                    \Log::error('Profile photo upload error: ' . $e->getMessage(), [
-                        'user_id' => $user->id,
-                    ]);
-                    return back()->with('error', 'Failed to upload profile photo. Please try again.');
-                }
-            }
-
-            $user->update($updateData);
-
-            // Update password if provided
+            // If password is being changed, update password and clear must_change_password flag
             if (!empty($validated['new_password'])) {
-                $user->update(['password' => \Hash::make($validated['new_password'])]);
+                $updateData['password'] = Hash::make($validated['new_password']);
+                $updateData['must_change_password'] = false;
+                $updateData['password_changed_at'] = now();
             }
+
+            // Filter out null values but always keep employee_id and profile_photo keys
+            $updateData = array_filter($updateData, function ($value, $key) {
+                return in_array($key, ['employee_id', 'profile_photo'], true) ? true : $value !== null;
+            }, ARRAY_FILTER_USE_BOTH);
+
+            Log::info('Updating technician user with data:', $updateData);
+
+            // Perform update
+            $user->update($updateData);
+            Log::info('Technician user updated successfully', ['user_id' => $user->id]);
 
             // Log the activity
             Activity::create([
@@ -186,6 +221,13 @@ class TechnicianController extends Controller
                 'action' => 'Profile Updated',
                 'description' => 'Technician profile updated',
             ]);
+
+            DB::commit();
+            Log::info('Technician profile transaction committed successfully');
+
+            // Refresh user and update guard session
+            $user->refresh();
+            Auth::guard('technician')->setUser($user);
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -201,13 +243,15 @@ class TechnicianController extends Controller
                         'profile_photo' => $user->profile_photo ? asset('storage/' . $user->profile_photo) : null,
                         'specialization' => $user->specialization,
                         'employee_id' => $user->employee_id,
-                        'skills' => $user->skills
-                    ]
+                        'skills' => $user->skills,
+                    ],
                 ]);
             }
 
-            return back()->with('success', 'Profile updated successfully.');
+            return redirect()->route('technician.profile')
+                ->with('success', 'Profile updated successfully!');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Technician profile update error: ' . $e->getMessage(), [
                 'technician_id' => $user->id,
             ]);
@@ -216,11 +260,12 @@ class TechnicianController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to update profile. Please try again.',
-                    'error' => config('app.debug') ? $e->getMessage() : null
+                    'error' => config('app.debug') ? $e->getMessage() : null,
                 ], 500);
             }
 
-            return back()->with('error', 'Failed to update profile. Please try again.');
+            return back()->withInput()
+                ->with('error', 'An error occurred while updating your profile. Please try again.');
         }
     }
 }

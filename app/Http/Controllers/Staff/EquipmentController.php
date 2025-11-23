@@ -42,6 +42,11 @@ class EquipmentController extends Controller
     {
         $user = Auth::guard('staff')->user();   
 
+        // Debug: Check if user has office assigned
+        if (!$user->office_id) {
+            return back()->withErrors(['error' => 'You have not been assigned to an office. Please contact your administrator.']);
+        }
+
         // Start with equipment from the staff's office
         $query = Equipment::where('office_id', $user->office_id);
 
@@ -62,16 +67,21 @@ class EquipmentController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $equipment = $query->with(['category', 'office', 'equipmentType', 'maintenanceLogs' => function($query) {
-            $query->latest()->limit(5);
-        }])->paginate(10);
+        // Optimized query - remove history loading for better performance
+        $equipment = $query->with(['category', 'office', 'equipmentType'])->paginate(10);
 
         $equipmentTypes = $this->getEquipmentTypes();
 
-        // Get campuses with their active offices for filter
-        $campuses = \App\Models\Campus::with(['offices' => function($query) {
-            $query->where('is_active', true)->orderBy('name');
-        }])->orderBy('name')->get();
+        // For staff users, only load their office data (much faster)
+        $userOffice = \App\Models\Office::find($user->office_id);
+        $campuses = collect([
+            (object) [
+                'id' => $userOffice->campus_id ?? 0,
+                'name' => $userOffice->campus->name ?? 'Current Campus',
+                'code' => $userOffice->campus->code ?? 'N/A',
+                'offices' => collect([$userOffice])
+            ]
+        ]);
 
         // Get categories for filter
         $categories = \App\Models\Category::orderBy('name')->pluck('name', 'id');
@@ -539,7 +549,10 @@ class EquipmentController extends Controller
      */
     protected function getEquipmentTypes()
     {
-        return \App\Models\EquipmentType::orderBy('name')->pluck('name', 'id');
+        // Cache equipment types for better performance
+        return \Cache::remember('equipment_types', 3600, function () {
+            return \App\Models\EquipmentType::orderBy('name')->pluck('name', 'id');
+        });
     }
 
     /**
@@ -672,6 +685,11 @@ class EquipmentController extends Controller
     public function printQrcodes(Request $request)
     {
         $user = Auth::guard('staff')->user();
+
+        // Check if user has office assigned
+        if (!$user->office_id) {
+            return back()->withErrors(['error' => 'You have not been assigned to an office. Please contact your administrator.']);
+        }
 
         $query = Equipment::with(['office', 'equipmentType'])
             ->where('office_id', $user->office_id); // Only their office equipment

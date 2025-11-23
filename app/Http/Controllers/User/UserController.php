@@ -218,6 +218,9 @@ class UserController extends Controller
         // Generate email verification token first
         $verificationToken = Str::random(64);
         
+        // Store the plain password for email notification
+        $plainPassword = $validated['password'];
+        
         // Create user directly with Eloquent including verification token
         $user = User::create([
             'first_name' => $validated['first_name'],
@@ -233,6 +236,7 @@ class UserController extends Controller
             'email_verified_at' => null,
             'email_verification_token' => $verificationToken,
             'email_verification_token_expires_at' => Carbon::now()->addHours(24),
+            'must_change_password' => true, // New users must change password on first login
         ]);
 
         if (!$user) {
@@ -247,7 +251,7 @@ class UserController extends Controller
 
         // Send verification email (optional - don't fail if email is not configured)
         try {
-            $user->notify(new EmailVerificationNotification($verificationUrl, $user));
+            $user->notify(new EmailVerificationNotification($verificationUrl, $user, $plainPassword));
             \Illuminate\Support\Facades\Log::info('Email verification notification sent successfully');
             $emailSent = true;
         } catch (\Exception $e) {

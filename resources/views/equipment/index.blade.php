@@ -23,18 +23,26 @@
     // Determine the current user and prefix based on which guard is actually authenticated
     $currentUser = null;
     $prefix = 'admin'; // default
+    $currentOfficeId = null;
     
     if (auth('staff')->check()) {
         $currentUser = auth('staff')->user();
         $prefix = 'staff';
+        $currentOfficeId = $currentUser->office_id;
     } elseif (auth('technician')->check()) {
         $currentUser = auth('technician')->user();
         $prefix = 'technician';
+        $currentOfficeId = $currentUser->office_id;
     } elseif (auth()->check()) {
         $currentUser = auth()->user();
         $prefix = 'admin';
+        $currentOfficeId = $currentUser->office_id;
     }
 @endphp
+
+@if($currentOfficeId)
+<meta name="current-office-id" content="{{ $currentOfficeId }}">
+@endif
 
 @if(!$currentUser || !$currentUser->hasPermissionTo('equipment.view'))
     @php abort(403) @endphp
@@ -65,6 +73,10 @@
         </div>
         <div class="card-body">
             <form action="{{ route($prefix . '.equipment.index') }}" method="GET" class="filter-form">
+                @if($prefix === 'staff' && $currentOfficeId)
+                    <input type="hidden" name="office_id" value="{{ $currentOfficeId }}">
+                @endif
+                
                 <!-- Search Field -->
                 <div class="filter-group">
                     <label for="search">Search</label>
@@ -98,6 +110,7 @@
                     </select>
                 </div>
 
+                @if($prefix !== 'staff')
                 <!-- Office Filter -->
                 <div class="filter-group">
                     <label for="office_id">Office</label>
@@ -114,6 +127,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
 
                 <!-- Category Filter -->
                 <div class="filter-group">

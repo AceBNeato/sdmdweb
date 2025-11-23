@@ -88,6 +88,8 @@ class User extends Authenticatable
         'specialization',
         'skills',
         'profile_image',
+        'must_change_password',
+        'password_changed_at',
     ];
 
     /**

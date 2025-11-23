@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\RoleRedirectMiddleware::class,
+            \App\Http\Middleware\CheckPasswordChange::class,
         ]);
 
         $middleware->alias([
