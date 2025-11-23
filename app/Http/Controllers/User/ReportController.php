@@ -34,6 +34,20 @@ class ReportController extends BaseController
             });
         }
 
+        // Office filter
+        if ($request->filled('office_id')) {
+            $query->whereHas('equipment', function($q) use ($request) {
+                $q->where('office_id', $request->office_id);
+            });
+        }
+
+        // Equipment type filter
+        if ($request->filled('type')) {
+            $query->whereHas('equipment', function($q) use ($request) {
+                $q->where('equipment_type_id', $request->type);
+            });
+        }
+
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;

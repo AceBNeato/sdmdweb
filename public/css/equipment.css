@@ -146,11 +146,12 @@ body {
     flex-wrap: wrap;
     gap: 1rem;
     align-items: flex-end;
+
 }
 
 .filter-group {
     flex: 1;
-    min-width: 200px;
+    min-width: 230px;
 }
 
 .filter-group label {

@@ -129,18 +129,6 @@
                 </div>
                 @endif
 
-                <!-- Category Filter -->
-                <div class="filter-group">
-                    <label for="category_id">Category</label>
-                    <select id="category_id" name="category_id" class="form-select">
-                        <option value="all" {{ request('category_id') == 'all' || !request('category_id') ? 'selected' : '' }}>All Categories</option>
-                        @foreach($categories as $id => $name)
-                            <option value="{{ $id }}" {{ request('category_id') == $id ? 'selected' : '' }}>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-
                 <!-- Action Buttons -->
                 <div class="filter-group filter-actions">
                     <button type="submit" class="btn btn-primary">

@@ -118,6 +118,14 @@ class SettingsController extends Controller
             );
         }
 
+        // Handle AJAX requests
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Settings updated successfully.'
+            ]);
+        }
+
         return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
     }
 

@@ -69,11 +69,6 @@ class EquipmentController extends Controller
             $query->where('office_id', $request->office_id);
         }
 
-        // Filter by category
-        if ($request->has('category_id') && $request->category_id !== 'all') {
-            $query->where('category_id', $request->category_id);
-        }
-
         // Filter by date range
         if ($request->has('date_from') && $request->date_from) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -89,9 +84,7 @@ class EquipmentController extends Controller
 
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
-        $categories = \App\Models\Category::orderBy('name')->pluck('name', 'id');
-
-        return view('equipment.index', compact('equipment', 'equipmentTypes', 'campuses', 'categories'));
+        return view('equipment.index', compact('equipment', 'equipmentTypes', 'campuses'));
     }
 
     public function create()

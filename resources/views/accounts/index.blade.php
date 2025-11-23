@@ -181,7 +181,7 @@
                                 </button>
                                 
                                 <button type="button"
-                                        class="btn btn-sm {{ $user->is_active ? 'btn-outline-warning' : 'btn-outline-success' }} toggle-status-btn"
+                                        class="btn btn-sm toggle-status-btn {{ $user->is_active ? 'active' : 'inactive' }}"
                                         data-user-id="{{ $user->id }}"
                                         data-url="{{ route('admin.accounts.toggle-status', $user) }}"
                                         title="{{ $user->is_active ? 'Deactivate Account' : 'Activate Account' }}">

@@ -89,7 +89,7 @@ $(document).ready(function() {
         var userId = button.data('user-id');
         var url = button.data('url');
         var userName = button.closest('tr').find('td:first-child').text().trim();
-        var isCurrentlyActive = button.hasClass('btn-outline-warning');
+        var isCurrentlyActive = button.hasClass('active');
         
         var action = isCurrentlyActive ? 'deactivate' : 'activate';
         var confirmMessage = 'Are you sure you want to ' + action + ' the account for "' + userName + '"?';
@@ -106,6 +106,9 @@ $(document).ready(function() {
             cancelButtonText: 'Cancel'
         }).then(function(result) {
             if (result.isConfirmed) {
+                // Add status-changing animation
+                button.addClass('status-changing');
+                
                 // Show loading state
                 var originalHtml = button.html();
                 button.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin"></i>');
@@ -136,7 +139,8 @@ $(document).ready(function() {
                         });
                     },
                     error: function(xhr) {
-                        // Restore button
+                        // Remove animation and restore button
+                        button.removeClass('status-changing');
                         button.prop('disabled', false).html(originalHtml);
                         
                         // Show error message

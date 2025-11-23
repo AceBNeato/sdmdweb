@@ -122,9 +122,9 @@
             <!-- Settings Grid -->
             <div class="settings-grid">
 
-                <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6">
+                <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6 backup-settings-form">
                     @csrf
-
+                    <input type="hidden" name="section" value="backup">
 
                 <!-- Database Backup Section -->
                 <div class="settings-section">
@@ -784,6 +784,88 @@
                 // fallback if nothing found (shouldn't happen)
                 nextRunEl.textContent = 'Pending';
             }
+        }
+
+        // Handle backup settings form submission
+        const backupSettingsForm = document.querySelector('.backup-settings-form');
+        if (backupSettingsForm) {
+            backupSettingsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Settings Saved!',
+                            html: `
+                                <div class="text-left">
+                                    <p class="mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Backup settings have been updated successfully.</p>
+                                    <div class="bg-gray-50 p-3 rounded text-sm">
+                                        <strong>Changes Applied:</strong><br>
+                                        ${formData.get('backup_auto_enabled') === '1' ? '✓ Automatic backups enabled' : '✓ Automatic backups disabled'}<br>
+                                        ${formData.get('backup_auto_time') ? `✓ Backup time set to ${formData.get('backup_auto_time')}` : ''}<br>
+                                        ${formData.getAll('backup_auto_days[]').length > 0 ? `✓ Backup days: ${formData.getAll('backup_auto_days[]').map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}` : ''}
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'success',
+                            confirmButtonColor: '#10b981',
+                            confirmButtonText: '<i class="fas fa-check mr-2"></i>Great!'
+                        }).then(() => {
+                            // Optionally refresh the page to show updated status
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            html: `
+                                <div class="text-left">
+                                    <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Failed to save backup settings.</p>
+                                    <p class="text-sm text-gray-600">${data.message || 'An unknown error occurred.'}</p>
+                                </div>
+                            `,
+                            icon: 'error',
+                            confirmButtonColor: '#ef4444',
+                            confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Network Error!',
+                        html: `
+                            <div class="text-left">
+                                <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>A network error occurred while saving settings.</p>
+                                <p class="text-sm text-gray-600">Please check your connection and try again.</p>
+                            </div>
+                        `,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
+                    });
+                })
+                .finally(() => {
+                    // Restore button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
+            });
         }
     });
 </script>

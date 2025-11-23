@@ -36,8 +36,7 @@ class OfficeController extends BaseController
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhereHas('campus', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
+                      $q->where('name', 'like', "%{$search}%");
                   });
             });
         }

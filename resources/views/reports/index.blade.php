@@ -52,22 +52,12 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
                 </div>
 
                 <div class="filter-group">
-                    <label for="status">Equipment Status</label>
-                    <select id="status" name="status" class="form-select">
-                        <option value="">All Status</option>
-                        <option value="serviceable" {{ request('status') == 'serviceable' ? 'selected' : '' }}>Serviceable</option>
-                        <option value="for_repair" {{ request('status') == 'for_repair' ? 'selected' : '' }}>For Repair</option>
-                        <option value="defective" {{ request('status') == 'defective' ? 'selected' : '' }}>Defective</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="category_id">Category</label>
-                    <select id="category_id" name="category_id" class="form-select">
-                        <option value="">All Categories</option>
-                        @foreach(\App\Models\Category::orderBy('name')->get() as $category)
-                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
+                    <label for="type">Equipment Type</label>
+                    <select id="type" name="type" class="form-select">
+                        <option value="">All Types</option>
+                        @foreach(\App\Models\EquipmentType::orderBy('name')->get() as $type)
+                            <option value="{{ $type->id }}" {{ request('type') == $type->id ? 'selected' : '' }}>
+                                {{ $type->name }}
                             </option>
                         @endforeach
                     </select>
@@ -133,8 +123,13 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
             </table>
         </div>
 
-        <div class="d-flex justify-content-center mt-4">
-            {{ $equipmentHistory->links() }}
+        <div class="pagination-section">
+            <div class="pagination-info">
+                Showing {{ $equipmentHistory->firstItem() ?? 0 }} to {{ $equipmentHistory->lastItem() ?? 0 }} of {{ $equipmentHistory->total() }} results
+            </div>
+            <div class="d-flex justify-content-center">
+                {{ $equipmentHistory->appends(request()->query())->links('pagination.admin') }}
+            </div>
         </div>
     @else
         <div class="empty-state">
