@@ -23,7 +23,12 @@ $(document).ready(function() {
                 content.html(data);
             },
             error: function() {
-                content.html('<div class="alert alert-danger">Error loading create form. Please try again.</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error loading create form. Please try again.',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
     });
@@ -52,7 +57,12 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('Error loading office details:', { status, error });
-                content.html('<div class="alert alert-danger">Error loading office details. Please try again.</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error loading office details. Please try again.',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
     });
@@ -80,7 +90,12 @@ $(document).ready(function() {
                 content.html(data);
             },
             error: function() {
-                content.html('<div class="alert alert-danger">Error loading edit form. Please try again.</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error loading edit form. Please try again.',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
     });
@@ -142,20 +157,16 @@ $(document).ready(function() {
                 // Handle validation errors
                 if (xhr.status === 422 && xhr.responseJSON) {
                     var errors = xhr.responseJSON.errors;
-                    var errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><ul class="mb-0">';
+                    var errorMessages = [];
                     for (var field in errors) {
-                        errorHtml += '<li>' + errors[field][0] + '</li>';
+                        errorMessages.push(errors[field][0]);
                     }
-                    errorHtml += '</ul><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-                    
-                    // Remove existing alerts
-                    form.find('.alert').remove();
-                    
-                    // Show errors at the top of the modal body
-                    form.find('.modal-body').prepend(errorHtml);
-                    
-                    // Scroll to top to show errors
-                    form.find('.modal-body').scrollTop(0);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
+                        confirmButtonColor: '#3085d6'
+                    });
                 } else {
                     Swal.fire({
                         icon: 'error',

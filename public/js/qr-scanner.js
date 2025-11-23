@@ -79,29 +79,32 @@ function processScannedQrCode(qrData) {
                 </div>
             `;
         } else {
-            // Show error
-            document.getElementById('my-qr-reader').innerHTML = `
-                <div class="alert alert-danger">
-                    <h5 class="alert-heading">Scan Failed</h5>
-                    <p>${data.message || 'Unable to locate equipment for this QR code.'}</p>
-                    <button onclick="resetScanner()" class="btn btn-primary btn-sm qr-btn">Try Again</button>
-                </div>
-            `;
+            // Show error with SweetAlert
+            Swal.fire({
+                icon: 'error',
+                title: 'Scan Failed',
+                text: data.message || 'Unable to locate equipment for this QR code.',
+                confirmButtonText: 'Try Again',
+                confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    resetScanner();
+                });
         }
     })
     .catch(error => {
         console.error('Error processing QR code:', error);
         console.error('Error message:', error.message);
         console.error('Scan route:', window.qrScannerRoutes.scan);
-        document.getElementById('my-qr-reader').innerHTML = `
-            <div class="alert alert-danger">
-                <h5 class="alert-heading">Error</h5>
-                <p>An error occurred while processing the QR code.</p>
-                <p><small>Debug: ${error.message}</small></p>
-                <p><small>Route: ${window.qrScannerRoutes.scan}</small></p>
-                <button onclick="resetScanner()" class="btn btn-primary btn-sm qr-btn">Try Again</button>
-            </div>
-        `;
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            html: 'An error occurred while processing the QR code.<br><small>Debug: ' + error.message + '</small><br><small>Route: ' + window.qrScannerRoutes.scan + '</small>',
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#3085d6'
+        }).then(() => {
+            resetScanner();
+        });
     });
 }
 
@@ -165,11 +168,13 @@ function viewEquipmentDetails(equipmentId) {
         },
         error: function(xhr, status, error) {
             console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-            content.html('<div class="alert alert-danger">Failed to load equipment details. Error: ' + xhr.status + ' - ' + error + '</div>');
             
-            // Still show the modal with error message
-            const bootstrapModal = new bootstrap.Modal(document.getElementById('viewEquipmentModal'));
-            bootstrapModal.show();
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to Load',
+                text: 'Failed to load equipment details. Error: ' + xhr.status + ' - ' + error,
+                confirmButtonColor: '#3085d6'
+            });
         }
     });
 }
@@ -229,11 +234,13 @@ function addHistorySheet(equipmentId) {
         },
         error: function(xhr, status, error) {
             console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-            content.html('<div class="alert alert-danger">Failed to load history form. Error: ' + xhr.status + ' - ' + error + '</div>');
             
-            // Still show the modal with error message
-            const bootstrapModal = new bootstrap.Modal(document.getElementById('historyEquipmentModal'));
-            bootstrapModal.show();
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to Load',
+                text: 'Failed to load history form. Error: ' + xhr.status + ' - ' + error,
+                confirmButtonColor: '#3085d6'
+            });
         }
     });
 }

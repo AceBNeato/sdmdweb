@@ -428,23 +428,47 @@ body {
 }
 
 /* Form Switch Styling */
-.form-check {
+.form-check.form-switch {
     padding: 1rem;
     background: #ffffff;
     border-radius: 0.5rem;
     border: 1px solid #e2e8f0;
     margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.5rem;
 }
 
-.form-check-input:checked {
+.form-check.form-switch .form-check-input {
+    width: 2rem;
+    height: 1rem;
+    margin: 0;
+    flex-shrink: 0;
+    background-color: #cbd5e0;
+    border-color: #cbd5e0;
+    position: relative;
+    cursor: pointer;
+}
+
+.form-check.form-switch .form-check-input:checked {
     background-color: #4299e1;
     border-color: #4299e1;
 }
 
-.form-check-input:focus {
+.form-check.form-switch .form-check-input:focus {
     border-color: #4299e1;
     outline: 0;
     box-shadow: 0 0 0 0.25rem rgba(66, 153, 225, 0.25);
+}
+
+.form-check.form-switch .form-check-label {
+    margin: 0;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.5;
 }
 
 /* Office Details Styling */

@@ -96,6 +96,20 @@ class EquipmentController extends Controller
 
     public function create()
     {
+        // Check if any categories exist
+        $categoriesCount = \App\Models\Category::count();
+        if ($categoriesCount === 0) {
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot create equipment. No equipment types/categories have been added yet. Please add categories in Settings first.',
+                    'error_type' => 'no_categories'
+                ], 400);
+            }
+            
+            return redirect()->back()->with('error', 'Cannot create equipment. No equipment types/categories have been added yet. Please add categories in Settings first.');
+        }
+
         $equipment = new Equipment(); // Create empty equipment instance for form
 
         $equipmentTypes = \App\Models\EquipmentType::orderBy('name')
@@ -111,6 +125,22 @@ class EquipmentController extends Controller
 
     public function store(Request $request)
     {
+        // Check if any categories exist before proceeding
+        $categoriesCount = \App\Models\Category::count();
+        if ($categoriesCount === 0) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot create equipment. No equipment types/categories have been added yet. Please add categories in Settings first.',
+                    'error_type' => 'no_categories'
+                ], 400);
+            }
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Cannot create equipment. No equipment types/categories have been added yet. Please add categories in Settings first.');
+        }
+
         $validated = $request->validate([
             'brand' => 'required|string|max:100',
             'model_number' => 'required|string|max:100',

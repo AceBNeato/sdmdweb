@@ -23,7 +23,12 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                content.html('<div class="alert alert-danger">Failed to load user details. Error: ' + xhr.status + ' - ' + error + '</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load user details. Error: ' + xhr.status + ' - ' + error,
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
 
@@ -60,7 +65,12 @@ $(document).ready(function() {
                 },
                 error: function(xhr, status, error) {
                     console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                    content.html('<div class="alert alert-danger">Failed to load edit form. Error: ' + xhr.status + ' - ' + error + '</div>');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed to Load',
+                        text: 'Failed to load edit form. Error: ' + xhr.status + ' - ' + error,
+                        confirmButtonColor: '#3085d6'
+                    });
                 }
             });
 

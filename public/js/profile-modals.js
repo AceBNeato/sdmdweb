@@ -15,7 +15,12 @@
                 modal.show();
             },
             error: function(xhr){
-                $('#viewProfileContent').html('<div class="alert alert-danger">Failed to load profile. Error: '+xhr.status+'</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load profile. Error: '+xhr.status,
+                    confirmButtonColor: '#3085d6'
+                });
                 var modal = new bootstrap.Modal(document.getElementById('viewProfileModal'));
                 modal.show();
             }
@@ -43,7 +48,12 @@
                 modal.show();
             },
             error: function(xhr){
-                $('#editProfileContent').html('<div class="alert alert-danger">Failed to load edit form. Error: '+xhr.status+'</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load edit form. Error: '+xhr.status,
+                    confirmButtonColor: '#3085d6'
+                });
                 var modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
                 modal.show();
             }
@@ -76,12 +86,23 @@
             error: function(xhr){
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     var errors = xhr.responseJSON.errors;
-                    var html = '<div class="alert alert-danger"><ul class="mb-0">';
-                    for (var k in errors) { html += '<li>' + errors[k][0] + '</li>'; }
-                    html += '</ul></div>';
-                    $('#editProfileContent').prepend(html);
+                    var errorMessages = [];
+                    for (var k in errors) { 
+                        errorMessages.push(errors[k][0]); 
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
+                        confirmButtonColor: '#3085d6'
+                    });
                 } else {
-                    $('#editProfileContent').prepend('<div class="alert alert-danger">Failed to save profile. Please try again.</div>');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to save profile. Please try again.',
+                        confirmButtonColor: '#3085d6'
+                    });
                 }
             }
         });

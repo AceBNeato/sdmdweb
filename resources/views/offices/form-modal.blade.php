@@ -73,7 +73,7 @@
         <div class="row g-3">
             <div class="col-12">
                 <div class="field-container">
-                    <label for="create_location" class="form-label">Location</label>
+                    <label for="create_location" class="form-label">Location/Area</label>
                     <textarea class="form-control" id="create_location" name="location" rows="3" maxlength="500" placeholder="Enter complete office location..."></textarea>
                 </div>
             </div>
@@ -93,7 +93,7 @@
                         <input class="form-check-input" type="checkbox" id="create_is_active" name="is_active" value="1" checked>
                         <label class="form-check-label" for="create_is_active">Active</label>
                     </div>
-                    <small class="text-muted">Toggle to set the office as active or inactive</small>
+                    <small class="text-muted">Office will be visible and functional when active</small>
                 </div>
             </div>
         </div>

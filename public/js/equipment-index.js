@@ -48,7 +48,12 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                printQrcodesContent.html('<div class="alert alert-danger">Failed to load QR codes. Please try again.</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load QR codes. Please try again.',
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
     }
@@ -199,7 +204,35 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                content.html('<div class="alert alert-danger">Failed to load equipment form. Error: ' + xhr.status + ' - ' + error + '</div>');
+                
+                // Handle special case for no categories
+                if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error_type === 'no_categories') {
+                    // Close modal if it's open
+                    modal.modal('hide');
+                    // Show SweetAlert warning
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Cannot Add Equipment',
+                        text: xhr.responseJSON.message,
+                        confirmButtonText: 'Go to Settings',
+                        showCancelButton: true,
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Redirect to settings page
+                            window.location.href = '/settings';
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed to Load',
+                        text: 'Failed to load equipment form. Error: ' + xhr.status + ' - ' + error,
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
             }
         });
 
@@ -229,7 +262,12 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                content.html('<div class="alert alert-danger">Failed to load equipment details. Error: ' + xhr.status + ' - ' + error + '</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load equipment details. Error: ' + xhr.status + ' - ' + error,
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
 
@@ -262,7 +300,12 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                content.html('<div class="alert alert-danger">Failed to load equipment form. Error: ' + xhr.status + ' - ' + error + '</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load equipment form. Error: ' + xhr.status + ' - ' + error,
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
 
@@ -296,7 +339,12 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                content.html('<div class="alert alert-danger">Failed to load history form. Error: ' + xhr.status + ' - ' + error + '</div>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load history form. Error: ' + xhr.status + ' - ' + error,
+                    confirmButtonColor: '#3085d6'
+                });
             }
         });
 
@@ -342,18 +390,109 @@ $(document).ready(function() {
                 // Handle errors - show validation errors
                 if (xhr.status === 422) {
                     var errors = xhr.responseJSON.errors;
-                    // Display validation errors
-                    var errorHtml = '<div class="alert alert-danger"><ul>';
+                    // Display validation errors with SweetAlert
+                    var errorMessages = [];
                     for (var field in errors) {
-                        errorHtml += '<li>' + errors[field][0] + '</li>';
+                        errorMessages.push(errors[field][0]);
                     }
-                    errorHtml += '</ul></div>';
-                    $('#editEquipmentContent').prepend(errorHtml);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
+                        confirmButtonColor: '#3085d6'
+                    });
                 } else if (xhr.responseJSON && xhr.responseJSON.message) {
                     // Show error toast for JSON error responses
                     showToast(xhr.responseJSON.message, 'error');
                 } else {
-                    $('#editEquipmentContent').prepend('<div class="alert alert-danger">An error occurred. Please try again.</div>');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred. Please try again.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            }
+        });
+    });
+
+    // Handle add equipment form submission within modal
+    $(document).on('submit', '#addEquipmentModal form', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: form.attr('action'),
+            type: form.attr('method'),
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                // Close modal
+                $('#addEquipmentModal').modal('hide');
+
+                // Check if response is JSON with success/message
+                if (response && typeof response === 'object' && response.success) {
+                    // Show success toast directly
+                    showToast(response.message, 'success');
+
+                    // Redirect after a short delay to allow toast to be seen
+                    setTimeout(function() {
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        } else {
+                            location.reload();
+                        }
+                    }, 1000);
+                } else {
+                    // Fallback to page reload for backward compatibility
+                    location.reload();
+                }
+            },
+            error: function(xhr) {
+                // Handle errors - show validation errors
+                if (xhr.status === 422) {
+                    var errors = xhr.responseJSON.errors;
+                    // Display validation errors with SweetAlert
+                    var errorMessages = [];
+                    for (var field in errors) {
+                        errorMessages.push(errors[field][0]);
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
+                        confirmButtonColor: '#3085d6'
+                    });
+                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error_type === 'no_categories') {
+                    // Close modal and show SweetAlert for no categories
+                    $('#addEquipmentModal').modal('hide');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Cannot Add Equipment',
+                        text: xhr.responseJSON.message,
+                        confirmButtonText: 'Go to Settings',
+                        showCancelButton: true,
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Redirect to settings page
+                            window.location.href = '/settings';
+                        }
+                    });
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    // Show error toast for JSON error responses
+                    showToast(xhr.responseJSON.message, 'error');
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred. Please try again.',
+                        confirmButtonColor: '#3085d6'
+                    });
                 }
             }
         });
@@ -397,18 +536,27 @@ $(document).ready(function() {
                 // Handle errors - show validation errors
                 if (xhr.status === 422) {
                     var errors = xhr.responseJSON.errors;
-                    // Display validation errors
-                    var errorHtml = '<div class="alert alert-danger"><ul>';
+                    // Display validation errors with SweetAlert
+                    var errorMessages = [];
                     for (var field in errors) {
-                        errorHtml += '<li>' + errors[field][0] + '</li>';
+                        errorMessages.push(errors[field][0]);
                     }
-                    errorHtml += '</ul></div>';
-                    $('#historyEquipmentContent').prepend(errorHtml);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
+                        confirmButtonColor: '#3085d6'
+                    });
                 } else if (xhr.responseJSON && xhr.responseJSON.message) {
                     // Show error toast for JSON error responses
                     showToast(xhr.responseJSON.message, 'error');
                 } else {
-                    $('#historyEquipmentContent').prepend('<div class="alert alert-danger">An error occurred. Please try again.</div>');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred. Please try again.',
+                        confirmButtonColor: '#3085d6'
+                    });
                 }
             }
         });

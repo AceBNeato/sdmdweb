@@ -258,7 +258,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Password visibility toggle
     const togglePasswords = document.querySelectorAll('.toggle-password');
     togglePasswords.forEach(togglePassword => {
-        const password = togglePassword.previousElementSibling;
+        // Find the password input within the same parent container
+        const passwordContainer = togglePassword.closest('.relative');
+        const password = passwordContainer ? passwordContainer.querySelector('input[type="password"], input[type="text"]') : null;
 
         if (togglePassword && password) {
             togglePassword.addEventListener('click', function() {
