@@ -16,6 +16,7 @@ $isStaff = $prefix === 'staff';
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/qr-scanner.css') }}">
+<link rel="stylesheet" href="{{ asset('css/equipment.css') }}">
 @endpush
 
 @section('content')

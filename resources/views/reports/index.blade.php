@@ -33,12 +33,44 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
                     </div>
                 </div>
 
-                <!-- Date Range Filter -->
                 <div class="filter-group">
-                    <label for="date_from">History Date</label>
-                    <input type="date" id="date_from" name="date_from"
-                           class="form-control"
-                           value="{{ request('date_from') }}">
+                    <label for="office_id">Office</label>
+                    <select id="office_id" name="office_id" class="form-select">
+                        <option value="">All Offices</option>
+                        @if(auth()->user()->is_super_admin)
+                            @foreach(\App\Models\Office::orderBy('name')->get() as $office)
+                                <option value="{{ $office->id }}" {{ request('office_id') == $office->id ? 'selected' : '' }}>
+                                    {{ $office->name }}
+                                </option>
+                            @endforeach
+                        @else
+                            <option value="{{ auth()->user()->office_id }}" {{ request('office_id') == auth()->user()->office_id ? 'selected' : '' }}>
+                                {{ auth()->user()->office->name }}
+                            </option>
+                        @endif
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="status">Equipment Status</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="serviceable" {{ request('status') == 'serviceable' ? 'selected' : '' }}>Serviceable</option>
+                        <option value="for_repair" {{ request('status') == 'for_repair' ? 'selected' : '' }}>For Repair</option>
+                        <option value="defective" {{ request('status') == 'defective' ? 'selected' : '' }}>Defective</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="category_id">Category</label>
+                    <select id="category_id" name="category_id" class="form-select">
+                        <option value="">All Categories</option>
+                        @foreach(\App\Models\Category::orderBy('name')->get() as $category)
+                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                     <button type="submit" class="btn btn-primary">

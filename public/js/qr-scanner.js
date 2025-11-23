@@ -165,6 +165,9 @@ function viewEquipmentDetails(equipmentId) {
             // Initialize Bootstrap modal
             const bootstrapModal = new bootstrap.Modal(document.getElementById('viewEquipmentModal'));
             bootstrapModal.show();
+            
+            // Reinitialize edit button handlers after content is loaded
+            initializeEditHandlers();
         },
         error: function(xhr, status, error) {
             console.log('AJAX Error:', xhr.status, xhr.responseText, error);
@@ -175,6 +178,80 @@ function viewEquipmentDetails(equipmentId) {
                 text: 'Failed to load equipment details. Error: ' + xhr.status + ' - ' + error,
                 confirmButtonColor: '#3085d6'
             });
+        }
+    });
+}
+
+// Initialize edit button handlers
+function initializeEditHandlers() {
+    // Handle EDIT button clicks within the show modal
+    $('.edit-equipment-btn').off('click').on('click', function() {
+        var equipmentId = $(this).data('equipment-id');
+        var url = $(this).data('url');
+        
+        // Create edit modal if it doesn't exist
+        if (!$('#editEquipmentModal').length) {
+            $('body').append(`
+                <div class="modal fade" id="editEquipmentModal" tabindex="-1" aria-labelledby="editEquipmentModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editEquipmentModalLabel">Edit Equipment</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="editEquipmentContent">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        // Load edit form using AjaxHelper if available, otherwise fallback to plain AJAX
+        if (window.AjaxHelper) {
+            // Close the view modal first
+            $('#viewEquipmentModal').modal('hide');
+            
+            // Add a small delay to ensure modal closes properly
+            setTimeout(function() {
+                window.AjaxHelper.loadModal(url, '#editEquipmentModal', '#editEquipmentContent', {
+                    errorMessage: 'Failed to load equipment form. Please try again.',
+                    showSuccessAlert: false,
+                    showErrorAlert: false
+                });
+            }, 300);
+        } else {
+            // Fallback AJAX load
+            $('#viewEquipmentModal').modal('hide');
+            
+            setTimeout(function() {
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        $('#editEquipmentContent').html(response);
+                        const editModal = new bootstrap.Modal(document.getElementById('editEquipmentModal'));
+                        editModal.show();
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Failed to Load',
+                            text: 'Failed to load equipment form. Error: ' + xhr.status + ' - ' + error,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }, 300);
         }
     });
 }
