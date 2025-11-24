@@ -5,6 +5,7 @@
 
 @push('styles')
 <link href="{{ asset('css/settings.css') }}" rel="stylesheet">
+
 <style>
 .settings-tabs {
     display: flex;
@@ -344,7 +345,7 @@
                             <i class="fas fa-cogs fa-3x text-success mb-3"></i>
                             <h5>Equipment Types</h5>
                             <p class="text-muted">Manage equipment types and ordering</p>
-                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-success">
+                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-primary">
                                 Manage Equipment Types
                             </a>
                         </div>

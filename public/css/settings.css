@@ -22,6 +22,20 @@
   box-shadow: var(--shadow-md);
 }
 
+
+.btn-primary {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(66, 153, 225, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+    box-shadow: 0 6px 8px -1px rgba(66, 153, 225, 0.4);
+}
+
+
 .settings-section-header {
   display: flex;
   align-items: center;
@@ -149,28 +163,38 @@
   background: var(--panel-2);
 }
 
+/* Buttons */
 .btn {
-  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary);
+  color: white;
+  padding: 10px 20px;
   border-radius: var(--radius);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 14px;
+  line-height: 1.5;
+  border: none;
   cursor: pointer;
   transition: var(--transition);
   text-decoration: none;
-  font-family: var(--font-heading);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
+
 .btn-primary {
-  background: var(--primary);
-  color: white;
+    background-color: #4299e1;
+    border-color: #4299e1;
+    color: white;
 }
 
 .btn-primary:hover {
   background: var(--primary-dark);
+  border-color: var(--primary-dark);
 }
 
 .btn-danger {
@@ -182,9 +206,6 @@
   background: #b71c1c;
 }
 
-.backup-management {
-  margin-top: 2rem;
-}
 
 .backup-toolbar {
   display: flex;
@@ -268,71 +289,10 @@
   }
 }
 
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-backdrop.hidden {
-  display: none !important;
-}
-
-.modal-backdrop.flex {
-  display: flex;
-}
-
-.modal {
-  background: var(--panel);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border-light);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text);
-  font-family: var(--font-heading);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-muted);
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
+/* NOTE: The following modal overrides were forcing all Bootstrap modals,
+ * including the global profile modal, to use a small card layout on the
+ * Settings page. They have been removed to allow the shared profile modal
+ * to use the default layout defined by Bootstrap + profile-modal.css. */
 
 .toast-container {
   position: fixed;
@@ -472,11 +432,7 @@
     font-size: 0.875rem;
   }
 
-  .modal {
-    margin: 1rem;
-    width: calc(100% - 2rem);
-    max-width: none;
-  }
+  /* Mobile-specific modal overrides removed for the same reason as above */
 }
 
 @media (max-width: 480px) {

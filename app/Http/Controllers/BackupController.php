@@ -20,8 +20,8 @@ class BackupController extends Controller
      */
     public function index()
     {
-        // Only super-admin can access
-        if (!auth()->user()->is_super_admin) {
+        $user = auth()->user();
+        if (!$user || !$user->hasPermissionTo('settings.manage')) {
             abort(403, 'Unauthorized');
         }
 
@@ -36,7 +36,8 @@ class BackupController extends Controller
      */
     public function backup(Request $request)
     {
-        if (!auth()->user()->is_super_admin) {
+        $user = auth()->user();
+        if (!$user || !$user->hasPermissionTo('settings.manage')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -112,7 +113,8 @@ class BackupController extends Controller
      */
     public function download($filename)
     {
-        if (!auth()->user()->is_super_admin) {
+        $user = auth()->user();
+        if (!$user || !$user->hasPermissionTo('settings.manage')) {
             abort(403, 'Unauthorized');
         }
 
@@ -162,7 +164,8 @@ class BackupController extends Controller
      */
     public function restore(Request $request)
     {
-        if (!auth()->user()->is_super_admin) {
+        $user = auth()->user();
+        if (!$user || !$user->hasPermissionTo('settings.manage')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -284,7 +287,8 @@ class BackupController extends Controller
      */
     public function delete($filename)
     {
-        if (!auth()->user()->is_super_admin) {
+        $user = auth()->user();
+        if (!$user || !$user->hasPermissionTo('settings.manage')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -339,7 +343,8 @@ class BackupController extends Controller
      */
     public function list(Request $request)
     {
-        if (!auth()->user()->is_super_admin) {
+        $user = auth()->user();
+        if (!$user || !$user->hasPermissionTo('settings.manage')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
