@@ -16,10 +16,9 @@ class OfficeController extends BaseController
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:settings.manage')->only(['index', 'show']);
-        $this->middleware('permission:settings.manage')->only(['create', 'store']);
-        $this->middleware('permission:settings.manage')->only(['edit', 'update']);
-        $this->middleware('permission:settings.manage')->only(['destroy']);
+        $this->middleware('permission:offices.view')->only(['index', 'show']);
+        $this->middleware('permission:offices.create')->only(['create', 'store']);
+        $this->middleware('permission:offices.edit')->only(['edit', 'update', 'destroy', 'toggleStatus']);
     }
 
     /**

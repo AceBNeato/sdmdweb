@@ -248,6 +248,9 @@
                                     {{ $role->display_name }}
                                 </span>
                                 <div class="role-count">{{ $role->permissions->count() }} perms</div>
+                                <a href="#" class="text-primary small d-block mt-1 role-select-all" style="cursor: pointer;">
+                                    <i class="fas fa-check-square me-1"></i>Select All
+                                </a>
                             </th>
                         @endforeach
                     </tr>
@@ -363,7 +366,8 @@ const originalState = {};
 
 // Store original state
 document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-locked!="1"]');
+    const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+        .filter(checkbox => checkbox.dataset.locked !== '1');
     checkboxes.forEach(checkbox => {
         originalState[checkbox.id] = checkbox.checked;
     });
@@ -393,7 +397,8 @@ function updateButtonStates() {
 
 function resetForm() {
     // Only reset editable (non-locked) checkboxes
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-locked!="1"]');
+    const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+        .filter(checkbox => checkbox.dataset.locked !== '1');
     checkboxes.forEach(checkbox => {
         checkbox.checked = originalState[checkbox.id];
     });
@@ -481,36 +486,35 @@ window.addEventListener('beforeunload', function(e) {
 
 // Add select all functionality for columns
 document.addEventListener('DOMContentLoaded', function() {
-    const headers = document.querySelectorAll('.role-column');
-    
-    headers.forEach((header, index) => {
-        if (index === 0) return; // Skip the permission header
-        
-        const roleName = header.querySelector('.role-name').textContent.trim();
-        const selectLink = document.createElement('a');
-        selectLink.href = '#';
-        selectLink.className = 'text-primary small d-block mt-1';
-        selectLink.innerHTML = '<i class="fas fa-check-square me-1"></i>Select All';
-        selectLink.style.cursor = 'pointer';
-        
-        header.appendChild(selectLink);
-        
+    const selectLinks = document.querySelectorAll('.role-select-all');
+
+    selectLinks.forEach(selectLink => {
         selectLink.addEventListener('click', function(e) {
             e.preventDefault();
+
+            const header = this.closest('.role-column');
+            if (!header) return;
+
             const roleId = header.dataset.roleId;
             if (!roleId) return;
-            
-            const columnCheckboxes = document.querySelectorAll(`input[data-role="${roleId}"][data-locked!="1"]`);
-            const allChecked = Array.from(columnCheckboxes).every(cb => cb.checked);
-            
+
+            const columnCheckboxes = Array.from(document.querySelectorAll(`input[data-role="${roleId}"]`))
+                .filter(checkbox => checkbox.dataset.locked !== '1');
+            if (columnCheckboxes.length === 0) {
+                return;
+            }
+
+            const allChecked = columnCheckboxes.every(cb => cb.checked);
+
             columnCheckboxes.forEach(checkbox => {
                 checkbox.checked = !allChecked;
-                markChanged();
             });
-            
-            selectLink.innerHTML = allChecked ? 
-                '<i class="fas fa-square me-1"></i>Select All' : 
-                '<i class="fas fa-check-square me-1"></i>Deselect All';
+
+            markChanged();
+
+            this.innerHTML = allChecked
+                ? '<i class="fas fa-square me-1"></i>Select All'
+                : '<i class="fas fa-check-square me-1"></i>Deselect All';
         });
     });
 });
@@ -537,8 +541,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         selectLink.addEventListener('click', function(e) {
             e.preventDefault();
-            const checkboxes = row.querySelectorAll('input[type="checkbox"][data-locked!="1"]');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const checkboxes = Array.from(row.querySelectorAll('input[type="checkbox"]'))
+                .filter(checkbox => checkbox.dataset.locked !== '1');
+            const allChecked = checkboxes.every(cb => cb.checked);
             
             checkboxes.forEach(checkbox => {
                 checkbox.checked = !allChecked;

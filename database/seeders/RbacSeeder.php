@@ -139,11 +139,26 @@ class RbacSeeder extends Seeder
                 'is_active' => true,
             ],
 
+            // Offices
             [
                 'name' => 'offices.view',
                 'display_name' => 'View Offices',
                 'group' => 'Offices',
                 'description' => 'View offices',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'offices.create',
+                'display_name' => 'Create Offices',
+                'group' => 'Offices',
+                'description' => 'Create new offices',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'offices.edit',
+                'display_name' => 'Edit Offices',
+                'group' => 'Offices',
+                'description' => 'Edit existing offices',
                 'is_active' => true,
             ],
 

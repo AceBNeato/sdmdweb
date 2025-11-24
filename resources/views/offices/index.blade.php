@@ -33,14 +33,14 @@
     }
 @endphp
 
-@if(!$currentUser || !$currentUser->hasPermissionTo('settings.manage'))
+@if(!$currentUser || !$currentUser->hasPermissionTo('offices.view'))
     @php abort(403) @endphp
 @else
 
     <!-- Page Header with Filters Card -->
     <div class="card mb-4">
         <div class="action-buttons">
-            @if($currentUser && $currentUser->hasPermissionTo('settings.manage') && Route::has($prefix . '.offices.create'))
+            @if($currentUser && $currentUser->hasPermissionTo('offices.create') && Route::has($prefix . '.offices.create'))
             <button type="button"
                     class="btn btn-primary add-office-btn"
                     data-url="{{ route($prefix . '.offices.create') }}"
@@ -168,7 +168,7 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                @if($currentUser && $currentUser->hasPermissionTo('settings.manage')) 
+                                @if($currentUser && $currentUser->hasPermissionTo('offices.view')) 
                                 <button type="button" 
                                         class="btn btn-sm btn-primary office-view-btn"
                                         data-office-id="{{ $office->id }}"
@@ -177,7 +177,7 @@
                                     <i class='bx bx-show-alt'></i>
                                 </button>
                                 @endif
-                                @if($currentUser && $currentUser->hasPermissionTo('settings.manage'))
+                                @if($currentUser && $currentUser->hasPermissionTo('offices.edit'))
                                 <button type="button"
                                         class="btn btn-sm btn-outline-secondary office-edit-btn"
                                         data-office-id="{{ $office->id }}"

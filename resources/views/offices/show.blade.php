@@ -12,7 +12,7 @@
 @section('content')
 <div class="content">
 
-@if(!auth()->user()->hasPermissionTo('settings.manage'))
+@if(!auth()->user()->hasPermissionTo('offices.view'))
     @php abort(403) @endphp
 @else
 

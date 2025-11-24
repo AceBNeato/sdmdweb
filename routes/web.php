@@ -615,9 +615,9 @@ Route::middleware(['auth'])
 
             Route::resource('reports', ReportController::class)->except(['index'])->middleware('permission:reports.generate');
 
-            // ============================================================================
+            // ==========================================================================
             // SYSTEM ADMINISTRATION
-            // ============================================================================
+            // ==========================================================================
 
             // RBAC Management (Protected)
             Route::middleware(['rbac.verify'])->group(function () {
@@ -630,9 +630,9 @@ Route::middleware(['auth'])
             });
 
             // Office Management
-            Route::resource('offices', OfficeController::class)->middleware('permission:settings.manage');
+            Route::resource('offices', OfficeController::class);
             Route::post('offices/{office}/toggle-status', [OfficeController::class, 'toggleStatus'])
-                ->name('offices.toggle-status')->middleware('permission:settings.manage');
+                ->name('offices.toggle-status')->middleware('permission:offices.edit');
 
             // System Logs
             Route::prefix('system-logs')->name('system-logs.')->group(function () {
