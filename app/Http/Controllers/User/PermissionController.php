@@ -7,6 +7,7 @@ use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Models\Activity;
 
 class PermissionController extends Controller
 {
@@ -70,6 +71,21 @@ class PermissionController extends Controller
 
         $permission = Permission::create($validated);
 
+        Activity::logSystemManagement(
+            'RBAC Permission Created',
+            'Created permission "' . $permission->display_name . '" (' . $permission->name . ')',
+            'rbac',
+            $permission->id,
+            [
+                'name' => $permission->name,
+                'display_name' => $permission->display_name,
+                'description' => $permission->description,
+                'group' => $permission->group,
+            ],
+            null,
+            'RBAC'
+        );
+
         return redirect()->route('admin.rbac.permissions.index')
             ->with('success', 'Permission created successfully.');
     }
@@ -106,12 +122,34 @@ class PermissionController extends Controller
             'group' => 'nullable|string|max:100',
         ]);
         
+        $originalPermission = $permission->replicate();
+        
         // If no group is provided, use 'General'
         if (empty($validated['group'])) {
             $validated['group'] = 'General';
         }
 
         $permission->update($validated);
+
+        Activity::logSystemManagement(
+            'RBAC Permission Updated',
+            'Updated permission "' . $originalPermission->display_name . '" (' . $originalPermission->name . ')',
+            'rbac',
+            $permission->id,
+            [
+                'name' => $permission->name,
+                'display_name' => $permission->display_name,
+                'description' => $permission->description,
+                'group' => $permission->group,
+            ],
+            [
+                'name' => $originalPermission->name,
+                'display_name' => $originalPermission->display_name,
+                'description' => $originalPermission->description,
+                'group' => $originalPermission->group,
+            ],
+            'RBAC'
+        );
 
         return redirect()->route('admin.rbac.permissions.index')
             ->with('success', 'Permission updated successfully.');
@@ -127,7 +165,24 @@ class PermissionController extends Controller
                 ->with('error', 'Cannot delete permission. It is assigned to one or more roles.');
         }
 
+        $permissionData = [
+            'name' => $permission->name,
+            'display_name' => $permission->display_name,
+            'description' => $permission->description,
+            'group' => $permission->group,
+        ];
+
         $permission->delete();
+
+        Activity::logSystemManagement(
+            'RBAC Permission Deleted',
+            'Deleted permission "' . $permissionData['display_name'] . '" (' . $permissionData['name'] . ')',
+            'rbac',
+            $permission->id,
+            null,
+            $permissionData,
+            'RBAC'
+        );
 
         return redirect()->route('admin.rbac.permissions.index')
             ->with('success', 'Permission deleted successfully.');

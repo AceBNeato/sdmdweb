@@ -433,20 +433,36 @@ class BackupService
                         }
 
                         if ($tableName) {
-                            // Whitelist allowed tables for security
+                            // Whitelist allowed base tables for security
                             $allowedTables = [
                                 'equipment', 'users', 'categories', 'campuses', 'offices',
                                 'equipment_types', 'activities', 'password_reset_tokens',
                                 'failed_jobs', 'migrations', 'sessions', 'cache',
                                 'job_batches', 'telescope_entries', 'telescope_monitoring',
-                                'permissions', 'roles', 'role_user', 'permission_user',
-                                'equipment_history', 'personal_access_tokens'
+                                'permissions', 'roles', 'role_user', 'permission_role', 'permission_user',
+                                'equipment_history', 'personal_access_tokens', 'settings'
                             ];
-                            
-                            if (!in_array($tableName, $allowedTables)) {
+
+                            // Views / derived summary tables that should never receive INSERTs
+                            $ignoredViews = [
+                                'activity_summary_view',
+                                'category_summary_view',
+                                'equipment_summary',
+                                'equipment_summary_view',
+                                'office_summary_view',
+                                'user_summary_view',
+                            ];
+
+                            if (in_array($tableName, $ignoredViews, true)) {
+                                // Skip silently; these are recomputed from base tables
+                                $statement = '';
+                                continue;
+                            }
+
+                            if (!in_array($tableName, $allowedTables, true)) {
                                 throw new \Exception('Invalid table name: ' . $tableName);
                             }
-                            
+
                             $safeName = '`' . str_replace('`', '``', $tableName) . '`';
 
                             if (!isset($truncatedTables[$tableName])) {

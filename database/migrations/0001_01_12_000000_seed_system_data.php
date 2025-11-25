@@ -67,56 +67,6 @@ return new class extends Migration
             \App\Models\EquipmentType::create($type);
         }
 
-        // Create system users
-        $superAdminRole = Role::where('name', 'super-admin')->first();
-        $adminRole = Role::where('name', 'admin')->first();
-
-        // Super Admin users
-        User::create([
-            'first_name' => 'Super',
-            'last_name' => 'Administrator',
-            'email' => 'superadmin@sdmd.ph',
-            'password' => Hash::make('superadmin123'),
-            'position' => 'Super Administrator',
-            'phone' => '09123456780',
-            'location' => 'Tagum City, Davao del Norte, Philippines',
-            'office_id' => $sdmdOffice->id,
-            'campus_id' => $tagumCampus->id,
-            'role_id' => $superAdminRole->id,
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
-
-        User::create([
-            'first_name' => 'Super',
-            'last_name' => 'Administrator 2',
-            'email' => 'superadmin2@sdmd.ph',
-            'password' => Hash::make('superadmin123'),
-            'position' => 'Super Administrator',
-            'phone' => '09123456780',
-            'address' => 'Tagum City, Davao del Norte, Philippines',
-            'office_id' => $sdmdOffice->id,
-            'campus_id' => $tagumCampus->id,
-            'role_id' => $superAdminRole->id,
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
-
-        // Admin user
-        User::create([
-            'first_name' => 'Arthur',
-            'last_name' => 'Dale Micaroz',
-            'email' => 'arthurdalemicaroz@gmail.com',
-            'password' => Hash::make('12345678'),
-            'position' => 'System Administrator',
-            'phone' => '09123456789',
-            'address' => 'Mankilam, Tagum City, Davao del Norte, Philippines',
-            'office_id' => $sdmdOffice->id,
-            'campus_id' => $tagumCampus->id,
-            'role_id' => $adminRole->id,
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
 
         // Create default settings
         $settings = [

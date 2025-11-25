@@ -106,6 +106,17 @@
                             <i class='bx bx-list-ul me-2'></i>Equipment List
                         </h6>
                     </div>
+                    <div class="p-2 border-bottom bg-light">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">
+                                <i class='bx bx-search'></i>
+                            </span>
+                            <input type="text"
+                                   id="qrEquipmentSearch"
+                                   class="form-control"
+                                   placeholder="Search by model, serial, office or type">
+                        </div>
+                    </div>
                     <div class="card-body p-0">
                         <div class="qr-select-list">
                             @foreach($equipment as $item)

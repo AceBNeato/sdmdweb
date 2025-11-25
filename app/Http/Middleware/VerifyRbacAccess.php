@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Activity;
 
 
 class VerifyRbacAccess
@@ -23,6 +24,16 @@ class VerifyRbacAccess
 
         // Check if user is authenticated first
         if (!$user) {
+            Activity::logSystemManagement(
+                'RBAC Access Redirect',
+                'Unauthenticated user attempted to access RBAC management from ' . $request->path(),
+                'rbac',
+                null,
+                [],
+                [],
+                'RBAC'
+            );
+
             return redirect()->route('admin.accounts')
                 ->with('error', 'Please log in to access this section.');
         }
@@ -35,6 +46,17 @@ class VerifyRbacAccess
             }
 
             // Deny access to non-admin users
+            Activity::logSystemManagement(
+                'RBAC Access Denied',
+                'Non-admin user ' . $user->email . ' attempted to access RBAC management from ' . $request->path(),
+                'rbac',
+                null,
+                [],
+                [],
+                'RBAC',
+                $user
+            );
+
             return redirect()->route('admin.accounts')
                 ->with('error', 'You do not have permission to access RBAC management.');
         }

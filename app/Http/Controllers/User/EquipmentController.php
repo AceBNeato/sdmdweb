@@ -760,8 +760,12 @@ class EquipmentController extends Controller
             $parsedUrl = parse_url($qrData);
             if (isset($parsedUrl['query'])) {
                 parse_str($parsedUrl['query'], $queryParams);
-                if (isset($queryParams['id'])) {
-                    $equipment = Equipment::find($queryParams['id']);
+
+                // Support both ?id=123 and ?equipment_id=123 for maximum compatibility
+                $equipmentId = $queryParams['id'] ?? $queryParams['equipment_id'] ?? null;
+
+                if ($equipmentId) {
+                    $equipment = Equipment::find($equipmentId);
                     if (!$equipment) {
                         return response()->json(['success' => false, 'message' => 'Equipment not found']);
                     }
@@ -787,6 +791,38 @@ class EquipmentController extends Controller
                         ]
                     ]);
                 }
+            }
+        }
+
+        // If QR data is just a plain numeric ID, treat it as the equipment ID directly
+        if (is_string($qrData)) {
+            $trimmed = trim($qrData);
+            if ($trimmed !== '' && ctype_digit($trimmed)) {
+                $equipment = Equipment::find((int) $trimmed);
+
+                if (!$equipment) {
+                    return response()->json(['success' => false, 'message' => 'Equipment not found']);
+                }
+
+                Activity::create([
+                    'user_id' => auth()->id(),
+                    'type' => 'equipment_scanned',
+                    'description' => "Scanned QR code for equipment: {$equipment->equipment_model}",
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'equipment' => [
+                        'id' => $equipment->id,
+                        'model_number' => $equipment->equipment_model,
+                        'serial_number' => $equipment->serial_number,
+                        'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
+                        'location' => $equipment->location,
+                        'office' => $equipment->office ? $equipment->office->name : 'N/A',
+                        'status' => $equipment->status,
+                        'qr_code_image_path' => $equipment->qr_code_image_path,
+                    ]
+                ]);
             }
         }
 

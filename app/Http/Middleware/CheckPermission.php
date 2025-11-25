@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Activity;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckPermission
@@ -36,6 +37,17 @@ class CheckPermission
 
             // Check if the user has the required permission
             if (!$user->hasPermissionTo($permission)) {
+                Activity::logSystemManagement(
+                    'RBAC Permission Denied',
+                    'Permission "' . $permission . '" denied for user ' . $user->email . ' on ' . $request->path(),
+                    'rbac',
+                    null,
+                    [],
+                    [],
+                    'RBAC',
+                    $user
+                );
+
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,

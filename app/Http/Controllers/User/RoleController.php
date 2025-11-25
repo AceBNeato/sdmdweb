@@ -8,6 +8,7 @@ use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\Activity;
 
 class RoleController extends Controller
 {
@@ -48,6 +49,9 @@ class RoleController extends Controller
             'permissions.*' => 'exists:permissions,id',
         ]);
 
+        $originalRole = $role->replicate();
+        $originalPermissions = $role->permissions()->pluck('name')->toArray();
+
         DB::beginTransaction();
         try {
             $role->update([
@@ -57,6 +61,29 @@ class RoleController extends Controller
             ]);
 
             $role->permissions()->sync($request->permissions);
+
+            $role->load('permissions');
+            $newPermissions = $role->permissions->pluck('name')->toArray();
+
+            Activity::logSystemManagement(
+                'RBAC Role Updated',
+                'Updated role "' . $originalRole->display_name . '" (ID: ' . $role->id . ')',
+                'rbac',
+                $role->id,
+                [
+                    'name' => $role->name,
+                    'display_name' => $role->display_name,
+                    'description' => $role->description,
+                    'permissions' => implode(', ', $newPermissions),
+                ],
+                [
+                    'name' => $originalRole->name,
+                    'display_name' => $originalRole->display_name,
+                    'description' => $originalRole->description,
+                    'permissions' => implode(', ', $originalPermissions),
+                ],
+                'RBAC'
+            );
 
             DB::commit();
             return redirect()->route('admin.rbac.roles.index')
@@ -87,8 +114,25 @@ class RoleController extends Controller
             foreach ($request->permissions as $roleId => $permissionIds) {
                 $role = Role::find($roleId);
                 if ($role) {
-                    // Sync permissions - add checked, remove unchecked
+                    $originalPermissions = $role->permissions()->pluck('name')->toArray();
                     $role->permissions()->sync($permissionIds);
+
+                    $role->load('permissions');
+                    $newPermissions = $role->permissions->pluck('name')->toArray();
+
+                    Activity::logSystemManagement(
+                        'RBAC Role Permissions Updated',
+                        'Updated permissions for role "' . $role->display_name . '" (ID: ' . $role->id . ')',
+                        'rbac',
+                        $role->id,
+                        [
+                            'permissions' => implode(', ', $newPermissions),
+                        ],
+                        [
+                            'permissions' => implode(', ', $originalPermissions),
+                        ],
+                        'RBAC'
+                    );
                 }
             }
 

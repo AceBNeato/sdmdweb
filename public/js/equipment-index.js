@@ -71,6 +71,7 @@ $(document).ready(function() {
         const qrPreviewGrid = modal.find('.qr-preview-grid');
         const pdfForm = modal.find('#printQrcodesPdfForm');
         const pdfUrl = printButton.data('pdf-url');
+        const searchInput = modal.find('#qrEquipmentSearch');
 
         function getSelectedIds() {
             return modal.find('.qr-select-checkbox:checked').map(function() {
@@ -102,6 +103,19 @@ $(document).ready(function() {
             }
         }
 
+        function applySearchFilter() {
+            if (!searchInput.length) {
+                return;
+            }
+
+            const term = searchInput.val().toLowerCase().trim();
+
+            modal.find('.qr-select-item').each(function() {
+                const text = $(this).text().toLowerCase();
+                $(this).toggle(!term || text.indexOf(term) !== -1);
+            });
+        }
+
         modal.off('submit', '#printQrFilterForm').on('submit', '#printQrFilterForm', function(e) {
             e.preventDefault();
             const form = $(this);
@@ -120,6 +134,12 @@ $(document).ready(function() {
             modal.find('.qr-select-checkbox').prop('checked', isChecked);
             updateSelections();
         });
+
+        if (searchInput.length) {
+            modal.off('input', '#qrEquipmentSearch').on('input', '#qrEquipmentSearch', function() {
+                applySearchFilter();
+            });
+        }
 
         modal.off('click', '.print-selected-btn').on('click', '.print-selected-btn', function() {
             if (!pdfUrl || pdfUrl === '#') {
@@ -151,6 +171,7 @@ $(document).ready(function() {
             });
         });
 
+        applySearchFilter();
         updateSelections();
     }
 
