@@ -140,6 +140,7 @@ body {
 }
 
 
+
 /* Filter Form */
 .filter-form {
     display: flex;
@@ -862,7 +863,7 @@ body {
 
 .row{
     display: flex;
-    flex-direction: column;
+    flex-direction: row !important;
     margin-bottom: 1rem;
 }
 

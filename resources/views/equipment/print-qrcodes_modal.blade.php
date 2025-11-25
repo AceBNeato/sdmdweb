@@ -19,8 +19,8 @@
 
 <!-- Modal Body -->
 <div class="modal-body p-4">
-    <!-- Filter Section -->
-    <div class="filter-section bg-light rounded-lg p-3 mb-4">
+    <!-- Filters & Bulk Actions -->
+    <div class="filter-section rounded-lg p-3 mb-4">
         <form id="printQrFilterForm" action="{{ route($prefix . '.equipment.print-qrcodes') }}" method="GET" class="print-filter-form">
             <div class="row g-3 align-items-end">
                 <div class="col-12 col-lg-4 col-xl-5">
@@ -43,7 +43,7 @@
                     </select>
                 </div>
                 <div class="col-12 col-lg-8 col-xl-7">
-                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                    <div class="d-flex flex-wrap gap-2 align-items-end justify-content-lg-end">
                         <div class="flex-grow-1 flex-sm-grow-0">
                             <button type="submit" class="btn btn-primary btn-lg w-100 w-sm-auto">
                                 <i class='bx bx-filter-alt me-2'></i>Apply Filter
@@ -65,37 +65,38 @@
                 </div>
             </div>
         </form>
+
+        @if($equipment->count() > 0)
+            <div class="selection-controls mt-3 pt-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <div class="form-check form-check-lg">
+                            <input class="form-check-input" type="checkbox" value="1" id="selectAllQrcodes">
+                            <label class="form-check-label fw-semibold" for="selectAllQrcodes">
+                                <i class='bx bx-check-square me-1'></i>Select All
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 col-lg-6 text-center">
+                        <div class="selection-counter">
+                            <span class="badge bg-primary fs-6 p-2">
+                                <i class='bx bx-check me-1'></i>
+                                <span class="selected-count-value">0</span> Selected
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 col-lg-3 text-md-end">
+                        <button type="button" class="btn btn-success btn-lg w-100 w-md-auto print-selected-btn" 
+                                data-pdf-url="{{ $printPdfRoute ?? '#' }}" disabled>
+                            <i class='bx bx-printer me-2'></i>Print Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     @if($equipment->count() > 0)
-        <!-- Selection Controls -->
-        <div class="selection-controls bg-white border rounded-lg p-3 mb-4 shadow-sm">
-            <div class="row g-3 align-items-center">
-                <div class="col-12 col-md-4 col-lg-3">
-                    <div class="form-check form-check-lg">
-                        <input class="form-check-input" type="checkbox" value="1" id="selectAllQrcodes">
-                        <label class="form-check-label fw-semibold" for="selectAllQrcodes">
-                            <i class='bx bx-check-square me-1'></i>Select All
-                        </label>
-                    </div>
-                </div>
-                <div class="col-12 col-md-4 col-lg-6 text-center">
-                    <div class="selection-counter">
-                        <span class="badge bg-primary fs-6 p-2">
-                            <i class='bx bx-check me-1'></i>
-                            <span class="selected-count-value">0</span> Selected
-                        </span>
-                    </div>
-                </div>
-                <div class="col-12 col-md-4 col-lg-3 text-md-end">
-                    <button type="button" class="btn btn-success btn-lg w-100 w-md-auto print-selected-btn" 
-                            data-pdf-url="{{ $printPdfRoute ?? '#' }}" disabled>
-                        <i class='bx bx-printer me-2'></i>Print Selected
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Main Content -->
         <div class="row g-4">
             <!-- Equipment List -->
@@ -265,8 +266,9 @@
 
     /* Filter Section */
     .filter-section {
-        border: 1px solid #e9ecef;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .rounded-lg {
@@ -275,8 +277,9 @@
 
     /* Selection Controls */
     .selection-controls {
-        border: 1px solid #dee2e6;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border-top: 1px dashed #dee2e6;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
     }
     
     .form-check-lg .form-check-input {
@@ -577,7 +580,7 @@
         }
         
         .selection-controls .row {
-            flex-direction: column;
+            flex-direction: row !important;
             gap: 1rem;
         }
         
@@ -627,7 +630,7 @@
         }
         
         .selection-controls .row {
-            flex-direction: row;
+            flex-direction: row !important;
             gap: 1rem;
         }
     }
