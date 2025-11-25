@@ -23,16 +23,41 @@ domReady(function () {
         return;
     }
 
-    if (typeof Html5QrcodeScanner === "undefined" || !hasMediaDevices || (!isSecure && !isLocalhost)) {
-        const recommendedUrl = isSecure ? window.location.origin : ("https://" + window.location.host);
-        container.innerHTML = '<div class="alert alert-warning">'
-            + '<h5 class="alert-heading">Camera scanner not available on this device</h5>'
-            + '<p class="mb-1">This browser cannot access the camera here (it requires HTTPS and a supported browser).</p>'
-            + '<p class="mb-2">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
-            + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
-            + '<a href="' + recommendedUrl + '/public/qr-scanner" class="btn btn-primary btn-sm">Try Public Scanner</a>'
-            + '</div>';
-        return;
+    // Wait for html5-qrcode library to be loaded before starting the scanner
+    let html5qrcodeLoadAttempts = 0;
+    const HTML5QRCODE_MAX_ATTEMPTS = 20; // ~6 seconds with 300ms interval
+
+    function waitForLibraryAndStart() {
+        // Library is ready
+        if (typeof Html5QrcodeScanner !== "undefined") {
+            requestCameraAndStart();
+            return;
+        }
+
+        html5qrcodeLoadAttempts++;
+
+        // Show a loading state only on first attempt
+        if (html5qrcodeLoadAttempts === 1) {
+            container.innerHTML = '<div class="text-center py-4">'
+                + '<div class="spinner-border text-primary mb-3" role="status"></div>'
+                + '<p class="mb-0">Initializing camera scanner...</p>'
+                + '</div>';
+        }
+
+        // Give up after max attempts and show a helpful fallback
+        if (html5qrcodeLoadAttempts >= HTML5QRCODE_MAX_ATTEMPTS) {
+            const recommendedUrl = isSecure ? window.location.origin : ("https://" + window.location.host);
+            container.innerHTML = '<div class="alert alert-warning">'
+                + '<h5 class="alert-heading">Unable to initialize scanner</h5>'
+                + '<p class="mb-1">The scanner library could not be loaded in this browser.</p>'
+                + '<p class="mb-2">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+                + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
+                + '<a href="' + recommendedUrl + '/public/qr-scanner" class="btn btn-primary btn-sm">Try Public Scanner</a>'
+                + '</div>';
+            return;
+        }
+
+        setTimeout(waitForLibraryAndStart, 300);
     }
 
     // If found your qr code
@@ -85,7 +110,8 @@ domReady(function () {
         htmlscanner.render(onScanSuccess);
     }
 
-    requestCameraAndStart();
+    // Start once the library is loaded
+    waitForLibraryAndStart();
 });
 
 // Function to process scanned QR code with backend
