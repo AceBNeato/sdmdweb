@@ -9,7 +9,7 @@
 @section('breadcrumbs')
     <a href="{{ route($prefix . '.equipment.index') }}">Equipment</a>
     <span class="separator">/</span>
-    <a href="{{ route($prefix . '.equipment.show', $equipment) }}" class="current">{{ $equipment->model_number }}</a>
+    <a href="{{ route($prefix . '.equipment.show', $equipment) }}" class="current">{{ trim(($equipment->brand ?? '') . ' ' . ($equipment->model_number ?? '')) }}</a>
 @endsection
 @section('page_title', 'Equipment Details')
 
@@ -38,7 +38,7 @@
             </div>
         </div>
         <div class="col-md-9">
-            <h1 class="equipment-title">{{ $equipment->model_number }}</h1>
+            <h1 class="equipment-title">{{ trim(($equipment->brand ?? '') . ' ' . ($equipment->model_number ?? '')) }}</h1>
             <div class="equipment-subtitle">{{ $equipment->equipmentType->name ?? 'Unknown Type' }} • {{ $equipment->serial_number }}</div>
 
 

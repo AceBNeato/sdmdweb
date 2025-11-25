@@ -22,7 +22,7 @@
             
         </div>
         <div class="col-md-8">
-            <h1 class="equipment-title">{{ $equipment->model_number }}</h1>
+            <h1 class="equipment-title">{{ trim(($equipment->brand ?? '') . ' | ' . ($equipment->model_number ?? '')) }}</h1>
             <div class="equipment-subtitle">{{ $equipment->equipmentType->name ?? 'Unknown Type' }} • {{ $equipment->serial_number }}</div>
 
             <div class="action-buttons mt-3">
