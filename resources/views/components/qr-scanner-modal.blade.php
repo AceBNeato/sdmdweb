@@ -180,7 +180,20 @@
 @endpush
 
 @push('scripts')
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    // Load html5-qrcode with CDN fallback and error detection
+    (function() {
+        var script = document.createElement('script');
+        script.src = 'https://unpkg.com/html5-qrcode';
+        script.onerror = function() {
+            console.warn('Failed to load html5-qrcode from CDN, falling back to local copy');
+            var fallback = document.createElement('script');
+            fallback.src = '{{ asset('js/vendor/html5-qrcode.min.js') }}';
+            document.head.appendChild(fallback);
+        };
+        document.head.appendChild(script);
+    })();
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById('qrScannerModal');
@@ -207,7 +220,11 @@
                     + '<div class="alert alert-warning mb-3">'
                     + '<h5 class="alert-heading">Camera scanner not available on this device</h5>'
                     + '<p class="mb-1">This browser cannot access the camera here (it requires HTTPS and a supported browser).</p>'
-                    + '<p class="mb-0">You can still scan using your phone\' + 's camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+                    + '<p class="mb-2">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+                    + '<div>'
+                    + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
+                    + '<a href="' + recommendedUrl + '/public/qr-scanner" class="btn btn-primary btn-sm">Try Public Scanner</a>'
+                    + '</div>'
                     + '</div>'
                     + '</div>';
                 return;
@@ -248,33 +265,71 @@
             scannerWrapper.style.display = 'block';
             scanResult.style.display = 'none';
 
+            requestCameraAndStart();
+        }
+
+        function requestCameraAndStart() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    stream.getTracks().forEach(track => track.stop()); // close test stream
+                    startHtml5QrScanner();
+                })
+                .catch(function(err) {
+                    console.warn('Camera permission denied:', err);
+                    scannerWrapper.style.display = 'none';
+                    scanResult.style.display = 'flex';
+                    const recommendedUrl = isSecure ? window.location.origin : ('https://' + window.location.host);
+                    scanResult.innerHTML = '<div class="text-center p-4">'
+                        + '<div class="alert alert-warning">'
+                        + '<h5 class="alert-heading">Camera access required</h5>'
+                        + '<p class="mb-2">Please allow camera access to scan QR codes.</p>'
+                        + '<div class="mb-3">'
+                        + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
+                        + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
+                        + '</div>'
+                        + '<p class="mb-0 text-muted">Or use your phone\'s camera app and open: <br><code>' + recommendedUrl + '/public/qr-scanner</code></p>'
+                        + '</div>'
+                        + '</div>';
+                });
+        }
+
+        function startHtml5QrScanner() {
             try {
-                // Only initialize if not already initialized
                 if (!html5QrCode) {
                     html5QrCode = new Html5Qrcode("reader");
                 }
-                
+
                 const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-                    const minEdgePercentage = 0.7; // 70%
+                    const minEdgePercentage = 0.8; // Larger scan area for better detection
                     const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
                     const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-                    return {
-                        width: qrboxSize,
-                        height: qrboxSize
-                    };
+                    return { width: qrboxSize, height: qrboxSize };
                 };
 
+                // Optimized config for older devices
                 const config = { 
-                    fps: 10,
-                    qrbox: qrboxFunction,
-                    aspectRatio: 1.0
+                    fps: 5, // Lower FPS for better performance
+                    qrbox: qrboxFunction, 
+                    aspectRatio: 1.0,
+                    disableFlip: false, // Allow image flipping for better detection
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true // Use native detector when available
+                    }
                 };
 
-                // Show the scanner UI
-                scannerWrapper.style.display = 'block';
-                scanResult.style.display = 'none';
+                // Show scanning hint for older devices
+                setTimeout(function() {
+                    if (html5QrCode && html5QrCode.isScanning) {
+                        const hint = document.createElement('div');
+                        hint.className = 'alert alert-info mt-2';
+                        hint.innerHTML = '<small><strong>Tip:</strong> Hold steady and ensure good lighting. If scanning takes too long, use your phone\'s camera app instead.</small>';
+                        const scannerContainer = document.querySelector('#reader');
+                        if (scannerContainer && scannerContainer.parentNode) {
+                            scannerContainer.parentNode.insertBefore(hint, scannerContainer.nextSibling);
+                        }
+                    }
+                }, 8000); // Show hint after 8 seconds
 
-                // Start the scanner
                 html5QrCode.start(
                     { facingMode: "environment" },
                     config,
@@ -282,14 +337,32 @@
                     onScanFailure
                 ).catch(err => {
                     console.error("Unable to start scanning", err);
-                    alert("Unable to start the camera. Please check your camera permissions.");
-                    stopScanner();
+                    showFallbackWithRetry("Unable to start the camera. Try using your phone's camera app instead.");
                 });
             } catch (err) {
                 console.error("Error initializing QR scanner:", err);
-                alert("Failed to initialize QR scanner. Please try again.");
-                stopScanner();
+                showFallbackWithRetry("Failed to initialize QR scanner. Your device may not support this feature.");
             }
+        }
+
+        function showFallbackWithRetry(message) {
+            scannerWrapper.style.display = 'none';
+            scanResult.style.display = 'flex';
+            const recommendedUrl = isSecure ? window.location.origin : ('https://' + window.location.host);
+            scanResult.innerHTML = '<div class="text-center p-4">'
+                + '<div class="alert alert-warning">'
+                + '<h5 class="alert-heading">Scanner Not Working</h5>'
+                + '<p class="mb-2">' + message + '</p>'
+                + '<div class="mb-3">'
+                + '<strong>Alternative:</strong> Use your phone\'s camera app to scan the QR code, then tap the link that appears.'
+                + '</div>'
+                + '<div class="mb-3">'
+                + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
+                + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
+                + '</div>'
+                + '<p class="mb-0 text-muted">Or open directly: <br><code>' + recommendedUrl + '/public/qr-scanner</code></p>'
+                + '</div>'
+                + '</div>';
         }
 
         function stopScanner() {

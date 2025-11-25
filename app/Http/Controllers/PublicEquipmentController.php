@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Equipment;
+use App\Models\Activity;
 
 class PublicEquipmentController extends Controller
 {
@@ -30,6 +31,9 @@ class PublicEquipmentController extends Controller
                     'message' => 'Equipment not found'
                 ]);
             }
+
+            // Log public scan (no user context)
+            Activity::logQrCodeScan($equipment, null);
 
             // Return public equipment data
             return response()->json([
@@ -69,6 +73,9 @@ class PublicEquipmentController extends Controller
                 'message' => 'Equipment not found'
             ]);
         }
+
+        // Log public scan (no user context)
+        Activity::logQrCodeScan($equipment, null);
 
         // Return public equipment data
         return response()->json([

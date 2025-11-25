@@ -433,6 +433,20 @@ class BackupService
                         }
 
                         if ($tableName) {
+                            // Whitelist allowed tables for security
+                            $allowedTables = [
+                                'equipment', 'users', 'categories', 'campuses', 'offices',
+                                'equipment_types', 'activities', 'password_reset_tokens',
+                                'failed_jobs', 'migrations', 'sessions', 'cache',
+                                'job_batches', 'telescope_entries', 'telescope_monitoring',
+                                'permissions', 'roles', 'role_user', 'permission_user',
+                                'equipment_history', 'personal_access_tokens'
+                            ];
+                            
+                            if (!in_array($tableName, $allowedTables)) {
+                                throw new \Exception('Invalid table name: ' . $tableName);
+                            }
+                            
                             $safeName = '`' . str_replace('`', '``', $tableName) . '`';
 
                             if (!isset($truncatedTables[$tableName])) {

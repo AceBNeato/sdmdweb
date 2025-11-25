@@ -40,6 +40,19 @@ $isStaff = $prefix === 'staff';
         console.log('QR Scanner Routes:', window.qrScannerRoutes);
         console.log('Current user prefix:', '{!! $prefix !!}');
     </script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        // Load html5-qrcode with CDN fallback and error detection
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+            script.onerror = function() {
+                console.warn('Failed to load html5-qrcode from CDN, falling back to local copy');
+                var fallback = document.createElement('script');
+                fallback.src = '{{ asset('js/vendor/html5-qrcode.min.js') }}';
+                document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
     <script src="{{ asset('js/qr-scanner.js') }}"></script>
 @endsection

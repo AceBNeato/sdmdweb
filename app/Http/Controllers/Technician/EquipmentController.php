@@ -922,7 +922,7 @@ class EquipmentController extends BaseController
 
         // Use the cached QR code service instead of external API
         $qrCodeService = app(\App\Services\QrCodeService::class);
-        $qrPath = $qrCodeService->generateQrCode($qrData, '300x300', 'png');
+        $qrPath = $qrCodeService->generateQrCode($qrData, '300x300', 'png', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use

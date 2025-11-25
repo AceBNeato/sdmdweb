@@ -48,6 +48,9 @@ Route::redirect('/home', '/');
 Route::prefix('public')->name('public.')->group(function () {
     Route::get('/qr-scanner', [PublicEquipmentController::class, 'scanner'])->name('qr-scanner');
     Route::post('/equipment/scan', [PublicEquipmentController::class, 'scanQrCode'])->name('equipment.scan');
+    Route::get('/qr-setup', function() {
+        return view('equipment.qr-setup-guide');
+    })->name('qr-setup');
 });
 
 // Email Verification Routes (public)

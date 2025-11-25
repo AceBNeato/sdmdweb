@@ -178,7 +178,8 @@ class EquipmentController extends Controller
         ];
 
         try {
-            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg');
+            // For user equipment, use public URL mode for maximum compatibility
+            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg', publicUrl: true);
             if ($qrPath) {
                 $equipment->update(['qr_code_image_path' => $qrPath]);
                 Log::info('QR code generated and saved for new equipment', [
@@ -238,7 +239,7 @@ class EquipmentController extends Controller
                     'status' => $equipment->status,
                 ];
 
-                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg');
+                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg', publicUrl: true);
 
                 if ($qrPath) {
                     $equipment->update(['qr_code_image_path' => $qrPath]);
@@ -988,8 +989,8 @@ class EquipmentController extends Controller
             'generated_at' => now()->toISOString(),
         ];
 
-        // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg');
+        // Use cached QR code service with public URL for stickers
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use

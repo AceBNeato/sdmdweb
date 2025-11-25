@@ -47,14 +47,25 @@ class RoleRedirectMiddleware
         // Get the current route prefix from the URL
         $currentRoutePrefix = $this->getCurrentRoutePrefix($request);
 
-        // If the prefixes don't match, redirect to the correct route
+        // If the prefixes don't match, force logout and redirect to login
         if ($currentPrefix && $currentRoutePrefix && $currentPrefix !== $currentRoutePrefix) {
-            $newUrl = $this->buildRedirectUrl($request, $currentRoutePrefix, $currentPrefix);
-            if ($newUrl) {
-                // Store the redirect reason in session for display
-                session()->flash('info', 'Your role has been updated. You have been redirected to the appropriate section.');
-                return redirect($newUrl);
+            // Store SweetAlert data before logout
+            session()->flash('swal', [
+                'icon' => 'warning',
+                'title' => 'Role Changed!',
+                'text' => 'Your role has been changed by an administrator. Please login again with your new role.',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
+            
+            // Force logout for security
+            if (auth()->check()) {
+                auth()->logout();
+                session()->invalidate();
+                session()->regenerateToken();
             }
+            
+            return redirect()->route('login');
         }
 
         return $next($request);

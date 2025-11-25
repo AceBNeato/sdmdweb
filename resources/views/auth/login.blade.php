@@ -168,6 +168,21 @@ particlesJS('particles-js', {
 </script>
 <script src="{{ asset('js/login.js') }}"></script>
 
+<!-- Show SweetAlert if role was changed -->
+@if(session('swal'))
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        icon: '{{ session('swal.icon') }}',
+        title: '{{ session('swal.title') }}',
+        text: '{{ session('swal.text') }}',
+        timer: {{ session('swal.timer') ?? 3000 }},
+        showConfirmButton: {{ session('swal.showConfirmButton') ? 'true' : 'false' }}
+    });
+});
+</script>
+@endif
+
 </body>
 
 </html>

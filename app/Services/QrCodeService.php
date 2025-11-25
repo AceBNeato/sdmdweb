@@ -19,11 +19,12 @@ class QrCodeService
      * @param array $data QR code data payload
      * @param string $size QR code dimensions (e.g., '200x200')
      * @param string $format Output format ('png' or 'svg')
+     * @param bool $publicUrl If true, encode a plain HTTPS URL for public scanning
      * @return string|null Path to cached QR code file or null on failure
      */
-    public function generateQrCode(array $data, string $size = '200x200', string $format = 'svg'): ?string
+    public function generateQrCode(array $data, string $size = '200x200', string $format = 'svg', bool $publicUrl = false): ?string
     {
-        $cacheKey = $this->getCacheKey($data, $size, $format);
+        $cacheKey = $this->getCacheKey($data, $size, $format, $publicUrl);
 
         // Check cache first
         if (Cache::has($cacheKey)) {
@@ -44,8 +45,17 @@ class QrCodeService
             [$width, $height] = explode('x', $size);
             $width = (int) $width;
 
-            // Encode data as JSON
-            $qrContent = json_encode($data);
+            // Choose content: URL for public, JSON for internal
+            if ($publicUrl && isset($data['equipment_id'])) {
+                $baseUrl = config('app.url');
+                // Ensure HTTPS for LAN use
+                if (!str_starts_with($baseUrl, 'https://')) {
+                    $baseUrl = 'https://' . parse_url($baseUrl, PHP_URL_HOST);
+                }
+                $qrContent = $baseUrl . '/public/qr-scanner?equipment_id=' . $data['equipment_id'];
+            } else {
+                $qrContent = json_encode($data);
+            }
 
             // Create QR code with v6 constructor (data as first param)
             $qrCode = new QrCode(
@@ -74,7 +84,8 @@ class QrCodeService
                 'cache_key' => $cacheKey,
                 'path' => $path,
                 'size' => $size,
-                'format' => $format
+                'format' => $format,
+                'public_url' => $publicUrl
             ]);
 
             return $path;
@@ -85,7 +96,8 @@ class QrCodeService
                 'trace' => $e->getTraceAsString(),
                 'data' => $data,
                 'size' => $size,
-                'format' => $format
+                'format' => $format,
+                'public_url' => $publicUrl
             ]);
         }
 
@@ -95,9 +107,10 @@ class QrCodeService
     /**
      * Generate cache key for QR code data
      */
-    private function getCacheKey(array $data, string $size, string $format): string
+    private function getCacheKey(array $data, string $size, string $format, bool $publicUrl = false): string
     {
-        return 'qr_code_' . md5(json_encode($data) . $size . $format);
+        $base = json_encode($data) . $size . $format . ($publicUrl ? '_url' : '');
+        return 'qr_code_' . md5($base);
     }
 
     /**

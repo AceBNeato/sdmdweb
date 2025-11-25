@@ -211,7 +211,8 @@ class EquipmentController extends Controller
         ];
 
         try {
-            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png');
+            // For staff equipment, use public URL mode for maximum compatibility
+            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png', publicUrl: true);
             if ($qrPath) {
                 $equipment->update(['qr_code_image_path' => $qrPath]);
                 Log::info('QR code generated and saved for new equipment', [
@@ -281,7 +282,7 @@ class EquipmentController extends Controller
                     'status' => $equipment->status,
                 ];
 
-                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png');
+                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png', publicUrl: true);
 
                 if ($qrPath) {
                     $equipment->update(['qr_code_image_path' => $qrPath]);
@@ -648,8 +649,8 @@ class EquipmentController extends Controller
             'created_at' => $equipment->created_at->toISOString(),
         ];
 
-        // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
+        // Use cached QR code service with public URL for stickers
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use
@@ -697,8 +698,8 @@ class EquipmentController extends Controller
             'created_at' => $equipment->created_at->toISOString(),
         ];
 
-        // Use cached QR code service
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png');
+        // Use cached QR code service with public URL for stickers
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';

@@ -200,12 +200,75 @@
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                 <i class='bx bx-x'></i> Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" onclick="handleUserUpdate(event, this)">
                 <i class='bx bx-save'></i> Update User
             </button>
         </div>
     </form>
 </div>
+
+<script>
+function handleUserUpdate(event, button) {
+    event.preventDefault();
+    
+    const form = button.closest('form');
+    const formData = new FormData(form);
+    const currentUserId = @json(auth()->check() ? auth()->id() : null);
+    const updatingUserId = @json($user->id);
+    
+    // Check if role is being changed for current user
+    const isCurrentUserRoleChange = currentUserId === updatingUserId;
+    
+    // Submit form via AJAX
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message || 'User updated successfully',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            // If current user's role was changed, force logout and reload
+            if (isCurrentUserRoleChange && data.logout_required) {
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '/login';
+                }, 2000);
+            } else {
+                // Close modal and reload page to show changes
+                const modal = bootstrap.Modal.getInstance(document.querySelector('#editUserModal'));
+                if (modal) modal.hide();
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: data.message || 'Failed to update user'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fallback to regular form submission
+        form.submit();
+    });
+}
+</script>
 
 <script>
 // Role permissions data

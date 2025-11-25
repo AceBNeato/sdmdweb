@@ -28,7 +28,9 @@ domReady(function () {
         container.innerHTML = '<div class="alert alert-warning">'
             + '<h5 class="alert-heading">Camera scanner not available on this device</h5>'
             + '<p class="mb-1">This browser cannot access the camera here (it requires HTTPS and a supported browser).</p>'
-            + '<p class="mb-0">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+            + '<p class="mb-2">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+            + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
+            + '<a href="' + recommendedUrl + '/public/qr-scanner" class="btn btn-primary btn-sm">Try Public Scanner</a>'
             + '</div>';
         return;
     }
@@ -42,11 +44,48 @@ domReady(function () {
         processScannedQrCode(decodeText);
     }
 
-    htmlscanner = new Html5QrcodeScanner(
-        "my-qr-reader",
-        { fps: 10, qrbox: 250 }
-    );
-    htmlscanner.render(onScanSuccess);
+    // Helper to request camera permissions and start scanner
+    function requestCameraAndStart() {
+        if (!hasMediaDevices) {
+            container.innerHTML = '<div class="alert alert-danger">Camera not supported on this device.</div>';
+            return;
+        }
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                stream.getTracks().forEach(track => track.stop()); // close test stream
+                startHtml5QrScanner();
+            })
+            .catch(function(err) {
+                console.warn('Camera permission denied:', err);
+                container.innerHTML = '<div class="alert alert-warning">'
+                    + '<h5 class="alert-heading">Camera access required</h5>'
+                    + '<p class="mb-2">Please allow camera access to scan QR codes.</p>'
+                    + '<div class="mb-3">'
+                    + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
+                    + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
+                    + '</div>'
+                    + '<p class="mb-0 text-muted">Or use your phone\'s camera app and open: <br><code>' + (isSecure ? window.location.origin : ("https://" + window.location.host)) + '/public/qr-scanner</code></p>'
+                    + '</div>';
+            });
+    }
+
+    function startHtml5QrScanner() {
+        htmlscanner = new Html5QrcodeScanner(
+            "my-qr-reader",
+            { 
+                fps: 5, // Lower FPS for better performance on older devices
+                qrbox: { width: 300, height: 300 }, // Larger scan area
+                disableFlip: false, // Allow flipping for better detection
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true // Use native detector when available
+                }
+            }
+        );
+        htmlscanner.render(onScanSuccess);
+    }
+
+    requestCameraAndStart();
 });
 
 // Function to process scanned QR code with backend

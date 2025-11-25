@@ -597,8 +597,8 @@ class UserController extends Controller
                     'success' => true,
                     'message' => '⚠️ Your role has been changed! You will be logged out and redirected to login.',
                     'alert_type' => 'warning',
-                    'redirect' => route('login'),
-                    'force_logout' => true,
+                    'redirect_url' => route('login'),
+                    'logout_required' => true,
                     'user' => [
                         'id' => $user->id,
                         'first_name' => $user->first_name,
@@ -613,7 +613,8 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully.',
-                'redirect' => route('accounts.index'),
+                'logout_required' => false,
+                'redirect_url' => route('accounts.index'),
                 'user' => [
                     'id' => $user->id,
                     'first_name' => $user->first_name,
