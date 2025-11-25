@@ -1046,9 +1046,9 @@ class EquipmentController extends BaseController
 
         // Auto-generate remarks based on equipment status
         $statusRemarks = [
-            'serviceable' => 'Equipment marked as serviceable',
-            'for_repair' => 'repair',
-            'defective' => 'Equipment marked as defective'
+            'serviceable' => 'Serviceable',
+            'for_repair' => 'Repair',
+            'defective' => 'Defective'
         ];
         $validated['remarks'] = $statusRemarks[$validated['equipment_status']] ?? '';
 
