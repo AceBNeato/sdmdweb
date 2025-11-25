@@ -13,6 +13,26 @@ function domReady(fn) {
 }
 
 domReady(function () {
+    const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    const isSecure = window.isSecureContext || window.location.protocol === "https:";
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+    const container = document.getElementById("my-qr-reader");
+
+    if (!container) {
+        return;
+    }
+
+    if (typeof Html5QrcodeScanner === "undefined" || !hasMediaDevices || (!isSecure && !isLocalhost)) {
+        const recommendedUrl = isSecure ? window.location.origin : ("https://" + window.location.host);
+        container.innerHTML = '<div class="alert alert-warning">'
+            + '<h5 class="alert-heading">Camera scanner not available on this device</h5>'
+            + '<p class="mb-1">This browser cannot access the camera here (it requires HTTPS and a supported browser).</p>'
+            + '<p class="mb-0">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+            + '</div>';
+        return;
+    }
+
     // If found your qr code
     function onScanSuccess(decodeText, decodeResult) {
         // Stop the scanner after successful scan

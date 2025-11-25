@@ -190,11 +190,28 @@
         const scanResult = document.getElementById('scan-result');
         let html5QrCode = null;
 
+        const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        const isSecure = window.isSecureContext || window.location.protocol === 'https:';
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const scannerSupported = typeof Html5Qrcode !== 'undefined' && hasMediaDevices && (isSecure || isLocalhost);
+
         // Only initialize when the modal is shown
         modal.addEventListener('show.bs.modal', function() {
             // Reset UI state
             scannerWrapper.style.display = 'none';
             scanResult.style.display = 'flex';
+
+            if (!scannerSupported) {
+                const recommendedUrl = isSecure ? window.location.origin : ('https://' + window.location.host);
+                scanResult.innerHTML = '<div class="text-center p-4 w-100">'
+                    + '<div class="alert alert-warning mb-3">'
+                    + '<h5 class="alert-heading">Camera scanner not available on this device</h5>'
+                    + '<p class="mb-1">This browser cannot access the camera here (it requires HTTPS and a supported browser).</p>'
+                    + '<p class="mb-0">You can still scan using your phone\' + 's camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
+                    + '</div>'
+                    + '</div>';
+                return;
+            }
             
             // Initialize event listeners
             startBtns.forEach(btn => {
@@ -222,6 +239,12 @@
         });
 
         function startScanner() {
+            if (!scannerSupported) {
+                const recommendedUrl = isSecure ? window.location.origin : ('https://' + window.location.host);
+                alert('Camera scanner is not available on this device/browser. Please use your camera or any QR app and open ' + recommendedUrl + ' in your browser.');
+                return;
+            }
+
             scannerWrapper.style.display = 'block';
             scanResult.style.display = 'none';
 
