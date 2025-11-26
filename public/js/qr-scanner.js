@@ -133,14 +133,14 @@ function processScannedQrCode(qrData) {
         body: JSON.stringify({ qr_data: qrData })
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
+        const status = response.status;
+        return response.json()
+            .then(data => ({ status, data }))
+            .catch(() => ({ status, data: {} }));
     })
-    .then(data => {
-        if (data.success) {
-            // Display equipment details
+    .then(({ status, data }) => {
+        if (status === 200 && data.success) {
+            // Display equipment detailss
             document.getElementById('my-qr-reader').innerHTML = `
                 <div class="alert alert-success">
                     <h5 class="alert-heading">Equipment Found!</h5>
@@ -164,16 +164,47 @@ function processScannedQrCode(qrData) {
                 </div>
             `;
         } else {
-            // Show error with SweetAlert
-            Swal.fire({
-                icon: 'error',
-                title: 'Scan Failed',
-                text: data.message || 'Unable to locate equipment for this QR code.',
-                confirmButtonText: 'Try Again',
-                confirmButtonColor: '#3085d6'
+            if (window.qrScannerRoutes && window.qrScannerRoutes.isStaff && status === 403) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Equipment Not In Your Office',
+                    text: data.message || 'This equipment is not assigned to your office. You can only scan equipment from your own office.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
                 }).then(() => {
                     resetScanner();
                 });
+            } else if (status === 404) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Equipment Not Found',
+                    text: data.message || 'No equipment record was found for this QR code.',
+                    confirmButtonText: 'Try Again',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    resetScanner();
+                });
+            } else if (status === 400) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid QR Code',
+                    text: data.message || 'The scanned QR code format is not recognized.',
+                    confirmButtonText: 'Try Again',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    resetScanner();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Scan Failed',
+                    text: data.message || 'Unable to locate equipment for this QR code.',
+                    confirmButtonText: 'Try Again',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    resetScanner();
+                });
+            }
         }
     })
     .catch(error => {

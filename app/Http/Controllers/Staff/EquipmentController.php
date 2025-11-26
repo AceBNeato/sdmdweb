@@ -199,10 +199,11 @@ class EquipmentController extends Controller
         // Log the activity using new method
         Activity::logEquipmentCreation($equipment);
 
-        // Generate and save QR code using optimized service
+        // Generate and save QR code using unified URL-based format for all roles
         $qrData = [
-            'id' => $equipment->id,
-            'type' => 'equipment',
+            'type' => 'equipment_url',
+            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
             'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
@@ -273,8 +274,9 @@ class EquipmentController extends Controller
         if (!$equipment->qr_code_image_path || !Storage::disk('public')->exists($equipment->qr_code_image_path)) {
             try {
                 $qrData = [
-                    'id' => $equipment->id,
-                    'type' => 'equipment',
+                    'type' => 'equipment_url',
+                    'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+                    'equipment_id' => $equipment->id,
                     'model_number' => $equipment->model_number,
                     'serial_number' => $equipment->serial_number,
                     'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
@@ -469,9 +471,11 @@ class EquipmentController extends Controller
                 $parsedUrl = parse_url($qrData);
                 if (isset($parsedUrl['query'])) {
                     parse_str($parsedUrl['query'], $queryParams);
-                    if (isset($queryParams['id'])) {
+                    $equipmentId = $queryParams['equipment_id'] ?? $queryParams['id'] ?? null;
+
+                    if ($equipmentId) {
                         $equipment = Equipment::with('office', 'equipmentType')
-                            ->find($queryParams['id']);
+                            ->find($equipmentId);
 
                         if (!$equipment) {
                             return response()->json([
@@ -635,16 +639,16 @@ class EquipmentController extends Controller
             $equipment->save();
         }
 
-        // Prepare QR data for viewing
+        // Prepare QR data for unified viewing format (URL-based, shared with admin/technician/public)
         $qrData = [
-            'id' => $equipment->id,
-            'type' => 'equipment',
+            'type' => 'equipment_url',
+            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
             'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
-            'url' => route('staff.equipment.show', $equipment),
             'qr_code' => $equipment->qr_code,
             'created_at' => $equipment->created_at->toISOString(),
         ];
@@ -684,16 +688,16 @@ class EquipmentController extends Controller
             $equipment->save();
         }
 
-        // Prepare QR data for printing
+        // Prepare QR data for printing (same unified format used everywhere)
         $qrData = [
-            'id' => $equipment->id,
-            'type' => 'equipment',
+            'type' => 'equipment_url',
+            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
             'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
-            'url' => route('staff.equipment.show', $equipment),
             'qr_code' => $equipment->qr_code,
             'created_at' => $equipment->created_at->toISOString(),
         ];

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Equipment Details</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="{{ asset('css/equipment.css') }}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
@@ -72,23 +73,26 @@
                     }
 
                     const eq = data.equipment;
-                    content.innerHTML = '
+                    const status = (eq.status || 'available').toLowerCase();
+                    const statusClass = 'status-' + status.replace(' ', '_');
+
+                    content.innerHTML = `
                         <div class="mb-3 text-center">
-                            <h4 class="mb-1">' + (eq.model_number || 'Unknown Model') + '</h4>
-                            <p class="text-muted mb-0">Serial: ' + (eq.serial_number || 'N/A') + '</p>
+                            <h4 class="mb-1">${eq.model_number || 'Unknown Model'}</h4>
+                            <p class="text-muted mb-0">Serial: ${eq.serial_number || 'N/A'}</p>
                         </div>
                         <hr>
                         <dl class="row mb-0">
                             <dt class="col-sm-4">Equipment Type</dt>
-                            <dd class="col-sm-8">' + (eq.equipment_type || 'Unknown') + '</dd>
+                            <dd class="col-sm-8">${eq.equipment_type || 'Unknown'}</dd>
 
                             <dt class="col-sm-4">Status</dt>
-                            <dd class="col-sm-8"><span class="badge bg-secondary">' + (eq.status || 'Unknown') + '</span></dd>
+                            <dd class="col-sm-8"><span class="badge ${statusClass}">${eq.status || 'Unknown'}</span></dd>
 
                             <dt class="col-sm-4">Office</dt>
-                            <dd class="col-sm-8">' + (eq.office || 'N/A') + '</dd>
+                            <dd class="col-sm-8">${eq.office || 'N/A'}</dd>
                         </dl>
-                    ';
+                    `;
                 })
                 .catch(function(err) {
                     console.error('Public equipment scan failed:', err);

@@ -18,19 +18,30 @@
                     @php
                         $user = auth()->user();
                         $prefix = '';
-                        if ($user->role?->name === 'technician') {
-                            $roleName = 'Technician';
-                            $loginUrl = route('technician.login');
-                        } elseif ($user->role?->name === 'staff') {
-                            $prefix = 'staff';
-                        } elseif ($user->is_admin) {
-                            $prefix = 'admin';
+
+                        $hasEquipment = false;
+                        $hasReports = false;
+                        $hasOffices = false;
+                        $hasSystemLogs = false;
+                        $hasAccounts = false;
+
+                        if ($user) {
+                            $roleName = $user->role && $user->role->name ? $user->role->name : null;
+
+                            if ($roleName === 'technician') {
+                                $prefix = 'technician';
+                            } elseif ($roleName === 'staff') {
+                                $prefix = 'staff';
+                            } elseif (!empty($user->is_admin)) {
+                                $prefix = 'admin';
+                            }
+
+                            $hasEquipment = $user->hasPermissionTo('equipment.view');
+                            $hasReports = $user->hasPermissionTo('reports.view');
+                            $hasOffices = $user->hasPermissionTo('settings.manage') && $prefix === 'admin';
+                            $hasSystemLogs = $user->hasPermissionTo('system.logs.view') && $prefix === 'admin';
+                            $hasAccounts = $user->hasPermissionTo('users.view');
                         }
-                        $hasEquipment = $user && $user->hasPermissionTo('equipment.view');
-                        $hasReports = $user && $user->hasPermissionTo('reports.view');
-                        $hasOffices = $user && $user->hasPermissionTo('settings.manage') && $prefix === 'admin';
-                        $hasSystemLogs = $user && $user->hasPermissionTo('system.logs.view') && $prefix === 'admin';
-                        $hasAccounts = $user && $user->hasPermissionTo('users.view');
                     @endphp
                     @if($hasEquipment)
                         <a href="{{ $prefix === 'admin' ? url('/admin/equipment') : route($prefix . '.equipment.index') }}" class="btn btn-primary me-2">Go to Equipment</a>

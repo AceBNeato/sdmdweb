@@ -847,9 +847,11 @@ class EquipmentController extends BaseController
             $parsedUrl = parse_url($qrData);
             if (isset($parsedUrl['query'])) {
                 parse_str($parsedUrl['query'], $queryParams);
-                if (isset($queryParams['id'])) {
+                $equipmentId = $queryParams['equipment_id'] ?? $queryParams['id'] ?? null;
+
+                if ($equipmentId) {
                     $equipment = Equipment::with('office')
-                        ->find($queryParams['id']);
+                        ->find($equipmentId);
 
                     if (!$equipment) {
                         return response()->json([

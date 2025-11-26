@@ -244,6 +244,12 @@
 
     @include('layouts.session-lock-modal')
 
+    <!-- User status checker (auto-logout on deactivation) -->
+    <script src="{{ asset('js/user-status-check.js') }}" defer></script>
+
+    <!-- System updates checker (silent auto-reload on new Activity logs) -->
+    <script src="{{ asset('js/system-updates-check.js') }}" defer></script>
+
     @php
         $isTechnician = auth('technician')->check();
         $isStaff = auth('staff')->check();

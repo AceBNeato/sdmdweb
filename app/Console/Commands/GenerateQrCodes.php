@@ -61,10 +61,10 @@ class GenerateQrCodes extends Command
         
         foreach ($equipments as $equipment) {
             try {
-                // Generate QR code data
+                // Generate QR code data (unified URL-based format)
                 $qrData = [
                     'type' => 'equipment_url',
-                    'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+                    'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
                     'equipment_id' => $equipment->id,
                     'model_number' => $equipment->model_number,
                     'serial_number' => $equipment->serial_number,
@@ -73,8 +73,8 @@ class GenerateQrCodes extends Command
                     'status' => $equipment->status,
                 ];
                 
-                // Generate QR code
-                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg');
+                // Generate QR code using the shared local generator (URL-based format)
+                $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg', publicUrl: true);
                 
                 if ($qrPath) {
                     $equipment->update(['qr_code_image_path' => $qrPath]);

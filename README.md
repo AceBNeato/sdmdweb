@@ -95,6 +95,7 @@ php artisan serve
 | `php artisan storage:link` | **Important:** expose `storage/app/public` via `public/storage` |
 | `php artisan queue:work` | Run queued jobs (if using notifications or async tasks) |
 | `php artisan optimize:clear` | Clear config, route, view caches |
+| `php artisan config:clear && php artisan cache:clear` |
 | `npm run dev` | Watch + hot reload assets |
 | `npm run build` | Compile & minify production assets |
 

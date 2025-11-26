@@ -51,12 +51,12 @@
                     </form>
                 @endif
 
-                @if(Route::has($prefix . '.equipment.qrcode'))
-                    <a href="{{ route($prefix . '.equipment.qrcode', $equipment) }}"
+                @if(Route::has($prefix . '.equipment.print-qrcodes.pdf'))
+                    <a href="{{ route($prefix . '.equipment.print-qrcodes.pdf', ['equipment_ids' => $equipment->id]) }}"
                        class="btn btn-primary"
                        target="_blank"
-                       title="Download / Print QR Code">
-                        <i class='bx bx-printer me-1'></i> DOWNLOAD / PRINT QR CODE
+                       title="Print QR Code">
+                        <i class='bx bx-printer me-1'></i> PRINT QR CODE
                     </a>
                 @endif
             </div>

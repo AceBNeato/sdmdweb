@@ -656,9 +656,13 @@ class Activity extends Model
     public static function logQrCodeScan($equipment, $scannedBy = null)
     {
         $actor = $scannedBy ?? auth()->user();
-        
+
+        if (!$actor) {
+            return null;
+        }
+
         return self::create([
-            'user_id' => $actor?->id,
+            'user_id' => $actor->id,
             'type' => 'equipment_scanned',
             'description' => sprintf(
                 'Scanned QR code for equipment: %s %s (%s)',

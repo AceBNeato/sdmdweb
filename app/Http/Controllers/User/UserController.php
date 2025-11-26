@@ -669,17 +669,37 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'You do not have permission to edit admin users.'], 403);
+            }
             return redirect()->route('admin.accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
+        $wasActive = $user->is_active;
         $user->update(['is_active' => !$user->is_active]);
 
         // Log status toggle to activities table
         Activity::logUserStatusToggle($user);
 
+        if ($wasActive && !$user->is_active) {
+            \Log::info('User deactivated, force logging out', ['user_id' => $user->id, 'email' => $user->email]);
+            $this->forceUserLogout($user);
+        }
+
         $status = $user->is_active ? 'activated' : 'deactivated';
-        return redirect()->back()->with('success', "User {$status} successfully.");
+        $message = "User {$status} successfully.";
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'user_id' => $user->id,
+                'is_active' => $user->is_active
+            ]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**
@@ -697,5 +717,38 @@ class UserController extends Controller
 
         $status = $user->is_admin ? 'granted admin privileges' : 'revoked admin privileges';
         return redirect()->back()->with('success', "User {$status} successfully.");
+    }
+
+    /**
+     * Check current user's active status (for AJAX polling)
+     */
+    public function checkStatus()
+    {
+        $guards = ['web', 'staff', 'technician'];
+        $user = null;
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                break;
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['logged_out' => true], 401);
+        }
+
+        $isActive = (bool) $user->is_active;
+
+        if (!$isActive) {
+            // Force logout on backend if inactive
+            $this->forceUserLogout($user);
+        }
+
+        return response()->json([
+            'is_active' => $isActive,
+            'user_id' => $user->id,
+            'email' => $user->email
+        ]);
     }
     }

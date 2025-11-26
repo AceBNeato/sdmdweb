@@ -2,6 +2,7 @@
 
 @push('styles')
   <link href="{{ asset('css/equipment.css') }}" rel="stylesheet">
+  <link href="{{ asset('css/equipment-print-qrcodes.css') }}" rel="stylesheet">
 @endpush
 
 @push('scripts')

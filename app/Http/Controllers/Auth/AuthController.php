@@ -167,6 +167,21 @@ class AuthController extends Controller
                 ]);
             }
 
+            // Block deactivated accounts immediately (applies to all guards)
+            if (!$user->is_active) {
+                RateLimiter::hit($throttleKey);
+                $newAttempts = RateLimiter::attempts($throttleKey);
+                $newRemaining = max(0, 3 - $newAttempts);
+
+                return back()->withErrors([
+                    'email' => 'Account has been deactivated. Please contact the SDMD administrator.',
+                ])->withInput($request->only('email'))->with([
+                    'remaining_attempts' => $newRemaining,
+                    'lockout' => $newRemaining === 0,
+                    'remaining_seconds' => $newRemaining === 0 ? RateLimiter::availableIn($throttleKey) : null,
+                ]);
+            }
+
             // Check if user is an admin - reject them from this login page but count as attempt
             if ($user->is_admin) {
                 // Still increment the attempts for security

@@ -309,4 +309,21 @@ class SystemLogController extends BaseController
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
+
+    /**
+     * Lightweight endpoint for AJAX polling to detect new system changes.
+     * Returns the latest Activity ID and whether it is newer than the provided last_id.
+     */
+    public function checkUpdates(Request $request)
+    {
+        // Get the highest activity ID as a cheap "change token"
+        $latestId = Activity::max('id') ?? 0;
+
+        $lastId = (int) $request->query('last_id', 0);
+
+        return response()->json([
+            'latest_id' => $latestId,
+            'has_updates' => $latestId > $lastId,
+        ]);
+    }
 }

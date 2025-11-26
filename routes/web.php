@@ -32,6 +32,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\EmailVerificationController;
+use App\Http\Controllers\User\SystemLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,6 +90,12 @@ Route::prefix('email')->name('email.')->group(function () {
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
+// Session status check for auto-logout (works for any guard)
+Route::get('/session/check-status', [UserController::class, 'checkStatus'])->name('session.check-status');
+
+// System updates check (used by system-updates-check.js for silent page reloads)
+Route::get('/system/check-updates', [SystemLogController::class, 'checkUpdates'])->name('system.check-updates');
+
 Route::middleware(['guest'])->group(function () {
     // Unified Login
     Route::get('/login', [\App\Http\Controllers\Auth\AuthController::class, 'showLoginForm'])
@@ -334,6 +341,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/{user}/toggle-status', [\App\Http\Controllers\User\UserController::class, 'toggleStatus'])
             ->name('toggle-status')
             ->middleware('permission:users.edit');
+        Route::get('/check-status', [\App\Http\Controllers\User\UserController::class, 'checkStatus'])
+            ->name('check-status');
     });
 });
 

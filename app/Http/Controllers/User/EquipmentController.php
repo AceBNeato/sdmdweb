@@ -168,7 +168,7 @@ class EquipmentController extends Controller
         // Generate and save QR code using optimized service
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
@@ -230,7 +230,7 @@ class EquipmentController extends Controller
             try {
                 // Generate QR code with URL that opens public scanner
                 $qrData = [
-                    'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+                    'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
                     'equipment_id' => $equipment->id,
                     'model' => $equipment->equipment_model, // Use concatenated brand + model_number
                     'serial' => $equipment->serial_number,
@@ -1015,7 +1015,7 @@ class EquipmentController extends Controller
         // Prepare QR data for viewing (Admin uses URL-based QR codes for public scanner)
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?id=' . $equipment->id,
+            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model' => $equipment->equipment_model, // Use concatenated brand + model_number
             'serial' => $equipment->serial_number,

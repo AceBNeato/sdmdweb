@@ -73,7 +73,7 @@ body {
 
 .status-for-repair {
     background-color: #fef3c7;
-    color: #d97706;
+    color: #d97706 !important;
     border: 1px solid #fde68a;
 }
 
@@ -103,13 +103,13 @@ body {
 
 .status-for_repair {
     background-color: #fef3c7;
-    color: #d97706;
+    color: #d97706 !important;
     border: 1px solid #fde68a;
 }
 
 .status-defective {
     background-color: #fee2e2;
-    color: #dc2626;
+    color: #dc2626  !important;
     border: 1px solid #fecaca;
 }
 
@@ -121,7 +121,7 @@ body {
 
 .status-not-working {
     background-color: #fee2e2;
-    color: #dc2626;
+    color: #dc2626 !important;
     border: 1px solid #fecaca;
 }
 
@@ -856,14 +856,13 @@ body {
 
 
 
+
+
 .equipment-header {
     padding: 2rem;
 }
 
-
-.row{
-    display: flex;
-    flex-direction: row !important;
+.equipment-header .row{
     margin-bottom: 1rem;
 }
 

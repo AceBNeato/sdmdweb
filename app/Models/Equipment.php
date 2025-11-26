@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -140,19 +139,23 @@ class Equipment extends Model
      */
     public function generateQrCode($size = 300)
     {
-        $data = [
-            'id' => $this->id,
-            'model' => $this->equipment_model, // Use concatenated brand + model_number
-            'serial' => $this->serial_number,
-            'type' => $this->equipmentType?->name ?? 'Unknown',
+        // Use the shared local QR code service so all QR codes are generated consistently
+        $qrCodeService = app(\App\Services\QrCodeService::class);
+
+        $qrData = [
+            'type' => 'equipment_url',
+            'equipment_id' => $this->id,
+            'model_number' => $this->model_number,
+            'serial_number' => $this->serial_number,
+            'equipment_type' => $this->equipmentType?->name ?? 'Unknown',
             'office' => $this->office?->name ?? 'N/A',
             'status' => $this->status,
-            'last_updated' => now()->toDateTimeString()
         ];
 
-        return QrCode::size($size)
-            ->format('svg')
-            ->generate(json_encode($data));
+        $sizeString = $size . 'x' . $size;
+
+        // Returns the storage path to the generated QR image (PNG)
+        return $qrCodeService->generateQrCode($qrData, $sizeString, 'png', publicUrl: true);
     }
 
     /**
