@@ -160,6 +160,9 @@ class EquipmentController extends Controller
             $validated['condition'] = 'good';   
         }
 
+        // Track who added this equipment to the office so DB triggers can attribute correctly
+        $validated['assigned_by_id'] = auth()->id();
+
         $equipment = Equipment::create($validated);
 
         // Log the activity using new method

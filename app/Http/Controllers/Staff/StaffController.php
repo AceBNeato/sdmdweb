@@ -170,7 +170,7 @@ class StaffController extends Controller
             'employee_id' => 'nullable|string|max:50',
             'skills' => 'nullable|string',
             'is_active' => 'nullable|boolean',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
 
         // Manually check if email is already used by another staff member
@@ -196,6 +196,8 @@ class StaffController extends Controller
                 'has_file' => $request->hasFile('profile_photo'),
                 'validated_data' => $validated
             ]);
+
+            $photoUpdated = false;
 
             // Handle profile image upload
             if ($request->hasFile('profile_photo')) {
@@ -228,6 +230,7 @@ class StaffController extends Controller
                 $file->move($destination, $filename);
                 $validated['profile_photo'] = 'profile-photos/' . $filename;
                 Log::info('New profile photo stored', ['path' => $filename]);
+                $photoUpdated = true;
             } else {
                 Log::info('No profile photo file in request');
             }
@@ -277,6 +280,10 @@ class StaffController extends Controller
                 'type' => 'profile_updated',
                 'description' => 'Staff profile updated',
             ]);
+
+            if ($photoUpdated) {
+                Activity::logProfilePhotoUpdate($user);
+            }
 
             DB::commit();
             Log::info('Transaction committed successfully');

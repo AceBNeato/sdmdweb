@@ -126,7 +126,7 @@ class TechnicianController extends Controller
             'current_password' => 'nullable|string',
             'new_password' => 'nullable|string|min:8',
             'new_password_confirmation' => 'nullable|string|min:8|same:new_password',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
 
         DB::beginTransaction();
@@ -148,6 +148,8 @@ class TechnicianController extends Controller
                 'has_file' => $request->hasFile('profile_photo'),
                 'validated_data' => $validated,
             ]);
+
+            $photoUpdated = false;
 
             // Handle profile image upload
             if ($request->hasFile('profile_photo')) {
@@ -180,6 +182,7 @@ class TechnicianController extends Controller
                 $file->move($destination, $filename);
                 $validated['profile_photo'] = 'profile-photos/' . $filename;
                 Log::info('New technician profile photo stored', ['path' => $filename]);
+                $photoUpdated = true;
             } else {
                 Log::info('No technician profile photo file in request');
             }
@@ -227,6 +230,10 @@ class TechnicianController extends Controller
                 'type' => 'profile_updated',
                 'description' => 'Technician profile updated',
             ]);
+
+            if ($photoUpdated) {
+                Activity::logProfilePhotoUpdate($user);
+            }
 
             DB::commit();
             Log::info('Technician profile transaction committed successfully');

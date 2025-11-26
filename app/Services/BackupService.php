@@ -407,6 +407,11 @@ class BackupService
             // Disable foreign key checks so we can freely truncate and insert
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 
+            // Suppress activity-writing triggers during restore so that we only
+            // restore Activity rows from the backup and do not generate new ones
+            // via triggers like office_equipment_count_trigger.
+            $pdo->exec('SET @SDMD_SUPPRESS_ACTIVITY = 1');
+
             // Replay only INSERT statements from the backup file line by line
             $statement = '';
             $truncatedTables = [];
@@ -487,7 +492,8 @@ class BackupService
                 }
             }
 
-            // Re-enable foreign key checks
+            // Re-enable activity triggers and foreign key checks
+            $pdo->exec('SET @SDMD_SUPPRESS_ACTIVITY = 0');
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
         } catch (\Throwable $exception) {

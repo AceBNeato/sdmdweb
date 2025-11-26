@@ -37,8 +37,8 @@
             }
 
             if (data.has_updates) {
-                // Silent reload to pick up new changes (existing SweetAlerts stay as-is)
-                window.location.reload();
+                // Advance baseline to pick up new changes
+                lastActivityId = latestId;
             } else if (latestId > lastActivityId) {
                 // No reload requested, but advance baseline to avoid false positives
                 lastActivityId = latestId;

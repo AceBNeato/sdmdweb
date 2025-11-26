@@ -651,6 +651,46 @@ class Activity extends Model
     }
 
     /**
+     * Log profile photo update activity
+     */
+    public static function logProfilePhotoUpdate($user, $updatedBy = null)
+    {
+        $actor = $updatedBy ?? auth()->user();
+
+        // Try to infer a simple role label for the description
+        $roleLabel = 'User';
+        if (method_exists($user, 'hasRole')) {
+            if ($user->hasRole('technician')) {
+                $roleLabel = 'Technician';
+            } elseif ($user->hasRole('staff')) {
+                $roleLabel = 'Staff';
+            } elseif ($user->hasRole('admin') || ($user->is_admin ?? false)) {
+                $roleLabel = 'Admin';
+            }
+        } elseif (property_exists($user, 'is_admin') && $user->is_admin) {
+            $roleLabel = 'Admin';
+        }
+
+        $description = sprintf('%s profile photo updated', $roleLabel);
+
+        // If someone else updated this user's photo, note it in the description
+        if ($actor && $actor->id !== $user->id) {
+            $description .= sprintf(
+                ' by %s %s (%s)',
+                $actor->first_name ?? '',
+                $actor->last_name ?? '',
+                $actor->email ?? ''
+            );
+        }
+
+        return self::create([
+            'user_id' => $user->id,
+            'type' => 'profile_photo_updated',
+            'description' => $description,
+        ]);
+    }
+
+    /**
      * Log QR code scan activity
      */
     public static function logQrCodeScan($equipment, $scannedBy = null)

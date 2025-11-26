@@ -208,7 +208,7 @@ class AdminController extends Controller
             'current_password' => 'nullable|string',
             'new_password' => 'nullable|string|min:8',
             'new_password_confirmation' => 'nullable|string|min:8|same:new_password',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
 
         try {
@@ -233,6 +233,8 @@ class AdminController extends Controller
                 'skills' => $validated['skills'] ?? null,
             ];
 
+            $photoUpdated = false;
+
             // Handle profile photo upload
             if ($request->hasFile('profile_photo')) {
                 try {
@@ -247,6 +249,7 @@ class AdminController extends Controller
                     
                     $file->move($destination, $filename);
                     $updateData['profile_photo'] = 'profile-photos/' . $filename;
+                    $photoUpdated = true;
                 } catch (\Exception $e) {
                     \Log::error('Profile photo upload error: ' . $e->getMessage(), [
                         'user_id' => $user->id,
@@ -278,6 +281,10 @@ class AdminController extends Controller
                 'type' => 'profile_updated',
                 'description' => 'Admin profile updated',
             ]);
+
+            if ($photoUpdated) {
+                Activity::logProfilePhotoUpdate($user);
+            }
 
             return back()->with('success', 'Profile updated successfully.');
         } catch (\Exception $e) {

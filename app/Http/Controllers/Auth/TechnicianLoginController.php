@@ -162,7 +162,7 @@ class TechnicianLoginController extends Controller
             'employee_id' => 'nullable|string|max:50',
             'skills' => 'nullable|string',
             'is_active' => 'nullable|boolean',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
 
         DB::beginTransaction();

@@ -312,12 +312,48 @@ class SystemLogController extends BaseController
 
     /**
      * Lightweight endpoint for AJAX polling to detect new system changes.
-     * Returns the latest Activity ID and whether it is newer than the provided last_id.
+     * Returns the latest *mutating* Activity ID (create/update/delete/etc.) and
+     * whether it is newer than the provided last_id.
      */
     public function checkUpdates(Request $request)
     {
-        // Get the highest activity ID as a cheap "change token"
-        $latestId = Activity::max('id') ?? 0;
+        // Only consider mutating actions (creates, updates, deletes, assignments, etc.)
+        // so that read-only events like QR scans or logins do NOT trigger reloads.
+        $mutatingTypes = [
+            // User account changes
+            'user_created',
+            'user_updated',
+            'user_deleted',
+            'user_status_toggled',
+            'user_role_changed',
+            'password_changed',
+            'profile_photo_updated',
+
+            // Equipment & history changes
+            'equipment_created',
+            'equipment_updated',
+            'equipment_deleted',
+            'equipment_assigned',
+            'equipment_unassigned',
+            'equipment_history_created',
+            'equipment_history_updated',
+            'equipment_history_corrected',
+
+            // Maintenance records
+            'maintenance_created',
+            'maintenance_updated',
+            'maintenance_deleted',
+
+            // Offices / campuses / categories
+            'office_created', 'office_updated', 'office_deleted',
+            'campus_created', 'campus_updated', 'campus_deleted',
+            'category_created', 'category_updated', 'category_deleted',
+
+            // Settings & generic system changes
+            'settings_updated',
+        ];
+
+        $latestId = Activity::whereIn('type', $mutatingTypes)->max('id') ?? 0;
 
         $lastId = (int) $request->query('last_id', 0);
 

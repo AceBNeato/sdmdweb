@@ -379,7 +379,8 @@ return new class extends Migration
                 AFTER UPDATE ON users
                 FOR EACH ROW
                 BEGIN
-                    IF OLD.is_active != NEW.is_active OR OLD.role_id != NEW.role_id THEN
+                    IF (OLD.is_active != NEW.is_active OR OLD.role_id != NEW.role_id)
+                       AND (@SDMD_SUPPRESS_ACTIVITY IS NULL OR @SDMD_SUPPRESS_ACTIVITY = 0) THEN
                         INSERT INTO activities (user_id, type, description, created_at)
                         VALUES (
                             NEW.id,
@@ -407,7 +408,8 @@ return new class extends Migration
                 AFTER INSERT ON equipment
                 FOR EACH ROW
                 BEGIN
-                    IF NEW.office_id IS NOT NULL THEN
+                    IF NEW.office_id IS NOT NULL
+                       AND (@SDMD_SUPPRESS_ACTIVITY IS NULL OR @SDMD_SUPPRESS_ACTIVITY = 0) THEN
                         INSERT INTO activities (user_id, type, description, created_at)
                         VALUES (
                             COALESCE(NEW.assigned_by_id, 1),
@@ -427,7 +429,8 @@ return new class extends Migration
                 AFTER UPDATE ON equipment
                 FOR EACH ROW
                 BEGIN
-                    IF OLD.category_id != NEW.category_id AND NEW.category_id IS NOT NULL THEN
+                    IF OLD.category_id != NEW.category_id AND NEW.category_id IS NOT NULL
+                       AND (@SDMD_SUPPRESS_ACTIVITY IS NULL OR @SDMD_SUPPRESS_ACTIVITY = 0) THEN
                         INSERT INTO activities (user_id, type, description, created_at)
                         VALUES (
                             COALESCE(NEW.assigned_by_id, 1),
