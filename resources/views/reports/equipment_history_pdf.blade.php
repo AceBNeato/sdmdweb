@@ -183,101 +183,175 @@
             background-color: #cce7ff;
             color: #0066cc;
         }
+        
+        @media print {
+            .page-number {
+                position: fixed;
+                bottom: 0.5in;
+                right: 0.5in;
+                font-size: 10px;
+                color: #333;
+            }
+            
+            .page-number::after {
+                content: counter(page);
+            }
+            
+            .page-number::before {
+                content: "Page ";
+            }
+            
+            body {
+                counter-reset: page;
+            }
+            .page {
+                page-break-after: always;
+                counter-increment: page;
+                display: table;
+                width: 100%;
+                height: 100vh;
+            }
+            
+            .page:last-child {
+                page-break-after: auto;
+            }
+            
+            .page-header {
+                display: table-header-group;
+                background-color: #fff;
+                padding: 15px 0.25in;
+                border-bottom: 2px solid #000;
+                font-size: 14pt;
+                font-weight: bold;
+                text-align: center;
+            }
+            
+            .page-footer {
+                display: table-footer-group;
+                background-color: #fff;
+                padding: 10px 0.25in;
+                border-top: 1px solid #000;
+                font-size: 10pt;
+                color: #666;
+                text-align: center;
+            }
+            
+            .page-content {
+                display: table-row-group;
+                padding: 20px 0.25in;
+            }
+            
+            .header-repeat, .footer {
+                display: block;
+            }
+            
+            .content-area {
+                margin: 0;
+                padding: 20px 0.25in;
+            }
+        }
     </style>
 </head>
-<body>
+<body data-generated="{{ $generated_at }}" data-user="{{ $generated_by }}">
     <div class="action-buttons">
         <button onclick="window.print()" class="btn">
             <i class='bx bx-printer'></i> Print
         </button>
     </div>
 
+    @php
+        $logs = $equipment->maintenanceLogs;
+        $perPage = 25;
+        $logChunks = $logs->count() ? $logs->chunk($perPage) : collect([collect()]);
+    @endphp
+
+    @foreach ($logChunks as $pageIndex => $pageLogs)
     <div class="page">
-        <div class="header">
-            <h1>Equipment History Report</h1>
-            <div class="subtitle">Generated on {{ $generated_at }} by {{ $generated_by }}</div>
+        @include('reports.partials.pdf_header')
+
+        <div class="content-area">
+            @if ($pageIndex === 0)
+            <div class="info-section">
+                <h3>Equipment Details</h3>
+                <table class="info-table">
+                    <tr>
+                        <td>Model Number:</td>
+                        <td>{{ $equipment->model_number }}</td>
+                    </tr>
+                    <tr>
+                        <td>Serial Number:</td>
+                        <td>{{ $equipment->serial_number }}</td>
+                    </tr>
+                    <tr>
+                        <td>Equipment Type:</td>
+                        <td>{{ $equipment->equipment_type }}</td>
+                    </tr>
+                    <tr>
+                        <td>Status:</td>
+                        <td>
+                            <span class="status-badge status-{{ $equipment->status }}">
+                                {{ ucfirst($equipment->status) }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Location:</td>
+                        <td>{{ $equipment->location }}</td>
+                    </tr>
+                    <tr>
+                        <td>Office:</td>
+                        <td>{{ $equipment->office ? $equipment->office->name : 'N/A' }}</td>
+                    </tr>
+                    @if ($equipment->purchase_date)
+                    <tr>
+                        <td>Purchase Date:</td>
+                        <td>{{ $equipment->purchase_date->format('M d, Y') }}</td>
+                    </tr>
+                    @endif
+                </table>
+            </div>
+
+            @if ($equipment->qr_code_image_path)
+            <div class="qr-code">
+                <img src="{{ public_path('storage/' . $equipment->qr_code_image_path) }}" alt="QR Code">
+            </div>
+            @endif
+            @endif
+
+            @if ($logs->count() > 0)
+            <div class="history-section">
+                <h3>Maintenance History @if($pageIndex > 0)(continued)@endif</h3>
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($pageLogs as $log)
+                        <tr>
+                            <td>{{ $log->created_at->format('M d, Y H:i') }}</td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $log->action)) }}</td>
+                            <td>{{ $log->details }}</td>
+                            <td>{{ $log->user ? $log->user->name : 'System' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @elseif ($pageIndex === 0)
+            <div class="history-section">
+                <h3>Maintenance History</h3>
+                <p>No maintenance history available for this equipment.</p>
+            </div>
+            @endif
         </div>
 
-    <div class="info-section">
-        <h3>Equipment Details</h3>
-        <table class="info-table">
-            <tr>
-                <td>Model Number:</td>
-                <td>{{ $equipment->model_number }}</td>
-            </tr>
-            <tr>
-                <td>Serial Number:</td>
-                <td>{{ $equipment->serial_number }}</td>
-            </tr>
-            <tr>
-                <td>Equipment Type:</td>
-                <td>{{ $equipment->equipment_type }}</td>
-            </tr>
-            <tr>
-                <td>Status:</td>
-                <td>
-                    <span class="status-badge status-{{ $equipment->status }}">
-                        {{ ucfirst($equipment->status) }}
-                    </span>
-                </td>
-            </tr>
-            <tr>
-                <td>Location:</td>
-                <td>{{ $equipment->location }}</td>
-            </tr>
-            <tr>
-                <td>Office:</td>
-                <td>{{ $equipment->office ? $equipment->office->name : 'N/A' }}</td>
-            </tr>
-            @if($equipment->purchase_date)
-            <tr>
-                <td>Purchase Date:</td>
-                <td>{{ $equipment->purchase_date->format('M d, Y') }}</td>
-            </tr>
-            @endif
-        </table>
+        @include('reports.partials.pdf_footer')
     </div>
-
-    @if($equipment->qr_code_image_path)
-    <div class="qr-code">
-        <img src="{{ public_path('storage/' . $equipment->qr_code_image_path) }}" alt="QR Code">
-    </div>
-    @endif
-
-    @if($equipment->maintenanceLogs->count() > 0)
-    <div class="history-section">
-        <h3>Maintenance History</h3>
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>Date & Time</th>
-                    <th>Action</th>
-                    <th>Details</th>
-                    <th>User</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($equipment->maintenanceLogs as $log)
-                <tr>
-                    <td>{{ $log->created_at->format('M d, Y H:i') }}</td>
-                    <td>{{ ucfirst(str_replace('_', ' ', $log->action)) }}</td>
-                    <td>{{ $log->details }}</td>
-                    <td>{{ $log->user ? $log->user->name : 'System' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @else
-    <div class="history-section">
-        <h3>Maintenance History</h3>
-        <p>No maintenance history available for this equipment.</p>
-    </div>
-    @endif
-
-    <div class="footer">
-        <p>This report was generated automatically by the SDMD system.</p>
-    </div>
-    </div>
+    @endforeach
 </body>
 </html>

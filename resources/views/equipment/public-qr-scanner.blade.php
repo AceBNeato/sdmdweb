@@ -28,7 +28,7 @@
                 </div>
 
                 <div class="mt-3 text-center">
-                    <a href="/" class="btn btn-outline-secondary btn-sm">Back to site</a>
+                    <a href="https://{{ request()->getHost() }}" class="btn btn-outline-secondary btn-sm">Back to site</a>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
     <script>
         (function() {
             const params = new URLSearchParams(window.location.search);
-            const equipmentId = params.get('equipment_id');
+            const equipmentId = params.get('equipment') || params.get('equipment_id'); // Support both formats
             const content = document.getElementById('equipmentContent');
             const loading = document.getElementById('loadingState');
 
@@ -50,7 +50,7 @@
                 return;
             }
 
-            fetch('{{ route('public.equipment.scan') }}?equipment_id=' + encodeURIComponent(equipmentId), {
+            fetch('{{ route('public.equipment.scan') }}?equipment=' + encodeURIComponent(equipmentId), {
                 headers: {
                     'Accept': 'application/json'
                 }

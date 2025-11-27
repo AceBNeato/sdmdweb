@@ -12,28 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Check for backup triggers every minute (more frequent for better reliability)
-        $schedule->command('backup:check-triggers')
+        // Check for backup triggers every minute using the new backup system
+        $schedule->command('backup:run-scheduled')
             ->everyMinute()
             ->withoutOverlapping()
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/backup-scheduler.log'));
-
-        // Direct backup using your existing settings as primary method
-        $schedule->command('backup:database --scheduled')
-            ->daily()
-            ->at(function () {
-                // Get backup time from settings
-                $backupTime = \App\Models\Setting::getValue('backup_auto_time', '02:00');
-                return $backupTime ?: '02:00';
-            })
-            ->when(function () {
-                // Only run if backup is enabled and scheduled for today
-                return \App\Models\Setting::isBackupScheduledForDate();
-            })
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/daily-backup.log'));
     }
 
     /**

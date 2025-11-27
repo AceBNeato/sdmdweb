@@ -22,8 +22,10 @@ class PublicEquipmentController extends Controller
     public function scanQrCode(Request $request)
     {
         // Check if equipment_id is provided (for direct URL access)
-        if ($request->has('equipment_id')) {
-            $equipment = Equipment::with('office', 'equipmentType')->find($request->equipment_id);
+        $equipmentId = $request->has('equipment_id') ? $request->equipment_id : $request->get('equipment');
+        
+        if ($equipmentId) {
+            $equipment = Equipment::with('office', 'equipmentType')->find($equipmentId);
 
             if (!$equipment) {
                 return response()->json([

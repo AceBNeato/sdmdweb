@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Setting;
+use App\Models\Activity;
 use App\Services\BackupService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -63,6 +64,14 @@ class RunScheduledBackup extends Command
         try {
             $filename = $this->backupService->createBackup();
             Setting::recordBackupRun();
+
+            // Log automatic backup in activities for user visibility
+            Activity::create([
+                'user_id' => 1, // System user
+                'type' => 'database_backup',
+                'description' => "Automatic backup created: {$filename}",
+                'created_at' => now(),
+            ]);
 
             $this->info('Scheduled backup created: ' . $filename);
             return self::SUCCESS;

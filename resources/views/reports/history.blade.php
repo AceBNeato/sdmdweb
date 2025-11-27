@@ -37,33 +37,48 @@
     </div>
 
 
-    <!-- History Content -->
-    <div class="history-content">
-        <!-- Filters and Search -->
-        <div class="content-controls">
-            <div class="search-section">
-                <div class="search-input-wrapper">
-                    <i class='bx bx-search'></i>
-                    <input type="text" id="historySearch" placeholder="Search history records..." class="search-input">
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="#" method="GET" class="filter-form">
+                <div class="filter-group">
+                    <label for="historySearch">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class='bx bx-search'></i></span>
+                        <input type="text" id="historySearch" name="search" class="form-control"
+                               placeholder="Search history records..."
+                               value="{{ request('search') }}">
+                    </div>
                 </div>
-            </div>
 
-            <div class="filter-section">
-                <select id="actionFilter" class="filter-select">
-                    <option value="">All Actions</option>
-                    @foreach($equipment->history->unique('action_taken')->pluck('action_taken') as $action)
-                        <option value="{{ $action }}">{{ $action }}</option>
-                    @endforeach
-                </select>
+                <div class="filter-group">
+                    <label for="actionFilter">Action</label>
+                    <select id="actionFilter" name="action" class="form-select">
+                        <option value="">All Actions</option>
+                        @foreach($equipment->history->unique('action_taken')->pluck('action_taken') as $action)
+                            <option value="{{ $action }}">{{ $action }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                <select id="technicianFilter" class="filter-select">
-                    <option value="">All Technicians</option>
-                    @foreach($equipment->history->unique('responsible_person')->pluck('responsible_person') as $tech)
-                        <option value="{{ $tech }}">{{ $tech }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div class="filter-group">
+                    <label for="technicianFilter">Technician</label>
+                    <select id="technicianFilter" name="technician" class="form-select">
+                        <option value="">All Technicians</option>
+                        @foreach($equipment->history->unique('responsible_person')->pluck('responsible_person') as $tech)
+                            <option value="{{ $tech }}">{{ $tech }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class='bx bx-filter-alt me-1'></i> Apply Filters
+                </button>
+                <a href="#" class="btn btn-outline-secondary">
+                    <i class='bx bx-reset me-1'></i> Reset
+                </a>
+            </form>
         </div>
+    </div>
 
         <!-- History Records -->
         <div class="history-records" id="historyRecords">
@@ -133,7 +148,9 @@
             @endif
         </div>
     </div>
+
 </div>
+
 
 @push('scripts')
 <script>

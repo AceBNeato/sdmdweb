@@ -41,19 +41,49 @@ class EmailVerificationController extends Controller
             $user = User::where('email_verification_token', $token)->first();
 
             if (!$user) {
-                return redirect()->route('login')
-                    ->with('error', 'Invalid verification token.');
+                // Clear all session data and cookies to prevent login conflicts
+            $request->session()->flush();
+            $request->session()->regenerateToken();
+            
+            // Clear all authentication cookies
+            \Cookie::queue(\Cookie::forget(config('session.cookie')));
+            \Cookie::queue(\Cookie::forget('remember_web'));
+            \Cookie::queue(\Cookie::forget('remember_staff')); 
+            \Cookie::queue(\Cookie::forget('remember_technician'));
+
+            return redirect()->route('login')
+                ->with('error', 'Invalid verification token.');
             }
 
             // Check if token is expired
             if ($user->email_verification_token_expires_at && Carbon::now()->isAfter($user->email_verification_token_expires_at)) {
-                return redirect()->route('login')
+                // Clear all session data and cookies to prevent login conflicts
+            $request->session()->flush();
+            $request->session()->regenerateToken();
+            
+            // Clear all authentication cookies
+            \Cookie::queue(\Cookie::forget(config('session.cookie')));
+            \Cookie::queue(\Cookie::forget('remember_web'));
+            \Cookie::queue(\Cookie::forget('remember_staff')); 
+            \Cookie::queue(\Cookie::forget('remember_technician'));
+
+            return redirect()->route('login')
                     ->with('error', 'Verification token has expired. Please contact your administrator to resend verification email.');
             }
 
             // Check if already verified
             if ($user->hasVerifiedEmail()) {
-                return redirect()->route('login')
+                // Clear all session data and cookies to prevent login conflicts
+            $request->session()->flush();
+            $request->session()->regenerateToken();
+            
+            // Clear all authentication cookies
+            \Cookie::queue(\Cookie::forget(config('session.cookie')));
+            \Cookie::queue(\Cookie::forget('remember_web'));
+            \Cookie::queue(\Cookie::forget('remember_staff')); 
+            \Cookie::queue(\Cookie::forget('remember_technician'));
+
+            return redirect()->route('login')
                     ->with('info', 'Your email is already verified. You can now login.');
             }
 
@@ -71,6 +101,16 @@ class EmailVerificationController extends Controller
                 'email' => $user->email
             ]);
 
+            // Clear all session data and cookies to prevent login conflicts
+            $request->session()->flush();
+            $request->session()->regenerateToken();
+            
+            // Clear all authentication cookies
+            \Cookie::queue(\Cookie::forget(config('session.cookie')));
+            \Cookie::queue(\Cookie::forget('remember_web'));
+            \Cookie::queue(\Cookie::forget('remember_staff')); 
+            \Cookie::queue(\Cookie::forget('remember_technician'));
+
             return redirect()->route('login')
                 ->with('success', 'Email verified successfully! You can now login to your account.');
 
@@ -79,6 +119,16 @@ class EmailVerificationController extends Controller
                 'token' => $token,
                 'error' => $e->getMessage()
             ]);
+
+            // Clear all session data and cookies to prevent login conflicts
+            $request->session()->flush();
+            $request->session()->regenerateToken();
+            
+            // Clear all authentication cookies
+            \Cookie::queue(\Cookie::forget(config('session.cookie')));
+            \Cookie::queue(\Cookie::forget('remember_web'));
+            \Cookie::queue(\Cookie::forget('remember_staff')); 
+            \Cookie::queue(\Cookie::forget('remember_technician'));
 
             return redirect()->route('login')
                 ->with('error', 'Email verification failed. Please try again or contact support.');

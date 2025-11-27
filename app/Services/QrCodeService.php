@@ -49,7 +49,7 @@ class QrCodeService
             if ($publicUrl && isset($data['equipment_id'])) {
                 $baseUrl = config('app.url');
                 // Use APP_URL directly (IP address) without forcing HTTPS
-                $qrContent = $baseUrl . '/public/qr-scanner?equipment_id=' . $data['equipment_id'];
+                $qrContent = $baseUrl . '/public/qr-scanner?equipment=' . $data['equipment_id'];
             } else {
                 $qrContent = json_encode($data);
             }

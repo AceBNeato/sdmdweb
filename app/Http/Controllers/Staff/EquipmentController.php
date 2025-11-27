@@ -205,18 +205,18 @@ class EquipmentController extends Controller
         // Generate and save QR code using unified URL-based format for all roles
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'url' => config('app.url') . '/public/qr-scanner?equipment=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
-            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
+            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
         ];
 
         try {
             // For staff equipment, use public URL mode for maximum compatibility
-            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'png', publicUrl: true);
+            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg', publicUrl: true);
             if ($qrPath) {
                 $equipment->update(['qr_code_image_path' => $qrPath]);
                 Log::info('QR code generated and saved for new equipment', [
@@ -474,7 +474,7 @@ class EquipmentController extends Controller
                 $parsedUrl = parse_url($qrData);
                 if (isset($parsedUrl['query'])) {
                     parse_str($parsedUrl['query'], $queryParams);
-                    $equipmentId = $queryParams['equipment_id'] ?? $queryParams['id'] ?? null;
+                    $equipmentId = $queryParams['equipment'] ?? $queryParams['equipment_id'] ?? null;
 
                     if ($equipmentId) {
                         $equipment = Equipment::with('office', 'equipmentType')

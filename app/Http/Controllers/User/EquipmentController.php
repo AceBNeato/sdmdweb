@@ -171,7 +171,7 @@ class EquipmentController extends Controller
         // Generate and save QR code using optimized service
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'url' => config('app.url') . '/public/qr-scanner?equipment=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
@@ -764,8 +764,8 @@ class EquipmentController extends Controller
             if (isset($parsedUrl['query'])) {
                 parse_str($parsedUrl['query'], $queryParams);
 
-                // Support both ?id=123 and ?equipment_id=123 for maximum compatibility
-                $equipmentId = $queryParams['id'] ?? $queryParams['equipment_id'] ?? null;
+                // Support both ?equipment_id=123 and ?equipment=123 for maximum compatibility
+                $equipmentId = $queryParams['equipment'] ?? $queryParams['equipment_id'] ?? null;
 
                 if ($equipmentId) {
                     $equipment = Equipment::find($equipmentId);

@@ -272,29 +272,32 @@ class EquipmentController extends BaseController
         // Log the activity using new method
         Activity::logEquipmentCreation($equipment);
 
-        // Generate and save QR code using QRServer API with comprehensive structured data
-        $qrData = json_encode([
-            'id' => $equipment->id,
-            'type' => 'equipment',
-            'model' => $equipment->equipment_model, // Use concatenated brand + model_number
-            'serial' => $equipment->serial_number,
-            'type_name' => $equipment->equipmentType ? $equipment->equipmentType->name : 'N/A',
+        // Generate and save QR code using optimized service (same as admin)
+        $qrData = [
+            'type' => 'equipment_url',
+            'url' => config('app.url') . '/public/qr-scanner?equipment=' . $equipment->id,
+            'equipment_id' => $equipment->id,
+            'model_number' => $equipment->model_number,
+            'serial_number' => $equipment->serial_number,
+            'equipment_type' => $equipment->equipmentType ? $equipment->equipmentType->name : 'Unknown',
             'office' => $equipment->office ? $equipment->office->name : 'N/A',
             'status' => $equipment->status,
-        ]);
-        $qrSize = '200x200';
-        $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" . urlencode($qrData) . "&size={$qrSize}";
+        ];
 
-        $response = Http::get($apiUrl);
-        if ($response->successful()) {
-            $fileName = 'equipment_' . $equipment->id . '.png';
-            $path = 'qrcodes/' . $fileName;
-            Storage::disk('public')->put($path, $response->body());
-
-            // Update equipment with QR code image path
-            $equipment->update(['qr_code_image_path' => $path]);
-        } else {
-            Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id);
+        try {
+            // For technician equipment, use public URL mode for maximum compatibility
+            $qrPath = $this->qrCodeService->generateQrCode($qrData, '200x200', 'svg', publicUrl: true);
+            if ($qrPath) {
+                $equipment->update(['qr_code_image_path' => $qrPath]);
+                Log::info('QR code generated and saved for new equipment', [
+                    'equipment_id' => $equipment->id,
+                    'qr_path' => $qrPath
+                ]);
+            } else {
+                Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to generate QR code for equipment ID: ' . $equipment->id . ' - ' . $e->getMessage());
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -850,7 +853,7 @@ class EquipmentController extends BaseController
             $parsedUrl = parse_url($qrData);
             if (isset($parsedUrl['query'])) {
                 parse_str($parsedUrl['query'], $queryParams);
-                $equipmentId = $queryParams['equipment_id'] ?? $queryParams['id'] ?? null;
+                $equipmentId = $queryParams['equipment'] ?? $queryParams['equipment_id'] ?? null;
 
                 if ($equipmentId) {
                     $equipment = Equipment::with('office')

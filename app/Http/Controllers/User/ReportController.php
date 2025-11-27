@@ -25,7 +25,10 @@ class ReportController extends BaseController
 
     public function index(Request $request)
     {
-        $query = \App\Models\EquipmentHistory::with(['equipment', 'user.role']);
+        // Start with a query that groups by equipment_id
+        $query = \App\Models\EquipmentHistory::with(['equipment', 'equipment.office', 'user.role'])
+            ->selectRaw('equipment_id, MAX(created_at) as latest_updated_at, COUNT(*) as total_entries')
+            ->groupBy('equipment_id');
 
         // Filter by office for staff users only (not admins or super admins)
         if (Auth::user()->is_staff && !Auth::user()->is_admin) {
@@ -51,28 +54,42 @@ class ReportController extends BaseController
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('action_taken', 'like', "%{$search}%")
-                  ->orWhere('remarks', 'like', "%{$search}%")
-                  ->orWhere('responsible_person', 'like', "%{$search}%")
-                  ->orWhereHas('equipment', function($eq) use ($search) {
-                      $eq->where('model_number', 'like', "%{$search}%")
-                        ->orWhere('serial_number', 'like', "%{$search}%");
-                  });
+            $query->whereHas('equipment', function($eq) use ($search) {
+                $eq->where('model_number', 'like', "%{$search}%")
+                  ->orWhere('serial_number', 'like', "%{$search}%");
             });
         }
 
-        // Date filter
+        // Date filter (filter on the latest entry date)
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $query->havingRaw('MAX(created_at) >= ?', [$request->date_from]);
         }
 
-        $equipmentHistory = $query->orderBy('created_at', 'desc')
+        // Order by latest updated date and paginate
+        $equipmentGroups = $query->orderBy('latest_updated_at', 'desc')
             ->paginate(10)
             ->appends($request->query());
 
+        // Load full equipment relationships and latest history details
+        $equipmentGroups->getCollection()->transform(function ($group) {
+            $equipment = \App\Models\Equipment::with(['office', 'equipmentType'])
+                ->findOrFail($group->equipment_id);
+            
+            // Get the latest history entry for this equipment
+            $latestHistory = \App\Models\EquipmentHistory::with('user')
+                ->where('equipment_id', $group->equipment_id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $group->equipment = $equipment;
+            $group->latest_entry = $latestHistory;
+            $group->total_entries = (int) $group->total_entries;
+            
+            return $group;
+        });
+
         return view('reports.index', [
-            'equipmentHistory' => $equipmentHistory
+            'equipmentHistory' => $equipmentGroups
         ]);
     }
 

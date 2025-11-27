@@ -86,31 +86,27 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($equipmentHistory->groupBy('equipment_id') as $equipmentId => $historyItems)
-                        @php
-                            $equipment = $historyItems->first()->equipment;
-                            $latestEntry = $historyItems->sortByDesc('created_at')->first();
-                        @endphp
+                    @foreach($equipmentHistory as $equipmentGroup)
                         <tr>
                             <td>
-                                <div class="fw-bold text-primary">{{ $equipment->model_number }}</div>
-                                <small class="text-muted">{{ $equipment->serial_number }}</small>
+                                <div class="fw-bold text-primary">{{ $equipmentGroup->equipment->model_number }}</div>
+                                <small class="text-muted">{{ $equipmentGroup->equipment->serial_number }}</small>
                             </td>
                             <td>
-                                <div class="text-truncate" style="max-width: 200px;" title="{{ $equipment->office->name ?? 'N/A' }}">
-                                    {{ $equipment->office->name ?? 'N/A' }}
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ $equipmentGroup->equipment->office->name ?? 'N/A' }}">
+                                    {{ $equipmentGroup->equipment->office->name ?? 'N/A' }}
                                 </div>
                             </td>
                             <td>
-                                <div class="text-nowrap">{{ $latestEntry->created_at->format('M d, Y') }}</div>
-                                <small class="text-muted">{{ $latestEntry->created_at->format('H:i') }}</small>
+                                <div class="text-nowrap">{{ $equipmentGroup->latest_entry->created_at->format('M d, Y') }}</div>
+                                <small class="text-muted">{{ $equipmentGroup->latest_entry->created_at->format('H:i') }}</small>
                             </td>
                             <td>
-                                <span class="badge bg-primary">{{ $historyItems->count() }} entries</span>
+                                <span class="badge bg-primary">{{ $equipmentGroup->total_entries }} entries</span>
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="{{ route($prefix . '.reports.history', $equipment->id) }}"
+                                    <a href="{{ route($prefix . '.reports.history', $equipmentGroup->equipment->id) }}"
                                        class="btn btn-sm btn-primary"
                                        title="View History">
                                         <i class='bx bx-history'></i> View History

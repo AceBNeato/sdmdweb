@@ -1040,11 +1040,15 @@ body {
     border-radius: 16px;
     font-size: 0.75rem;
     font-weight: 600;
+    max-width: 200px;
     text-transform: uppercase;
     letter-spacing: 0.025em;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .record-meta {
