@@ -270,7 +270,11 @@
                     </td>
                 </tr>
                 @endforeach
-                @for($i = $history->count(); $i < 20; $i++)
+                @php
+                    // Calculate remaining rows to fill the page (15 rows per page)
+                    $remainingRows = 15 - $history->count();
+                @endphp
+                @for($i = 0; $i < $remainingRows; $i++)
                 <tr>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
@@ -284,8 +288,25 @@
 
         <div class="footer-bar">
             <span>Systems and Data Management Division (SDMD)</span>
-            <span>Page 1 of 1</span>
+            <span>Page {{ $currentPage }} of {{ $totalPages }}</span>
         </div>
+
+        {{-- Add page break for next page if needed --}}
+        @if($hasMorePages)
+            <div style="page-break-after: always;"></div>
+            @php
+                $nextPage = $currentPage + 1;
+                $nextPageUrl = request()->fullUrlWithQuery(['page' => $nextPage]);
+            @endphp
+            <script>
+                // Automatically load the next page
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.location.href = '{{ $nextPageUrl }}';
+                    }, 500);
+                };
+            </script>
+        @endif
     </div>
 </body>
 </html>

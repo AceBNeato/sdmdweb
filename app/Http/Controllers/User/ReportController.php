@@ -133,13 +133,28 @@ class ReportController extends BaseController
             abort(403, 'You do not have permission to access reports for this equipment.');
         }
 
-        $equipment->load(['office', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
-        }, 'history.user']);
+        // Load equipment with paginated history (15 items per page)
+        $equipment->load(['office']);
+        
+        $history = $equipment->history()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate total pages needed (15 items per page)
+        $perPage = 15;
+        $totalPages = ceil($history->count() / $perPage);
+        $currentPage = request()->get('page', 1);
+        
+        // Get items for current page
+        $currentPageItems = $history->forPage($currentPage, $perPage);
 
         return view('reports.ict_history_sheet', [
             'equipment' => $equipment,
-            'history' => $equipment->history
+            'history' => $currentPageItems,
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
+            'hasMorePages' => $currentPage < $totalPages
         ]);
     }
 
