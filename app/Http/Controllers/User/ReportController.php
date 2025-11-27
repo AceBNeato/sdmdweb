@@ -159,7 +159,7 @@ class ReportController extends BaseController
             ->get();
 
         // Calculate total pages needed (15 items per page)
-        $perPage = 15;
+        $perPage = 16;
         $totalPages = ceil($history->count() / $perPage);
         $currentPage = request()->get('page', 1);
         

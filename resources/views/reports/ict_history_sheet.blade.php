@@ -32,6 +32,8 @@
             box-sizing: border-box;
             padding: 0.2in 0.25in 0.2in;
             background: #fff;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
@@ -107,7 +109,7 @@
 
         .equipment-table td {
             border: 1px solid var(--border-color);
-            padding: 6px 8px;
+            padding: 8px 12px;
         }
 
         .equipment-table .label {
@@ -122,14 +124,15 @@
         .history-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5pt;
+            font-size: 9pt;
         }
 
         .history-table th,
         .history-table td {
             border: 1px solid var(--border-color);
-            padding: 5px 6px;
+            padding: 6px 8px;
             text-align: center;
+            line-height: 1.2;
         }
 
         .history-table th {
@@ -142,19 +145,20 @@
         }
 
         .footer-bar {
-            width: 96%;
-            border: 1px solid var(--border-color);
-            margin-top: 22px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 14px;
-            font-size: 10pt;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+            font-size: 9pt;
+            color: #666;
         }
 
-        .action-buttons {
-            text-align: center;
-            padding: 20px;
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .btn {
@@ -180,25 +184,108 @@
             margin-right: 8px;
         }
 
+        .pagination-controls {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pagination-info {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-buttons .btn {
+            padding: 6px 12px;
+            font-size: 14px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .pagination-buttons .btn.active {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+
+        .pagination-buttons .btn-outline-primary {
+            background-color: white;
+            border-color: #007bff;
+            color: #007bff;
+        }
+
+        .pagination-buttons .btn-outline-primary:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
         @media print {
             @page {
                 size: A4;
                 margin: 0.25in;
             }
             body { -webkit-print-color-adjust: exact; margin: 0; }
-            .page { margin: 0; border: none; }
+            .page { 
+                margin: 0; 
+                border: none;
+                height: auto;
+                min-height: 11.69in;
+                page-break-inside: avoid;
+                overflow: visible;
+            }
             .action-buttons { display: none; }
+            .pagination-controls { display: none; }
         }
     </style>
 </head>
 <body>
     <div class="action-buttons">
-        <a href="{{ route('technician.reports.equipment.history.export.pdf', $equipment) }}" class="btn btn-primary" target="_blank">
-            <i class='bx bx-file-pdf'></i> Export PDF
-        </a>
-        <button onclick="window.print()" class="btn btn-primary" style="margin-left: 10px;">
-            <i class='bx bx-printer'></i> Print
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class='bx bx-printer'></i> Print Current Page
         </button>
+        <button onclick="printAllPages()" class="btn btn-success" style="margin-left: 10px;">
+            <i class='bx bx-printer'></i> Print All Pages
+        </button>
+    </div>
+
+    {{-- Pagination Controls --}}
+    <div class="pagination-controls">
+        <div class="pagination-info">
+            Showing page {{ $currentPage }} of {{ $totalPages }} ({{ $history->count() }} records)
+        </div>
+        <div class="pagination-buttons">
+            @if($currentPage > 1)
+                <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage - 1]) }}" class="btn btn-outline-primary">
+                    <i class='bx bx-chevron-left'></i> Previous
+                </a>
+            @endif
+            
+            {{-- Page numbers --}}
+            @for($i = 1; $i <= $totalPages; $i++)
+                @if($i == $currentPage)
+                    <span class="btn btn-primary active">{{ $i }}</span>
+                @else
+                    <a href="{{ request()->fullUrlWithQuery(['page' => $i]) }}" class="btn btn-outline-primary">{{ $i }}</a>
+                @endif
+            @endfor
+            
+            @if($hasMorePages)
+                <a href="{{ request()->fullUrlWithQuery(['page' => $currentPage + 1]) }}" class="btn btn-outline-primary">
+                    Next <i class='bx bx-chevron-right'></i>
+                </a>
+            @endif
+        </div>
     </div>
 
     <div class="page">
@@ -227,30 +314,31 @@
             </div>
         </div>
 
-        <div class="title">ICT EQUIPMENT HISTORY SHEET</div>
+        <div class="content-area">
+            <div class="title">ICT EQUIPMENT HISTORY SHEET</div>
 
-        <table class="equipment-table">
-            <tr>
-                <td class="label">Equipment:</td>
-                <td class="value">{{ $equipment->model_number }}</td>
-            </tr>
-            <tr>
-                <td class="label">Property/Serial Number:</td>
-                <td class="value">{{ $equipment->serial_number }}</td>
-            </tr>
-            <tr>
-                <td class="label">Location:</td>
-                <td class="value">{{ $equipment->office->name ?? 'N/A' }}</td>
-            </tr>
-        </table>
+            <table class="equipment-table">
+                <tr>
+                    <td class="label">Equipment:</td>
+                    <td class="value">{{ $equipment->model_number }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Property/Serial Number:</td>
+                    <td class="value">{{ $equipment->serial_number }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Location:</td>
+                    <td class="value">{{ $equipment->office->name ?? 'N/A' }}</td>
+                </tr>
+            </table>
 
-        <table class="history-table">
+            <table class="history-table">
             <thead>
                 <tr>
-                    <th width="12%">Date</th>
-                    <th width="15%">JO Number</th>
-                    <th width="35%">Actions Taken</th>
-                    <th width="23%">Remarks</th>
+                    <th width="10%">Date</th>
+                    <th width="12%">JO Number</th>
+                    <th width="38%">Actions Taken</th>
+                    <th width="25%">Remarks</th>
                     <th width="15%">Responsible SDMD Personnel</th>
                 </tr>
             </thead>
@@ -285,6 +373,7 @@
                 @endfor
             </tbody>
         </table>
+        </div>
 
         <div class="footer-bar">
             <span>Systems and Data Management Division (SDMD)</span>
@@ -294,19 +383,123 @@
         {{-- Add page break for next page if needed --}}
         @if($hasMorePages)
             <div style="page-break-after: always;"></div>
-            @php
-                $nextPage = $currentPage + 1;
-                $nextPageUrl = request()->fullUrlWithQuery(['page' => $nextPage]);
-            @endphp
-            <script>
-                // Automatically load the next page
-                window.onload = function() {
-                    setTimeout(function() {
-                        window.location.href = '{{ $nextPageUrl }}';
-                    }, 500);
-                };
-            </script>
+        @else
         @endif
     </div>
+
+    <script>
+        function printAllPages() {
+            // Show loading indicator
+            const printAllBtn = event.target;
+            const originalText = printAllBtn.innerHTML;
+            printAllBtn.innerHTML = '<i class=\'bx bx-loader-alt bx-spin\'></i> Loading all pages...';
+            printAllBtn.disabled = true;
+            
+            // Get the base URL without page parameter
+            const baseUrl = window.location.origin + window.location.pathname;
+            const totalPages = {{ $totalPages }};
+            
+            // Create a container for all pages
+            const allPagesContainer = document.createElement('div');
+            allPagesContainer.style.display = 'none';
+            document.body.appendChild(allPagesContainer);
+            
+            let loadedPages = 0;
+            
+            // Load pages sequentially to maintain order
+            function loadPage(pageNumber) {
+                const pageUrl = `${baseUrl}?page=${pageNumber}`;
+                
+                fetch(pageUrl)
+                    .then(response => response.text())
+                    .then(html => {
+                        // Parse the HTML and extract the page content
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const pageContent = doc.querySelector('.page');
+                        
+                        if(pageContent) {
+                            // Clone the page content
+                            const pageClone = pageContent.cloneNode(true);
+                            // Remove pagination controls from printed pages
+                            const paginationControls = pageClone.querySelector('.pagination-controls');
+                            if(paginationControls) {
+                                paginationControls.style.display = 'none';
+                            }
+                            // Remove any existing page breaks to avoid blank pages
+                            const pageBreaks = pageClone.querySelectorAll('[style*="page-break-after: always"]');
+                            pageBreaks.forEach(breakElement => breakElement.remove());
+                            
+                            // Ensure proper page sizing for print
+                            pageClone.style.height = 'auto';
+                            pageClone.style.minHeight = '11.69in';
+                            pageClone.style.overflow = 'visible';
+                            pageClone.style.pageBreakInside = 'avoid';
+                            
+                            // Add page break only between pages (not after last page)
+                            if(pageNumber < totalPages) {
+                                pageClone.style.pageBreakAfter = 'always';
+                            }
+                            
+                            allPagesContainer.appendChild(pageClone);
+                        }
+                        
+                        loadedPages++;
+                        
+                        // Load next page or trigger print when all pages are loaded
+                        if(pageNumber < totalPages) {
+                            loadPage(pageNumber + 1);
+                        } else if(loadedPages === totalPages) {
+                            // All pages loaded, trigger print
+                            triggerPrint();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to load page ' + pageNumber, error);
+                        loadedPages++;
+                        
+                        // Continue to next page or trigger print
+                        if(pageNumber < totalPages) {
+                            loadPage(pageNumber + 1);
+                        } else if(loadedPages === totalPages) {
+                            triggerPrint();
+                        }
+                    });
+            }
+            
+            function triggerPrint() {
+                // Hide current page content temporarily
+                const currentContent = document.querySelector('.page');
+                const currentPagination = document.querySelector('.pagination-controls');
+                if(currentContent) currentContent.style.display = 'none';
+                if(currentPagination) currentPagination.style.display = 'none';
+                
+                // Show all pages container
+                allPagesContainer.style.display = 'block';
+                
+                // Trigger print dialog
+                setTimeout(() => {
+                    window.print();
+                    
+                    // Restore original view after print dialog closes
+                    setTimeout(() => {
+                        allPagesContainer.style.display = 'none';
+                        if(currentContent) currentContent.style.display = 'block';
+                        if(currentPagination) currentPagination.style.display = 'flex';
+                        
+                        // Clean up
+                        document.body.removeChild(allPagesContainer);
+                        
+                        // Restore button
+                        printAllBtn.innerHTML = originalText;
+                        printAllBtn.disabled = false;
+                    }, 1000);
+                }, 500);
+            }
+            
+            // Start loading from page 1
+            loadPage(1);
+        }
+    </script>
 </body>
 </html>

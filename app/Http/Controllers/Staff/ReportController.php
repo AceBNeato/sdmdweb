@@ -159,13 +159,27 @@ class ReportController extends Controller
             abort(403, 'Unauthorized access to equipment.');
         }
 
-        $equipment->load(['office', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
-        }, 'history.user']);
+        $equipment->load(['office']);
+        
+        $history = $equipment->history()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate total pages needed (16 items per page)
+        $perPage = 16;
+        $totalPages = ceil($history->count() / $perPage);
+        $currentPage = request()->get('page', 1);
+        
+        // Get items for current page
+        $currentPageItems = $history->forPage($currentPage, $perPage);
 
         return view('reports.ict_history_sheet', [
             'equipment' => $equipment,
-            'history' => $equipment->history
+            'history' => $currentPageItems,
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
+            'hasMorePages' => $currentPage < $totalPages
         ]);
     }
 
