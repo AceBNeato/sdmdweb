@@ -602,18 +602,7 @@ class EquipmentController extends Controller
      */
     protected function getEquipmentCategories()
     {
-        return [
-            'IT Equipment',
-            'Audio/Visual',
-            'Office Equipment',
-            'Networking',
-            'Medical Equipment',
-            'Laboratory',
-            'Industrial',
-            'Lab Equipment',
-            'Furniture',
-            'Other'
-        ];
+        return \App\Models\Category::orderBy('name')->pluck('name', 'id');
     }
 
     /**

@@ -224,13 +224,31 @@ class StaffController extends Controller
                 
                 $destination = public_path('storage/profile-photos');
                 if (!file_exists($destination)) {
-                    mkdir($destination, 0755, true);
+                    if (!mkdir($destination, 0755, true)) {
+                        Log::error('Failed to create directory', ['path' => $destination]);
+                        throw new \Exception('Failed to create profile photos directory');
+                    }
                 }
                 
-                $file->move($destination, $filename);
-                $validated['profile_photo_path'] = 'profile-photos/' . $filename;
-                Log::info('New profile photo stored', ['path' => $filename]);
-                $photoUpdated = true;
+                // Check if directory is writable
+                if (!is_writable($destination)) {
+                    Log::error('Directory is not writable', ['path' => $destination]);
+                    throw new \Exception('Profile photos directory is not writable');
+                }
+                
+                try {
+                    if ($file->move($destination, $filename)) {
+                        $validated['profile_photo_path'] = 'profile-photos/' . $filename;
+                        Log::info('New profile photo stored successfully', ['path' => $filename]);
+                        $photoUpdated = true;
+                    } else {
+                        Log::error('Failed to move profile photo file');
+                        throw new \Exception('Failed to move profile photo file');
+                    }
+                } catch (\Exception $moveException) {
+                    Log::error('Exception during file move: ' . $moveException->getMessage());
+                    throw new \Exception('Failed to upload profile photo: ' . $moveException->getMessage());
+                }
             } else {
                 Log::info('No profile photo file in request');
             }
