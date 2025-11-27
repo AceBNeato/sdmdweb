@@ -208,8 +208,8 @@ class StaffController extends Controller
                 ]);
 
                 // Delete old profile image if exists
-                if ($user->profile_photo) {
-                    $oldImagePath = 'public/' . $user->profile_photo;
+                if ($user->profile_photo_path) {
+                    $oldImagePath = 'public/' . $user->profile_photo_path;
                     if (Storage::exists($oldImagePath)) {
                         Storage::delete($oldImagePath);
                         Log::info('Deleted old profile photo', ['path' => $oldImagePath]);
@@ -228,7 +228,7 @@ class StaffController extends Controller
                 }
                 
                 $file->move($destination, $filename);
-                $validated['profile_photo'] = 'profile-photos/' . $filename;
+                $validated['profile_photo_path'] = 'profile-photos/' . $filename;
                 Log::info('New profile photo stored', ['path' => $filename]);
                 $photoUpdated = true;
             } else {
@@ -246,7 +246,7 @@ class StaffController extends Controller
                 'skills' => $validated['skills'] ?? null,
                 'is_active' => $validated['is_active'] ?? $user->is_active,
                 'employee_id' => $validated['employee_id'] ?? null,
-                'profile_photo' => $validated['profile_photo'] ?? $user->profile_photo,
+                'profile_photo_path' => $validated['profile_photo_path'] ?? $user->profile_photo_path,
             ];
 
             // If password is being changed, update password and clear must_change_password flag
@@ -264,7 +264,7 @@ class StaffController extends Controller
 
             // Filter out null values but keep explicit keys (employee_id, profile_photo) even if empty string
             $updateData = array_filter($updateData, function($value, $key) {
-                return $key === 'employee_id' || $key === 'profile_photo' ? true : $value !== null;
+                return $key === 'employee_id' || $key === 'profile_photo_path' ? true : $value !== null;
             }, ARRAY_FILTER_USE_BOTH);
 
             // Log the data that will be updated
@@ -305,7 +305,7 @@ class StaffController extends Controller
                         'last_name' => $user->last_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
-                        'profile_photo' => $user->profile_photo ? asset('storage/' . $user->profile_photo) : null,
+                        'profile_photo_path' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
                         'specialization' => $user->specialization,
                         'employee_id' => $user->employee_id,
                         'skills' => $user->skills

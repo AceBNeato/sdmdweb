@@ -160,8 +160,8 @@ class TechnicianController extends Controller
                 ]);
 
                 // Delete old profile image if exists
-                if ($user->profile_photo) {
-                    $oldImagePath = 'public/' . $user->profile_photo;
+                if ($user->profile_photo_path) {
+                    $oldImagePath = 'public/' . $user->profile_photo_path;
                     if (Storage::exists($oldImagePath)) {
                         Storage::delete($oldImagePath);
                         Log::info('Deleted old technician profile photo', ['path' => $oldImagePath]);
@@ -180,7 +180,7 @@ class TechnicianController extends Controller
                 }
 
                 $file->move($destination, $filename);
-                $validated['profile_photo'] = 'profile-photos/' . $filename;
+                $validated['profile_photo_path'] = 'profile-photos/' . $filename;
                 Log::info('New technician profile photo stored', ['path' => $filename]);
                 $photoUpdated = true;
             } else {
@@ -197,7 +197,7 @@ class TechnicianController extends Controller
                 'employee_id' => $validated['employee_id'] ?? null,
                 'specialization' => $validated['specialization'] ?? null,
                 'skills' => $validated['skills'] ?? null,
-                'profile_photo' => $validated['profile_photo'] ?? $user->profile_photo,
+                'profile_photo_path' => $validated['profile_photo_path'] ?? $user->profile_photo_path,
             ];
 
             // If password is being changed, update password and clear must_change_password flag
@@ -215,7 +215,7 @@ class TechnicianController extends Controller
 
             // Filter out null values but always keep employee_id and profile_photo keys
             $updateData = array_filter($updateData, function ($value, $key) {
-                return in_array($key, ['employee_id', 'profile_photo'], true) ? true : $value !== null;
+                return in_array($key, ['employee_id', 'profile_photo_path'], true) ? true : $value !== null;
             }, ARRAY_FILTER_USE_BOTH);
 
             Log::info('Updating technician user with data:', $updateData);
@@ -253,7 +253,7 @@ class TechnicianController extends Controller
                         'last_name' => $user->last_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
-                        'profile_photo' => $user->profile_photo ? asset('storage/' . $user->profile_photo) : null,
+                        'profile_photo_path' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
                         'specialization' => $user->specialization,
                         'employee_id' => $user->employee_id,
                         'skills' => $user->skills,

@@ -48,10 +48,7 @@ class QrCodeService
             // Choose content: URL for public, JSON for internal
             if ($publicUrl && isset($data['equipment_id'])) {
                 $baseUrl = config('app.url');
-                // Ensure HTTPS for LAN use
-                if (!str_starts_with($baseUrl, 'https://')) {
-                    $baseUrl = 'https://' . parse_url($baseUrl, PHP_URL_HOST);
-                }
+                // Use APP_URL directly (IP address) without forcing HTTPS
                 $qrContent = $baseUrl . '/public/qr-scanner?equipment_id=' . $data['equipment_id'];
             } else {
                 $qrContent = json_encode($data);

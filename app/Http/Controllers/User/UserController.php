@@ -245,8 +245,8 @@ class UserController extends Controller
                 ->withInput();
         }
 
-        // Create verification URL
-        $verificationUrl = route('email.verify', ['token' => $verificationToken]);
+        // Create verification URL using APP_URL (IP address)
+        $verificationUrl = config('app.url') . '/email/verify/' . $verificationToken;
         \Illuminate\Support\Facades\Log::info('Verification URL generated: ' . $verificationUrl);
 
         // Send verification email (optional - don't fail if email is not configured)

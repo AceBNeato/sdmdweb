@@ -444,7 +444,7 @@ class BackupService
                                 'equipment_types', 'activities', 'password_reset_tokens',
                                 'failed_jobs', 'migrations', 'sessions', 'cache',
                                 'job_batches', 'telescope_entries', 'telescope_monitoring',
-                                'permissions', 'roles', 'role_user', 'permission_role', 'permission_user',
+                                'permissions', 'roles', 'permission_role', 'permission_user',
                                 'equipment_history', 'personal_access_tokens', 'settings'
                             ];
 

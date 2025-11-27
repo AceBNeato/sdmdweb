@@ -22,11 +22,11 @@ class Role extends Model
     ];
 
     /**
-     * The users that belong to the role.
+     * Get the users that belong to this role (inverse of belongsTo).
      */
-    public function users(): BelongsToMany
+    public function users()
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return User::where('role_id', $this->id);
     }
 
     /**

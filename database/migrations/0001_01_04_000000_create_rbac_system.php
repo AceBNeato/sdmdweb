@@ -58,16 +58,13 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('position')->nullable();
             $table->foreignId('office_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('campus_id')->nullable();
+            $table->foreignId('campus_id')->nullable()->constrained()->onDelete('set null');
             $table->boolean('is_active')->default(true);
             $table->string('specialization')->nullable();
             $table->text('skills')->nullable();
             $table->boolean('is_available')->default(true);
             $table->string('employee_id')->nullable();
             $table->string('profile_photo_path')->nullable();
-            $table->binary('profile_photo')->nullable();
-            $table->string('url_prefix')->nullable();
-            $table->string('current_session_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('email_verification_token')->nullable();
             $table->timestamp('email_verification_token_expires_at')->nullable();
@@ -84,15 +81,6 @@ return new class extends Migration
             $table->index(['specialization']);
             $table->index(['email']);
         });
-
-        // Role User pivot table (for migration purposes only)
-        Schema::create('role_user', function (Blueprint $table) {
-            $table->foreignId('role_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-            $table->unique(['role_id', 'user_id']);
-            $table->index(['user_id', 'role_id']);
-        });
     }
 
     /**
@@ -100,7 +88,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('role_user');
         Schema::dropIfExists('users');
         Schema::dropIfExists('permission_role');
         Schema::dropIfExists('permissions');

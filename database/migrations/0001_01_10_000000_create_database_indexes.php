@@ -52,12 +52,6 @@ return new class extends Migration
             $table->index(['permission_id']);
         });
 
-        // Role_user indexes
-        Schema::table('role_user', function (Blueprint $table) {
-            $table->index(['user_id']);
-            $table->index(['role_id']);
-        });
-
         // Additional performance indexes
         Schema::table('equipment', function (Blueprint $table) {
             $table->index(['qr_code']);
@@ -82,11 +76,6 @@ return new class extends Migration
         DB::statement("ALTER TABLE equipment_types DROP INDEX name");
 
         // Drop composite indexes (simplified - in production you'd want to be more specific)
-        Schema::table('role_user', function (Blueprint $table) {
-            $table->dropIndex(['user_id']);
-            $table->dropIndex(['role_id']);
-        });
-
         Schema::table('permission_role', function (Blueprint $table) {
             $table->dropIndex(['role_id']);
             $table->dropIndex(['permission_id']);

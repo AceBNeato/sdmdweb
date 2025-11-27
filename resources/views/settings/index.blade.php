@@ -320,8 +320,8 @@
                         <div class="col-md-3">
                     <div class="card">
                         <div class="card-body text-center">
-                            <div class="h3 text-info">{{ \App\Models\EquipmentType::count() }}</div>
-                            <p class="text-muted mb-0">Total Equipment Types</p>
+                            <div class="h3 text-info">{{ \App\Models\Campus::count() }}</div>
+                            <p class="text-muted mb-0">Total Campuses</p>
                         </div>
                     </div>
                 </div>

@@ -1018,7 +1018,7 @@ class EquipmentController extends Controller
         // Prepare QR data for viewing (Admin uses URL-based QR codes for public scanner)
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'url' => config('app.url') . '/public/qr-scanner?equipment_id=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model' => $equipment->equipment_model, // Use concatenated brand + model_number
             'serial' => $equipment->serial_number,

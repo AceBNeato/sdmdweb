@@ -112,8 +112,8 @@ public function login(Request $request)
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Simple redirect with basic cache control for speed
-        return redirect('/login?logout=' . time())->withHeaders([
+        // Fast redirect with minimal headers
+        return redirect('/login')->withHeaders([
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache'
         ]);

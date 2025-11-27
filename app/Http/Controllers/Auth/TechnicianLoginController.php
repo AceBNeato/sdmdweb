@@ -113,7 +113,7 @@ class TechnicianLoginController extends Controller
         $request->session()->regenerateToken();
 
         // Fast redirect with minimal headers
-        return redirect('/login?logout=' . time())->withHeaders([
+        return redirect('/login')->withHeaders([
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache'
         ]);
@@ -195,7 +195,7 @@ class TechnicianLoginController extends Controller
 
                 // Store new profile image
                 $imagePath = $request->file('profile_photo')->store('profile_images', 'public');
-                $validated['profile_photo'] = $imagePath;
+                $validated['profile_photo_path'] = $imagePath;
                 \Log::info('New profile photo stored', ['path' => $imagePath]);
             } else {
                 \Log::info('No profile photo file in request');
@@ -212,12 +212,12 @@ class TechnicianLoginController extends Controller
                 'skills' => $validated['skills'] ?? null,
                 'is_available' => $validated['is_active'] ?? true,
                 'employee_id' => $validated['employee_id'] ?? null,
-                'profile_photo' => $validated['profile_photo'] ?? $user->profile_photo,
+                'profile_photo_path' => $validated['profile_photo_path'] ?? $user->profile_photo_path,
             ];
 
             // Filter out null values but keep empty strings for employee_id and profile_photo
             $updateData = array_filter($updateData, function($value, $key) {
-                return $key === 'employee_id' || $key === 'profile_photo' ? true : $value !== null;
+                return $key === 'employee_id' || $key === 'profile_photo_path' ? true : $value !== null;
             }, ARRAY_FILTER_USE_BOTH);
 
             // Log the data that will be updated

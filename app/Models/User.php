@@ -71,11 +71,12 @@ class User extends Authenticatable
         'email',
         'password',
         'is_active',
+        'is_available',
         'email_verified_at',
         'email_verification_token',
         'email_verification_token_expires_at',
         'phone',
-        'profile_photo',
+        'profile_photo_path',
         'position',
         'office_id',
         'campus_id',
@@ -252,20 +253,49 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user has the given permission through their role.
+     * Check if the user has the given permission through their role or directly.
      */
     public function hasPermissionTo($permission): bool
     {
-        if (!$this->role) {
-            return false;
-        }
-
         if (is_string($permission)) {
-            return $this->role->permissions()->where('name', $permission)->exists();
+            // Check role permissions first
+            if ($this->role && $this->role->permissions()->where('name', $permission)->exists()) {
+                return true;
+            }
+            
+            // Check direct user permissions (if permission_user table exists)
+            // Note: This will return false if the table doesn't exist, maintaining backward compatibility
+            try {
+                return \DB::table('permission_user')
+                    ->where('user_id', $this->id)
+                    ->whereExists(function ($query) use ($permission) {
+                        $query->select(\DB::raw(1))
+                              ->from('permissions')
+                              ->whereColumn('permissions.id', 'permission_user.permission_id')
+                              ->where('name', $permission);
+                    })
+                    ->exists();
+            } catch (\Exception $e) {
+                // Table doesn't exist, fall back to role permissions only
+                return false;
+            }
         }
 
         if ($permission instanceof Permission) {
-            return $this->role->permissions()->where('id', $permission->id)->exists();
+            // Check role permissions first
+            if ($this->role && $this->role->permissions()->where('id', $permission->id)->exists()) {
+                return true;
+            }
+            
+            // Check direct user permissions
+            try {
+                return \DB::table('permission_user')
+                    ->where('user_id', $this->id)
+                    ->where('permission_id', $permission->id)
+                    ->exists();
+            } catch (\Exception $e) {
+                return false;
+            }
         }
 
         return false;

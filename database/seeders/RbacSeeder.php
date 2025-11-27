@@ -20,7 +20,6 @@ class RbacSeeder extends Seeder
 
         // Clear existing data
         DB::table('permission_role')->truncate();
-        DB::table('role_user')->truncate();
         Permission::truncate();
         Role::truncate();
 

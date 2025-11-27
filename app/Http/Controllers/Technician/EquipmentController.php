@@ -915,7 +915,7 @@ class EquipmentController extends BaseController
         // Prepare QR data for technician view (URL-based for compatibility)
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('technician.equipment.show', $equipment->id),
+            'url' => config('app.url') . '/technician/equipment/' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
@@ -927,7 +927,7 @@ class EquipmentController extends BaseController
 
         // Use the cached QR code service instead of external API
         $qrCodeService = app(\App\Services\QrCodeService::class);
-        $qrPath = $qrCodeService->generateQrCode($qrData, '300x300', 'png', publicUrl: true);
+        $qrPath = $qrCodeService->generateQrCode($qrData, '300x300', 'svg', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use

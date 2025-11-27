@@ -29,13 +29,21 @@ class AdminLoginController extends Controller
     {
         // Check if this is a blocked access attempt
         if (request()->has('blocked') || request()->has('logout')) {
-            // Create an infinite redirect loop to prevent back button access
-            return redirect('/login/admin?blocked=' . time())->withHeaders([
-                'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0, no-transform, private, proxy-revalidate',
-                'Pragma' => 'no-cache',
-                'Expires' => '0',
-                'Refresh' => '0; url=/login/admin?blocked=' . time()
-            ]);
+            // Mark session as blocked to prevent back button access
+            session(['access_blocked' => true]);
+            
+            // Clear any existing session data
+            session()->invalidate();
+            session()->regenerateToken();
+            
+            // Return to login with a clean state
+            return redirect('/login/admin')->with('message', 'Access blocked for security reasons.');
+        }
+
+        // Check if session was previously blocked
+        if (session('access_blocked')) {
+            // Clear the block after one successful login page load
+            session()->forget('access_blocked');
         }
 
         return view('auth.admin-login');

@@ -248,7 +248,7 @@ class AdminController extends Controller
                     }
                     
                     $file->move($destination, $filename);
-                    $updateData['profile_photo'] = 'profile-photos/' . $filename;
+                    $updateData['profile_photo_path'] = 'profile-photos/' . $filename;
                     $photoUpdated = true;
                 } catch (\Exception $e) {
                     \Log::error('Profile photo upload error: ' . $e->getMessage(), [

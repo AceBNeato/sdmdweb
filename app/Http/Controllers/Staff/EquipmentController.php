@@ -626,9 +626,9 @@ class EquipmentController extends Controller
     {
         $user = Auth::guard('staff')->user();
 
-        // Ensure staff can only access QR code for equipment from their office
-        if ($equipment->office_id !== $user->office_id) {
-            abort(403, 'You can only access QR codes for equipment from your office.');
+        // Ensure staff can only access QR code for equipment from their office OR equipment they created
+        if ($equipment->office_id !== $user->office_id && $equipment->assigned_by_id !== $user->id) {
+            abort(403, 'You can only access QR codes for equipment from your office or that you created.');
         }
 
         // If QR code image is saved, return it
@@ -645,7 +645,7 @@ class EquipmentController extends Controller
         // Prepare QR data for unified viewing format (URL-based, shared with admin/technician/public)
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'url' => config('app.url') . '/public/qr-scanner?equipment_id=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
@@ -657,7 +657,7 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service with public URL for stickers
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png', publicUrl: true);
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
             // Save path to equipment for future use
@@ -680,9 +680,9 @@ class EquipmentController extends Controller
     {
         $user = Auth::guard('staff')->user();
 
-        // Ensure staff can only print QR code for equipment from their office
-        if ($equipment->office_id !== $user->office_id) {
-            abort(403, 'You can only print QR codes for equipment from your office.');
+        // Ensure staff can only print QR code for equipment from their office OR equipment they created
+        if ($equipment->office_id !== $user->office_id && $equipment->assigned_by_id !== $user->id) {
+            abort(403, 'You can only print QR codes for equipment from your office or that you created.');
         }
 
         // Generate QR code if it doesn't exist
@@ -694,7 +694,7 @@ class EquipmentController extends Controller
         // Prepare QR data for printing (same unified format used everywhere)
         $qrData = [
             'type' => 'equipment_url',
-            'url' => route('public.qr-scanner') . '?equipment_id=' . $equipment->id,
+            'url' => config('app.url') . '/public/qr-scanner?equipment_id=' . $equipment->id,
             'equipment_id' => $equipment->id,
             'model_number' => $equipment->model_number,
             'serial_number' => $equipment->serial_number,
@@ -706,15 +706,15 @@ class EquipmentController extends Controller
         ];
 
         // Use cached QR code service with public URL for stickers
-        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'png', publicUrl: true);
+        $qrPath = $this->qrCodeService->generateQrCode($qrData, '300x300', 'svg', publicUrl: true);
 
         if ($qrPath && Storage::disk('public')->exists($qrPath)) {
-            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.png';
+            $filename = 'qr-code-' . Str::slug($equipment->model_number . '-' . $equipment->serial_number) . '.svg';
 
             return response()->download(
                 storage_path('app/public/' . $qrPath),
                 $filename,
-                ['Content-Type' => 'image/png']
+                ['Content-Type' => 'image/svg+xml']
             );
         }
 

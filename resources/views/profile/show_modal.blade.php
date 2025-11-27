@@ -6,7 +6,7 @@
     <div class="row g-3">
         <div class="col-md-4">
             <div class="text-center profile-avatar-wrapper">
-                <img src="{{ ($user->profile_photo ?? $user->profile_photo_path) ? asset('storage/' . ($user->profile_photo ?? $user->profile_photo_path)) : asset('images/SDMDlogo.png') }}"
+                <img src="{{ $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : asset('images/SDMDlogo.png') }}"
                      alt="Profile Picture"
                      class="profile-avatar profile-avatar-lg img-fluid"
                      onerror="this.onerror=null; this.src='{{ asset('images/SDMDlogo.png') }}'">
