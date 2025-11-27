@@ -1,6 +1,76 @@
 // Equipment Index Page JavaScript
 $(document).ready(function() {
 
+    // Automatic Search Functionality
+    const searchInput = $('#search');
+    const statusFilter = $('#status');
+    const equipmentTypeFilter = $('#equipment_type');
+    const officeFilter = $('#office_id');
+    const equipmentRows = $('tbody tr');
+
+    function filterEquipment() {
+        const searchTerm = searchInput.val().toLowerCase();
+        const statusValue = statusFilter.val().toLowerCase();
+        const equipmentTypeValue = equipmentTypeFilter.val().toLowerCase();
+        const officeValue = officeFilter.val().toLowerCase();
+
+        equipmentRows.each(function() {
+            const row = $(this);
+            const serial = row.data('serial').toLowerCase();
+            const model = row.data('model').toLowerCase();
+            const type = row.data('type').toLowerCase();
+            const office = row.data('office').toLowerCase();
+            const status = row.data('status').toLowerCase();
+            const text = row.text().toLowerCase();
+
+            const matchesSearch = searchTerm === '' || 
+                text.includes(searchTerm) || 
+                serial.includes(searchTerm) || 
+                model.includes(searchTerm) || 
+                type.includes(searchTerm) || 
+                office.includes(searchTerm);
+
+            const matchesStatus = statusValue === 'all' || status.includes(statusValue);
+            const matchesEquipmentType = equipmentTypeValue === 'all' || type.includes(equipmentTypeValue);
+            const matchesOffice = officeValue === 'all' || office.includes(officeValue);
+
+            if (matchesSearch && matchesStatus && matchesEquipmentType && matchesOffice) {
+                row.show();
+            } else {
+                row.hide();
+            }
+        });
+    }
+
+    // Add event listeners for real-time filtering
+    searchInput.on('input', filterEquipment);
+    statusFilter.on('change', filterEquipment);
+    equipmentTypeFilter.on('change', filterEquipment);
+    officeFilter.on('change', filterEquipment);
+
+    // Also try vanilla JS event listeners as backup
+    if (searchInput[0]) {
+        searchInput[0].addEventListener('input', filterEquipment);
+    }
+    if (statusFilter[0]) {
+        statusFilter[0].addEventListener('change', filterEquipment);
+    }
+    if (equipmentTypeFilter[0]) {
+        equipmentTypeFilter[0].addEventListener('change', filterEquipment);
+    }
+    if (officeFilter[0]) {
+        officeFilter[0].addEventListener('change', filterEquipment);
+    }
+
+    // Debug: Check if elements are found
+    console.log('Search elements found:', {
+        searchInput: searchInput.length,
+        statusFilter: statusFilter.length,
+        equipmentTypeFilter: equipmentTypeFilter.length,
+        officeFilter: officeFilter.length,
+        equipmentRows: equipmentRows.length
+    });
+
     const printQrcodesModal = $('#printQrcodesModal');
     const printQrcodesContent = $('#printQrcodesContent');
     const printModalLoadingMarkup = '<div class="text-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';

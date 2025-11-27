@@ -159,7 +159,11 @@
             </thead>
             <tbody>
                 @forelse($equipment as $item)
-                    <tr>
+                    <tr data-serial="{{ $item->serial_number ?? '' }}" 
+                        data-model="{{ $item->model_number ?? '' }}" 
+                        data-type="{{ $item->equipmentType ? $item->equipmentType->name : '' }}" 
+                        data-office="{{ $item->office ? $item->office->name : '' }}" 
+                        data-status="{{ $item->status ?? '' }}">
                         <td>
                             <div class="fw-bold text-primary">{{ $item->serial_number ?? 'N/A' }}</div>
                         </td>

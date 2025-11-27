@@ -140,7 +140,11 @@
             </thead>
             <tbody>
                 @forelse($users as $user)
-                    <tr>
+                    <tr data-name="{{ $user->first_name . ' ' . $user->last_name }}" 
+                        data-email="{{ $user->email }}" 
+                        data-role="{{ $user->role?->display_name ?? '' }}" 
+                        data-campus="{{ $user->campus?->name ?? '' }}" 
+                        data-office="{{ $user->office?->name ?? '' }}">
                         <td>
                             <div class="fw-bold text-primary">{{ $user->first_name . ' ' . $user->last_name }}</div>
                         </td>
@@ -261,6 +265,60 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Automatic Search Functionality
+    const searchInput = document.getElementById('search');
+    const roleFilter = document.getElementById('role');
+    const campusFilter = document.getElementById('campus');
+    const officeFilter = document.getElementById('office');
+    const statusFilter = document.getElementById('status');
+    const userRows = document.querySelectorAll('tbody tr');
+
+    function filterUsers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const roleValue = roleFilter.value.toLowerCase();
+        const campusValue = campusFilter.value.toLowerCase();
+        const officeValue = officeFilter.value.toLowerCase();
+        const statusValue = statusFilter.value.toLowerCase();
+
+        userRows.forEach(row => {
+            const name = row.dataset.name.toLowerCase();
+            const email = row.dataset.email.toLowerCase();
+            const role = row.dataset.role.toLowerCase();
+            const campus = row.dataset.campus.toLowerCase();
+            const office = row.dataset.office.toLowerCase();
+            const text = row.textContent.toLowerCase();
+
+            const matchesSearch = searchTerm === '' || 
+                text.includes(searchTerm) || 
+                name.includes(searchTerm) || 
+                email.includes(searchTerm);
+
+            const matchesRole = roleValue === 'all' || role.includes(roleValue);
+            const matchesCampus = campusValue === 'all' || campus.includes(campusValue);
+            const matchesOffice = officeValue === 'all' || office.includes(officeValue);
+            const matchesStatus = statusValue === 'all' || text.includes(statusValue);
+
+            if (matchesSearch && matchesRole && matchesCampus && matchesOffice && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Add event listeners for real-time filtering
+    searchInput.addEventListener('input', filterUsers);
+    roleFilter.addEventListener('change', filterUsers);
+    campusFilter.addEventListener('change', filterUsers);
+    officeFilter.addEventListener('change', filterUsers);
+    statusFilter.addEventListener('change', filterUsers);
+});
+</script>
+@endpush
 
 @endsection
 
