@@ -318,6 +318,9 @@
             window.sessionData = {!! json_encode($sessionData) !!};
         </script>
         <script src="{{ asset('js/session-lock.js') }}"></script>
+        
+        <!-- Auto Backup Timer (temporarily on all pages for testing) -->
+        <script data-auto-backup="true" src="{{ asset('js/auto-backup-timer.js') }}"></script>
     @endif
 
     <script src="{{ asset('js/profile-modals.js') }}"></script>

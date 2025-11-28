@@ -24,7 +24,7 @@ class BackupController extends Controller
         if (!$user || !$user->hasPermissionTo('settings.manage')) {
             abort(403, 'Unauthorized');
         }
-
+        
         // Get list of existing backups
         $backups = $this->backupService->listBackups();
 
@@ -354,5 +354,140 @@ class BackupController extends Controller
             'backups' => $backups,
             'count' => count($backups),
         ]);
+    }
+
+    /**
+     * Handle automatic backup triggered via AJAX.
+     */
+    public function autoBackup(Request $request)
+    {
+        // For automatic backups, we don't require user authentication
+        // but we validate the request to prevent abuse
+        try {
+            $settings = Setting::getBackupSettings();
+
+            // If auto backup is disabled, return early
+            if (!$settings['enabled']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Automatic backups are disabled'
+                ]);
+            }
+
+            $configuredTime = \Carbon\Carbon::createFromFormat('H:i', $settings['time']);
+            $now = \Carbon\Carbon::now();
+            $today = strtolower($now->englishDayOfWeek);
+
+            // Check if today is in allowed days
+            if (!in_array($today, $settings['days'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Today ({$today}) is not scheduled for backup"
+                ]);
+            }
+
+            // Check if backup was already run recently (within last 1 minute)
+            $lastRunAt = $settings['last_run_at'] ?? null;
+            if ($lastRunAt) {
+                $lastRun = \Carbon\Carbon::parse($lastRunAt);
+                
+                // Calculate actual time difference in seconds, then convert to minutes
+                $actualTimeDiff = $now->timestamp - $lastRun->timestamp;
+                $minutesSinceLastRun = max(0, floor($actualTimeDiff / 60));
+                
+                // Calculate next backup time using the same logic as the frontend
+                $backupTime = $settings['time']; // e.g., "18:55"
+                $backupDays = $settings['days']; // e.g., ["friday", "saturday"]
+                $dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                
+                [$hour, $minute] = array_map('intval', explode(':', $backupTime));
+                $nextDate = $now->copy();
+                
+                // Find the next scheduled day (same logic as frontend)
+                for ($i = 0; $i < 7; $i++) {
+                    $currentDayName = strtolower($nextDate->englishDayOfWeek);
+                    
+                    if (in_array($currentDayName, $backupDays)) {
+                        $backupDateTime = $nextDate->copy()->setHour($hour)->setMinute($minute)->setSecond(0);
+                        
+                        if ($backupDateTime->gt($now)) {
+                            $nextBackupTime = $backupDateTime->format('M d, Y h:i A');
+                            break;
+                        }
+                    }
+                    
+                    $nextDate->addDay();
+                }
+                
+                // Fallback if no calculation worked
+                if (!isset($nextBackupTime)) {
+                    $nextBackupTime = $now->copy()->addDay()->setHour($hour)->setMinute($minute)->setSecond(0)->format('M d, Y h:i A');
+                }
+                
+                // Debug logging to see the actual values
+                \Log::info("Backup cooldown check: Last run at '{$lastRunAt}', Now: '{$now->toDateTimeString()}', Last run timestamp: {$lastRun->timestamp}, Now timestamp: {$now->timestamp}, Actual seconds diff: {$actualTimeDiff}, Minutes diff: {$minutesSinceLastRun}");
+                
+                if ($minutesSinceLastRun < 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Backup already run {$minutesSinceLastRun} minutes ago. Skipping to prevent duplicates.",
+                        'skipped' => true,
+                        'minutes_ago' => $minutesSinceLastRun,
+                        'next_backup_time' => $nextBackupTime
+                    ]);     
+                }
+            }
+
+            // Check if current time matches (within 30-second window: 15 seconds before to 15 seconds after)
+            $currentTime = $now;
+            $startWindow = $configuredTime->copy()->subSeconds(15);
+            $endWindow = $configuredTime->copy()->addSeconds(15);
+
+            if ($currentTime->lt($startWindow) || $currentTime->gt($endWindow)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Current time {$now->format('H:i')} does not match backup time {$settings['time']} (window: {$startWindow->format('H:i')} - {$endWindow->format('H:i')})"
+                ]);
+            }
+
+            // All conditions met → create backup
+            $filename = $this->backupService->createBackup();
+            Setting::recordBackupRun();
+
+            $path = $this->backupService->getBackupAbsolutePath($filename);
+            $size = file_exists($path) ? filesize($path) : 0;
+            $sizeHuman = $this->formatBytes($size);
+
+            // Log automatic backup in activities for user visibility
+            Activity::create([
+                'user_id' => 1, // System user
+                'type' => 'automatic_backup_created',
+                'description' => "Scheduled backup created: {$filename} ({$sizeHuman})",
+                'created_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Automatic backup created successfully',
+                'filename' => $filename,
+                'size_human' => $sizeHuman
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Automatic backup failed: ' . $e->getMessage());
+
+            // Log automatic backup failure in activities for user visibility
+            Activity::create([
+                'user_id' => 1, // System user
+                'type' => 'automatic_backup_failed',
+                'description' => 'Scheduled backup failed: ' . $e->getMessage(),
+                'created_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Automatic backup failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

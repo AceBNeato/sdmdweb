@@ -98,328 +98,52 @@ class SettingsController extends Controller
             $details = [];
             
             if ($oldValues['backup_auto_enabled'] !== $newValues['backup_auto_enabled']) {
-                $details[] = 'Automatic backup ' . ($newValues['backup_auto_enabled'] ? 'enabled' : 'disabled');
+                $details[] = sprintf('Auto backup %s', $newValues['backup_auto_enabled'] ? 'enabled' : 'disabled');
             }
-            
             if ($oldValues['backup_auto_time'] !== $newValues['backup_auto_time']) {
-                $details[] = 'Backup time changed from ' . $oldValues['backup_auto_time'] . ' to ' . $newValues['backup_auto_time'];
+                $details[] = sprintf('Time changed from %s to %s', $oldValues['backup_auto_time'], $newValues['backup_auto_time']);
             }
-            
             if ($oldValues['backup_auto_days'] !== $newValues['backup_auto_days']) {
-                $details[] = 'Backup days changed from "' . $oldValues['backup_auto_days'] . '" to "' . $newValues['backup_auto_days'] . '"';
+                $details[] = sprintf('Days changed from [%s] to [%s]', $oldValues['backup_auto_days'], $newValues['backup_auto_days']);
             }
 
-            Activity::logSettingsUpdate(
-                'Backup Settings',
+            if (!empty($details)) {
+                $description .= ': ' . implode(', ', $details);
+            }
+
+            Activity::logSystemManagement(
+                'Backup Settings Updated',
                 $description,
-                $oldValues,
+                'settings',
+                null,
                 $newValues,
-                implode('; ', $details)
+                $oldValues,
+                'Backup'
             );
         }
 
-        // Handle AJAX requests
+        // Handle AJAX requests for backup settings form
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => true,
-                'message' => 'Settings updated successfully.'
+                'message' => 'Backup settings updated successfully!'
             ]);
         }
 
-        return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
+        return redirect()->route('settings.index')
+            ->with('success', 'Settings updated successfully!');
     }
 
-    // ==========================================
-    // SYSTEM MANAGEMENT METHODS
-    // ==========================================
-
     /**
-     * Display the system management dashboard.
+     * Get backup settings for AJAX requests
      */
-    public function systemIndex()
+    public function getBackupSettings(Request $request)
     {
-        return view('system.index');
-    }
-
-    // ==========================================
-    // CATEGORY MANAGEMENT
-    // ==========================================
-
-    /**
-     * Display all categories.
-     */
-    public function categories(Request $request)
-    {
-        $query = Category::withCount('equipment');
-
-        // Search functionality
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
+        try {
+            $settings = Setting::getBackupSettings();
+            return response()->json($settings);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to load backup settings'], 500);
         }
-
-        // Filter by status
-        // Note: Status filtering removed as is_active column is being dropped
-
-        $categories = $query->orderBy('name')->paginate(15);
-
-        return view('system.categories.index', compact('categories'));
-    }
-
-    /**
-     * Show the form for creating a new category.
-     */
-    public function createCategory()
-    {
-        return view('system.categories.create');
-    }
-
-    /**
-     * Store a newly created category.
-     */
-    public function storeCategory(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:categories,name',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $category = Category::create($request->only(['name']));
-
-        // Log category creation
-        Activity::logSystemManagement(
-            'Category Created',
-            'Created new category: ' . $category->name,
-            'categories',
-            $category->id,
-            ['name' => $category->name],
-            null,
-            'Category'
-        );
-
-        return redirect()->route('admin.settings.system.categories.index')
-            ->with('success', 'Category created successfully.');
-    }
-
-    /**
-     * Show the form for editing a category.
-     */
-    public function editCategory(Category $category)
-    {
-        return view('system.categories.edit', compact('category'));
-    }
-
-    /**
-     * Update the specified category.
-     */
-    public function updateCategory(Request $request, Category $category)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // Store old values for logging
-        $oldValues = ['name' => $category->name];
-        $newValues = ['name' => $request->name];
-
-        $category->update($request->only(['name']));
-
-        // Log category update
-        Activity::logSystemManagement(
-            'Category Updated',
-            'Updated category from "' . $oldValues['name'] . '" to "' . $newValues['name'] . '"',
-            'categories',
-            $category->id,
-            $newValues,
-            $oldValues,
-            'Category'
-        );
-
-        return redirect()->route('admin.settings.system.categories.index')
-            ->with('success', 'Category updated successfully.');
-    }
-
-    /**
-     * Delete the specified category.
-     */
-    public function destroyCategory(Category $category)
-    {
-        // Check if category has equipment
-        if ($category->hasEquipment()) {
-            return redirect()->back()
-                ->with('error', 'Cannot delete category that contains equipment. Please reassign or remove all equipment first.');
-        }
-
-        // Store values for logging
-        $categoryData = ['name' => $category->name];
-        $equipmentCount = $category->equipment()->count();
-
-        $category->delete();
-
-        // Log category deletion
-        Activity::logSystemManagement(
-            'Category Deleted',
-            'Deleted category: ' . $categoryData['name'] . ' (had ' . $equipmentCount . ' equipment items)',
-            'categories',
-            $category->id,
-            null,
-            $categoryData,
-            'Category'
-        );
-
-        return redirect()->route('admin.settings.system.categories.index')
-            ->with('success', 'Category deleted successfully.');
-    }
-
-    // ==========================================
-    // EQUIPMENT TYPE MANAGEMENT
-    // ==========================================
-
-    /**
-     * Display all equipment types.
-     */
-    public function equipmentTypes(Request $request)
-    {
-        $query = EquipmentType::withCount('equipment');
-
-        // Search functionality
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        // Filter by status
-        // Note: Status filtering removed as is_active column is being dropped
-
-        $equipmentTypes = $query->orderBy('name')->paginate(15);
-
-        return view('system.equipment-types.index', compact('equipmentTypes'));
-    }
-
-    /**
-     * Show the form for creating a new equipment type.
-     */
-    public function createEquipmentType()
-    {
-        return view('system.equipment-types.create');
-    }
-
-    /**
-     * Store a newly created equipment type.
-     */
-    public function storeEquipmentType(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:equipment_types,name',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $equipmentType = EquipmentType::create($request->only(['name']));
-
-        // Log equipment type creation
-        Activity::logSystemManagement(
-            'Equipment Type Created',
-            'Created new equipment type: ' . $equipmentType->name,
-            'equipment_types',
-            $equipmentType->id,
-            ['name' => $equipmentType->name],
-            null,
-            'Equipment Type'
-        );
-
-        return redirect()->route('admin.settings.system.equipment-types.index')
-            ->with('success', 'Equipment type created successfully.');
-    }
-
-    /**
-     * Show the form for editing an equipment type.
-     */
-    public function editEquipmentType(EquipmentType $equipmentType)
-    {
-        return view('system.equipment-types.edit', compact('equipmentType'));
-    }
-
-    /**
-     * Update the specified equipment type.
-     */
-    public function updateEquipmentType(Request $request, EquipmentType $equipmentType)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:equipment_types,name,' . $equipmentType->id,
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // Store old values for logging
-        $oldValues = ['name' => $equipmentType->name];
-        $newValues = ['name' => $request->name];
-
-        $equipmentType->update($request->only(['name']));
-
-        // Log equipment type update
-        Activity::logSystemManagement(
-            'Equipment Type Updated',
-            'Updated equipment type from "' . $oldValues['name'] . '" to "' . $newValues['name'] . '"',
-            'equipment_types',
-            $equipmentType->id,
-            $newValues,
-            $oldValues,
-            'Equipment Type'
-        );
-
-        return redirect()->route('admin.settings.system.equipment-types.index')
-            ->with('success', 'Equipment type updated successfully.');
-    }
-
-    /**
-     * Delete the specified equipment type.
-     */
-    public function destroyEquipmentType(EquipmentType $equipmentType)
-    {
-        // Check if equipment type has equipment
-        if ($equipmentType->equipment()->exists()) {
-            return redirect()->back()
-                ->with('error', 'Cannot delete equipment type that contains equipment. Please reassign or remove all equipment first.');
-        }
-
-        // Store values for logging
-        $equipmentTypeData = ['name' => $equipmentType->name];
-        $equipmentCount = $equipmentType->equipment()->count();
-
-        $equipmentType->delete();
-
-        // Log equipment type deletion
-        Activity::logSystemManagement(
-            'Equipment Type Deleted',
-            'Deleted equipment type: ' . $equipmentTypeData['name'] . ' (had ' . $equipmentCount . ' equipment items)',
-            'equipment_types',
-            $equipmentType->id,
-            null,
-            $equipmentTypeData,
-            'Equipment Type'
-        );
-
-        return redirect()->route('admin.settings.system.equipment-types.index')
-            ->with('success', 'Equipment type deleted successfully.');
     }
 }

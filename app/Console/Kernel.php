@@ -12,12 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Check for backup triggers every minute using the new backup system
-        $schedule->command('backup:run-scheduled')
-            ->everyMinute()
-            ->withoutOverlapping()
-            ->runInBackground()
-            ->appendOutputTo(storage_path('logs/backup-scheduler.log'));
+        // Automatic backups are now handled via AJAX from frontend
+        // No scheduled commands needed for backup system
     }
 
     /**

@@ -16,9 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         RunScheduledBackup::class,
     ])
     ->withSchedule(function (Schedule $schedule): void {
-        $schedule->command(RunScheduledBackup::class)
-            ->everyFiveMinutes()
+        $schedule->command('backup:run --only-db')
+            ->everyMinute()
             ->withoutOverlapping();
+        $schedule->command('backup:clean')->daily();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

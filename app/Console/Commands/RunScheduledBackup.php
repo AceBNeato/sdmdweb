@@ -8,6 +8,7 @@ use App\Services\BackupService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Artisan;
 
 class RunScheduledBackup extends Command
 {
@@ -38,7 +39,7 @@ class RunScheduledBackup extends Command
             return self::SUCCESS;
         }
 
-        $timeString = $settings['time'] ?? '02:00';
+        $timeString = $settings['time'] ?? '05:00';
         [$hour, $minute] = array_pad(explode(':', $timeString, 2), 2, '00');
         $scheduledDateTime = (clone $now)->setTime((int) $hour, (int) $minute, 0);
 
@@ -62,18 +63,22 @@ class RunScheduledBackup extends Command
         }
 
         try {
-            $filename = $this->backupService->createBackup();
+            $this->info('Running Spatie backup...');
+            Artisan::call('backup:run --only-db');
+            $output = Artisan::output();
+            $this->info($output);
+
             Setting::recordBackupRun();
 
             // Log automatic backup in activities for user visibility
             Activity::create([
                 'user_id' => 1, // System user
                 'type' => 'database_backup',
-                'description' => "Automatic backup created: {$filename}",
+                'description' => "Automatic backup created via Spatie",
                 'created_at' => now(),
             ]);
 
-            $this->info('Scheduled backup created: ' . $filename);
+            $this->info('Scheduled backup completed.');
             return self::SUCCESS;
         } catch (\Throwable $throwable) {
             Log::error('Scheduled backup failed: ' . $throwable->getMessage());

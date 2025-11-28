@@ -344,6 +344,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/check-status', [\App\Http\Controllers\User\UserController::class, 'checkStatus'])
             ->name('check-status');
     });
+    
+    // Admin Settings
+    Route::prefix('settings')->name('settings.')->middleware('permission:settings.manage')->group(function () {
+        Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'update'])->name('update');
+        Route::get('/api/backup-settings', [\App\Http\Controllers\User\SettingsController::class, 'getBackupSettings'])->name('api.backup-settings');
+    });
 });
 
     Route::middleware(['auth:staff'])
@@ -661,6 +668,7 @@ Route::middleware(['auth'])
             Route::prefix('settings')->name('settings.')->middleware('permission:settings.manage')->group(function () {
                 Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'index'])->name('index');
                 Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'update'])->name('update');
+                Route::get('/api/backup-settings', [\App\Http\Controllers\User\SettingsController::class, 'getBackupSettings'])->name('api.backup-settings');
 
                 // System Management (Categories & Equipment Types)
                 Route::prefix('system')->name('system.')->group(function () {
@@ -701,6 +709,9 @@ Route::middleware(['auth'])
                 Route::get('/download/{filename}', [BackupController::class, 'download'])->name('download');
                 Route::delete('/delete/{filename}', [BackupController::class, 'delete'])->name('delete');
             });
+            
+            // Automatic backup endpoint (no auth required for AJAX calls)
+            Route::post('/backup/auto', [BackupController::class, 'autoBackup'])->name('backup.auto');
 
             // QR Scanner (Global)
             Route::get('qr-scanner', [EquipmentController::class, 'qrScanner'])

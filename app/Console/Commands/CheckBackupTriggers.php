@@ -30,7 +30,7 @@ class CheckBackupTriggers extends Command
     {
         // Check for backup triggers in the last hour
         $triggers = DB::table('activities')
-            ->where('type', 'backup_trigger')
+            ->where('type', 'backup_trigger')   
             ->where('created_at', '>=', Carbon::now()->subHour())
             ->get();
 

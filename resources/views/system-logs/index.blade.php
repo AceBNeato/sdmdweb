@@ -246,8 +246,7 @@
                         <tr>
                             <th scope="col">User</th>
                             <th scope="col">Action</th>
-                            <th scope="col" class="d-none d-md-table-cell">Description</th>
-                            <th scope="col" class="d-none d-md-table-cell">Timestamp</th>
+                            <th scope="col">Description</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -264,12 +263,17 @@
                                 <td>
                                     <span class="badge">{{ $activity->type }}</span>
                                 </td>
-                                <td class="d-none d-md-table-cell">
-                                    <div class="text-body">{{ $activity->description ?? 'No description available' }}</div>
-                                </td>
-                                <td class="text-end d-none d-md-table-cell">
-                                    <div class="timestamp">{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y') }}</div>
-                                    <small>{{ $activity->created_at->timezone(config('app.timezone'))->format('h:i A') }}</small>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary view-log-btn" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#logModal"
+                                            data-user-name="{{ $activity->user->name ?? 'Unknown User' }}"
+                                            data-user-email="{{ $activity->user->email ?? 'Email not available' }}"
+                                            data-type="{{ $activity->type }}"
+                                            data-description="{{ $activity->description ?? 'No description available' }}"
+                                            data-timestamp="{{ $activity->created_at->timezone(config('app.timezone'))->format('M d, Y h:i A') }}">
+                                        <i class='bx bx-eye me-1'></i>View
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
@@ -381,17 +385,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle log row clicks for mobile modal
+    // Handle View button clicks for modal
     document.addEventListener('click', function(event) {
-        const logRow = event.target.closest('.logs-row');
-        if (logRow && window.innerWidth < 768) { // Only for mobile/tablet
+        const viewBtn = event.target.closest('.view-log-btn');
+        if (viewBtn) {
             event.preventDefault();
 
             // Get data from data attributes
-            const userName = logRow.dataset.userName || 'Unknown User';
-            const userEmail = logRow.dataset.userEmail || 'Email not available';
-            const description = logRow.dataset.description || 'No description available';
-            const timestamp = logRow.dataset.timestamp || '';
+            const userName = viewBtn.dataset.userName || 'Unknown User';
+            const userEmail = viewBtn.dataset.userEmail || 'Email not available';
+            const description = viewBtn.dataset.description || 'No description available';
+            const timestamp = viewBtn.dataset.timestamp || '';
 
             // Populate modal
             document.getElementById('modal-user-name').textContent = userName;
@@ -413,12 +417,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 focus: true
             });
 
-            // Manually add modal-open class to body
-            document.body.classList.add('modal-open');
-            
-            // Add event listener to remove class when modal is hidden
+            // Add event listener to clean up when modal is hidden
             modalElement.addEventListener('hidden.bs.modal', function () {
                 document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
             });
 
             modal.show();

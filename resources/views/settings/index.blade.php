@@ -198,7 +198,7 @@
                                 </li>
                                 <li>
                                     <span class="font-medium">Last run:</span>
-                                    {{ $backupSettings['last_run_at'] ? \Carbon\Carbon::parse($backupSettings['last_run_at'])->format('M d, Y h:i A') : 'Never' }}
+                                    {{ $backupSettings['last_run_at'] ? \Carbon\Carbon::parse($backupSettings['last_run_at'])->format('m/d/Y, h:i:s A') : 'Never' }}
                                 </li>
                             </ul>
                         </div>
@@ -891,5 +891,6 @@
             });
         });
     });
-</script>
+
+    </script>
 @endsection

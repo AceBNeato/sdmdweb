@@ -107,24 +107,6 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        // Create admin user
-        $admin = User::updateOrCreate(
-            ['email' => 'arthurdalemicaroz@gmail.com'],
-            [
-                'first_name' => 'Arthur',
-                'last_name' => 'Dale Micaroz',
-                'password' => Hash::make('12345678'),
-                'position' => 'System Administrator',
-                'phone' => '09123456789',
-                'address' => 'Mankilam, Tagum City, Davao del Norte, Philippines',
-                'office_id' => $presidentOffice->id,
-                'campus_id' => $tagumCampus->id,
-                'is_active' => true,
-                'email_verified_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
 
 
 
@@ -142,14 +124,10 @@ class AdminUserSeeder extends Seeder
             $superAdmin->roles()->sync([$superAdminRole->id]);
             $superAdmin2->roles()->sync([$superAdminRole->id]);
         }
-        if ($adminRole) {
-            $admin->roles()->sync([$adminRole->id]);
-        }
 
         // Output summary
         $this->command->info('Created/Updated Users:');
         $this->command->info('- Super Admin 1: ' . $superAdmin->first_name . ' ' . $superAdmin->last_name . ' (' . $superAdmin->email . ') - ' . $superAdmin->position . ' at ' . $superAdmin->campus->name . ' - Password: superadmin123');
         $this->command->info('- Super Admin 2: ' . $superAdmin2->first_name . ' ' . $superAdmin2->last_name . ' (' . $superAdmin2->email . ') - ' . $superAdmin2->position . ' at ' . $superAdmin2->campus->name . ' - Password: superadmin123');
-        $this->command->info('- Admin: ' . $admin->first_name . ' ' . $admin->last_name . ' (' . $admin->email . ') - ' . $admin->position . ' at ' . $admin->campus->name . ' - Password: 12345678');
-    }
+       }
 }
