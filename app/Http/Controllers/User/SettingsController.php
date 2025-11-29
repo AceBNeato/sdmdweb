@@ -7,6 +7,8 @@ use App\Models\Activity;
 use App\Models\Setting;
 use App\Models\Category;
 use App\Models\EquipmentType;
+use App\Models\Equipment;
+use App\Models\Campus;
 use App\Services\BackupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -145,5 +147,155 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to load backup settings'], 500);
         }
+    }
+
+    // Category Management Methods
+    public function categories(Request $request)
+    {
+        $categories = Category::withCount('equipment')
+            ->when($request->search, function($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->paginate(10);
+
+        return view('settings.categories.index', compact('categories'));
+    }
+
+    public function createCategory()
+    {
+        return view('settings.categories.create');
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name',
+        ]);
+
+        Category::create([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->route('admin.settings.categories.index')
+            ->with('success', 'Category created successfully!');
+    }
+
+    public function editCategory(Category $category)
+    {
+        return view('settings.categories.edit', compact('category'));
+    }
+
+    public function updateCategory(Request $request, Category $category)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+        ]);
+
+        $category->update([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->route('admin.settings.categories.index')
+            ->with('success', 'Category updated successfully!');
+    }
+
+    public function destroyCategory(Category $category)
+    {
+        if ($category->equipment()->count() > 0) {
+            return redirect()->route('admin.settings.categories.index')
+                ->with('error', 'Cannot delete category that has equipment assigned!');
+        }
+
+        $category->delete();
+
+        return redirect()->route('admin.settings.categories.index')
+            ->with('success', 'Category deleted successfully!');
+    }
+
+    public function toggleCategory(Category $category)
+    {
+        $category->update([
+            'is_active' => !$category->is_active,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category status updated successfully!'
+        ]);
+    }
+
+    // Equipment Type Management Methods
+    public function equipmentTypes(Request $request)
+    {
+        $equipmentTypes = EquipmentType::withCount('equipment')
+            ->when($request->search, function($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->paginate(10);
+
+        return view('settings.equipment-types.index', compact('equipmentTypes'));
+    }
+
+    public function createEquipmentType()
+    {
+        return view('settings.equipment-types.create');
+    }
+
+    public function storeEquipmentType(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:equipment_types,name',
+        ]);
+
+        EquipmentType::create([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->route('admin.settings.equipment-types.index')
+            ->with('success', 'Equipment type created successfully!');
+    }
+
+    public function editEquipmentType(EquipmentType $equipmentType)
+    {
+        return view('settings.equipment-types.edit', compact('equipmentType'));
+    }
+
+    public function updateEquipmentType(Request $request, EquipmentType $equipmentType)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:equipment_types,name,' . $equipmentType->id,
+        ]);
+
+        $equipmentType->update([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->route('admin.settings.equipment-types.index')
+            ->with('success', 'Equipment type updated successfully!');
+    }
+
+    public function destroyEquipmentType(EquipmentType $equipmentType)
+    {
+        if ($equipmentType->equipment()->count() > 0) {
+            return redirect()->route('admin.settings.equipment-types.index')
+                ->with('error', 'Cannot delete equipment type that has equipment assigned!');
+        }
+
+        $equipmentType->delete();
+
+        return redirect()->route('admin.settings.equipment-types.index')
+            ->with('success', 'Equipment type deleted successfully!');
+    }
+
+    public function toggleEquipmentType(EquipmentType $equipmentType)
+    {
+        $equipmentType->update([
+            'is_active' => !$equipmentType->is_active,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Equipment type status updated successfully!'
+        ]);
     }
 }

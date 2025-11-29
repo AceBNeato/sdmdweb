@@ -316,6 +316,26 @@ function selectRole(roleId) {
             if (!form.checkValidity()) {
                 event.preventDefault()
                 event.stopPropagation()
+                
+                // Show SweetAlert with missing fields
+                const invalidFields = form.querySelectorAll(':invalid');
+                let missingFields = [];
+                
+                invalidFields.forEach(field => {
+                    const label = document.querySelector(`label[for="${field.id}"]`);
+                    const fieldName = label ? label.textContent.replace('*', '').trim() : field.name;
+                    missingFields.push(fieldName);
+                });
+                
+                if (missingFields.length > 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Missing Required Fields',
+                        html: `Please fill in the following required fields:<br><br><strong>${missingFields.join('<br>')}</strong>`,
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+                
                 return;
             }
 
@@ -345,8 +365,45 @@ function selectRole(roleId) {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (response.status === 422) {
+                    // Handle validation errors
+                    return response.json().then(data => {
+                        console.log('Validation errors:', data);
+                        
+                        // Show validation error message
+                        let errorMessage = 'Please fix the following errors:\n';
+                        if (data.errors) {
+                            Object.keys(data.errors).forEach(field => {
+                                errorMessage += `- ${data.errors[field][0]}\n`;
+                            });
+                        } else if (data.message) {
+                            errorMessage = data.message;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: errorMessage,
+                            confirmButtonColor: '#dc3545'
+                        });
+                        
+                        // Don't continue to success handler
+                        throw new Error('Validation failed');
+                    });
+                }
+                
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
+                
+                // Close loading SweetAlert first
+                Swal.close();
+                
                 if (data.success) {
                     // Show success SweetAlert
                     Swal.fire({
@@ -372,12 +429,12 @@ function selectRole(roleId) {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                // If it's not a JSON response, it might be a validation error redirect
-                if (error.message.includes('Unexpected token')) {
-                    // Reload the page to show validation errors
-                    window.location.reload();
-                } else {
+                console.error('Fetch error:', error);
+                
+                // Close loading SweetAlert
+                Swal.close();
+                
+                if (error.message !== 'Validation failed') { // Only show generic error if not a validation error
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',

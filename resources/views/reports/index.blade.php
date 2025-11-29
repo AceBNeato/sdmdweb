@@ -19,7 +19,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
 @if(!auth()->user()->hasPermissionTo('reports.view'))
     @php abort(403) @endphp
 @else
-
+    
     <div class="card mb-4">
         <div class="card-body">
             <form action="{{ route($prefix . '.reports.index') }}" method="GET" class="filter-form">

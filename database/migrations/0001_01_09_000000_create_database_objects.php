@@ -35,7 +35,7 @@ return new class extends Migration
                 LEFT JOIN roles r ON u.role_id = r.id
                 LEFT JOIN offices o ON u.office_id = o.id
                 LEFT JOIN campuses c ON u.campus_id = c.id
-                LEFT JOIN equipment e ON (e.assigned_to_id = u.id AND e.assigned_to_type = 'user')
+                LEFT JOIN equipment e ON 1=0 -- Removed assignment fields
                 WHERE u.deleted_at IS NULL
                 GROUP BY u.id, u.first_name, u.last_name, u.email, u.position, u.phone, 
                          u.is_active, u.is_available, u.specialization, u.employee_id,
@@ -76,7 +76,6 @@ return new class extends Migration
                 SELECT 
                     cat.id,
                     cat.name,
-                    cat.description,
                     cat.is_active,
                     COUNT(e.id) as equipment_count,
                     COALESCE(SUM(e.cost_of_purchase), 0) as total_equipment_cost,
@@ -87,7 +86,7 @@ return new class extends Migration
                 FROM categories cat
                 LEFT JOIN equipment e ON e.category_id = cat.id AND e.deleted_at IS NULL
                 WHERE cat.deleted_at IS NULL
-                GROUP BY cat.id, cat.name, cat.description, cat.is_active, cat.created_at
+                GROUP BY cat.id, cat.name, cat.is_active, cat.created_at
             ");
         }
 
@@ -253,48 +252,12 @@ return new class extends Migration
                         COUNT(e.id) as equipment_count
                     FROM users u
                     LEFT JOIN roles r ON u.role_id = r.id
-                    LEFT JOIN equipment e ON (e.assigned_to_id = u.id AND e.assigned_to_type = 'user')
+                    LEFT JOIN equipment e ON 1=0 -- Removed assignment fields
                     WHERE u.office_id = p_office_id
                     AND u.deleted_at IS NULL
                     GROUP BY u.id, u.first_name, u.last_name, u.email, u.position, 
                              u.is_active, u.is_available, r.name
                     ORDER BY u.first_name, u.last_name;
-                END
-            ");
-        }
-
-        if (!DB::select("SELECT * FROM information_schema.routines WHERE routine_schema = DATABASE() AND routine_name = 'transfer_user_equipment'")) {
-            DB::statement("
-                CREATE PROCEDURE transfer_user_equipment(
-                    IN p_from_user_id INT,
-                    IN p_to_user_id INT,
-                    IN p_notes TEXT
-                )
-                BEGIN
-                    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-                    BEGIN
-                        ROLLBACK;
-                        RESIGNAL;
-                    END;
-                    
-                    START TRANSACTION;
-                    
-                    UPDATE equipment 
-                    SET assigned_to_id = p_to_user_id, 
-                        assigned_at = NOW(),
-                        updated_at = NOW()
-                    WHERE assigned_to_id = p_from_user_id 
-                    AND assigned_to_type = 'user';
-                    
-                    INSERT INTO activities (user_id, type, description, created_at)
-                    VALUES (
-                        p_from_user_id, 
-                        'equipment_transfer', 
-                        CONCAT('Transferred all equipment from user ', p_from_user_id, ' to user ', p_to_user_id, IFNULL(CONCAT(': ', p_notes), '')),
-                        NOW()
-                    );
-                    
-                    COMMIT;
                 END
             ");
         }
@@ -322,18 +285,16 @@ return new class extends Migration
             ");
         }
 
-        // Equipment Assignment View (create only if doesn't exist)
+        // Equipment Assignment View (create only if doesn't exist) - Simplified since assignment fields removed
         if (!DB::select("SELECT * FROM information_schema.views WHERE table_schema = DATABASE() AND table_name = 'equipment_assignment_view'")) {
             DB::statement("
                 CREATE VIEW equipment_assignment_view AS
                 SELECT 
                     e.id, e.brand, e.model_number, e.serial_number, e.status,
-                    e.assigned_to_type, e.assigned_to_id, e.assigned_at,
-                    u.first_name, u.last_name, o.name as office_name
+                    o.name as office_name
                 FROM equipment e
-                LEFT JOIN users u ON e.assigned_to_id = u.id
                 LEFT JOIN offices o ON e.office_id = o.id
-                WHERE e.assigned_to_type IS NOT NULL
+                WHERE 1=0 -- No assignment data available
             ");
         }
 
@@ -544,7 +505,6 @@ return new class extends Migration
         
         // Drop procedures
         DB::statement("DROP PROCEDURE IF EXISTS get_users_by_office");
-        DB::statement("DROP PROCEDURE IF EXISTS transfer_user_equipment");
         DB::statement("DROP PROCEDURE IF EXISTS get_equipment_by_office");
         DB::statement("DROP PROCEDURE IF EXISTS bulk_update_equipment_status");
         

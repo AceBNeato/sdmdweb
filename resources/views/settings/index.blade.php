@@ -38,6 +38,64 @@
 .tab-content.active {
     display: block;
 }
+
+.management-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.management-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.management-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.management-card-icon {
+    margin-bottom: 1rem;
+}
+
+.management-card-content h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.management-card-content p {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.quick-actions {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.quick-actions h5 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #374151;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
 </style>
 @endpush
 
@@ -53,8 +111,8 @@
             <div class="settings-tab active" data-tab="general">
                 <i class="fas fa-cog mr-2"></i>Session Settings
             </div>
-            <div class="settings-tab" data-tab="system">
-                <i class="fas fa-database mr-2"></i>Equipment Settings
+            <div class="settings-tab" data-tab="equipment">
+                <i class="fas fa-tools mr-2"></i>Equipment Settings
             </div>
             <div class="settings-tab" data-tab="backup">
                 <i class="fas fa-hdd mr-2"></i>Backup and Restore
@@ -115,6 +173,85 @@
                     </button>
                 </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Equipment Settings Tab -->
+        <div id="equipment-tab" class="tab-content">
+            <!-- Equipment Settings Dashboard -->
+            <div class="settings-summary-cards">
+                <div class="summary-card">
+                    <div class="summary-value">{{ \App\Models\Category::count() }}</div>
+                    <div class="summary-label">Total Categories</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">{{ \App\Models\EquipmentType::count() }}</div>
+                    <div class="summary-label">Equipment Types</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">{{ \App\Models\Equipment::count() }}</div>
+                    <div class="summary-label">Total Equipment</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">{{ \App\Models\Campus::count() }}</div>
+                    <div class="summary-label">Total Campuses</div>
+                </div>
+            </div>
+
+            <!-- Management Cards -->
+            <div class="settings-grid">
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <i class="fas fa-tools settings-section-icon"></i>
+                        <h3>Equipment Management</h3>
+                    </div>
+                    <div class="settings-section-content">
+                        <p class="text-gray-600 mb-4">
+                            Manage equipment categories, types, and other master data for the equipment inventory system.
+                        </p>
+
+                        <div class="management-cards">
+                            <div class="management-card">
+                                <div class="management-card-icon">
+                                    <i class="fas fa-tags fa-3x text-primary"></i>
+                                </div>
+                                <div class="management-card-content">
+                                    <h5>Categories</h5>
+                                    <p class="text-muted">Manage equipment categories</p>
+                                    <a href="{{ url('admin/settings/categories') }}" class="btn btn-primary">
+                                        Manage Categories
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="management-card">
+                                <div class="management-card-icon">
+                                    <i class="fas fa-cogs fa-3x text-success"></i>
+                                </div>
+                                <div class="management-card-content">
+                                    <h5>Equipment Types</h5>
+                                    <p class="text-muted">Manage equipment types and ordering</p>
+                                    <a href="{{ url('admin/settings/equipment-types') }}" class="btn btn-primary">
+                                        Manage Equipment Types
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if(auth()->user()->hasPermissionTo('settings.manage'))
+                        <div class="quick-actions">
+                            <h5>Quick Actions</h5>
+                            <div class="quick-actions-grid">
+                                <a href="{{ url('admin/settings/categories/create') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-plus mr-2"></i> Add New Category
+                                </a>
+                                <a href="{{ url('admin/settings/equipment-types/create') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-plus mr-2"></i> Add New Equipment Type
+                                </a>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -288,71 +425,6 @@
             </div>
         </div>
 
-        <!-- System Management Tab -->
-        <div id="system-tab" class="tab-content">
-
-            <!-- System Statistics -->
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <div class="h3 text-primary">{{ \App\Models\Category::count() }}</div>
-                            <p class="text-muted mb-0">Total Categories</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <div class="h3 text-success">{{ \App\Models\EquipmentType::count() }}</div>
-                            <p class="text-muted mb-0">Equipment Types</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <div class="h3 text-warning">{{ \App\Models\Equipment::count() }}</div>
-                            <p class="text-muted mb-0">Total Equipment</p>
-                        </div>
-                    </div>
-                </div>
-                        <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <div class="h3 text-info">{{ \App\Models\Campus::count() }}</div>
-                            <p class="text-muted mb-0">Total Campuses</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="category-row">
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <i class="fas fa-tags fa-3x text-primary mb-3"></i>
-                            <h5>Categories</h5>
-                            <p class="text-muted">Manage equipment categories</p>
-                            <a href="{{ route('admin.settings.system.categories.index') }}" class="btn btn-primary">
-                                Manage Categories
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <i class="fas fa-cogs fa-3x text-success mb-3"></i>
-                            <h5>Equipment Types</h5>
-                            <p class="text-muted">Manage equipment types and ordering</p>
-                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-primary">
-                                Manage Equipment Types
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
         
         
     </div>

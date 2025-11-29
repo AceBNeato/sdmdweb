@@ -240,3 +240,519 @@
 <form id="printQrcodesPdfForm" action="{{ $printPdfRoute ?? '#' }}" method="GET" target="_blank" style="display:none;">
     <input type="hidden" name="equipment_ids" value="">
 </form>
+
+
+<style>
+    /* Modal Header Styling */
+    .modal-header.bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+    
+    .modal-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .modal-icon-wrapper i {
+        font-size: 24px;
+        color: white;
+    }
+
+    /* Filter Section */
+    .filter-section {
+        border: 1px solid #dee2e6;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .rounded-lg {
+        border-radius: 12px;
+    }
+
+    /* Selection Controls */
+    .selection-controls {
+        border-top: 1px dashed #dee2e6;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+    }
+    
+    .form-check-lg .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-top: 6px;
+    }
+
+    /* Equipment List Card */
+    .equipment-list-card {
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        height: 500px;
+    }
+    
+    .equipment-list-card .card-header {
+        border-bottom: none;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .qr-select-list {
+        max-height: 420px;
+        overflow-y: auto;
+        background: white;
+    }
+    
+    .qr-select-item {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .qr-select-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(2px);
+    }
+    
+    .qr-select-item:last-child {
+        border-bottom: none;
+    }
+    
+    .qr-select-item .form-check {
+        margin-bottom: 0;
+    }
+    
+    .qr-select-item .form-check-input {
+        margin-top: 8px;
+    }
+    
+    .qr-status-indicator {
+        font-size: 18px;
+    }
+
+    /* QR Preview Card */
+    .qr-preview-card {
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        height: 500px;
+    }
+    
+    .qr-preview-card .card-header {
+        border-bottom: none;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+
+    .qr-print-preview {
+        max-height: 420px;
+        overflow-y: auto;
+        padding: 1rem;
+        background: white;
+    }
+
+    /* QR Grid */
+    .qr-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .qr-preview-item {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        background: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .qr-preview-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        border-color: #007bff;
+    }
+    
+    .qr-preview-item.selected {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+    }
+    
+    .qr-preview-item.unselected {
+        opacity: 0.4;
+        transform: scale(0.95);
+    }
+
+    .qr-image-wrapper {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .qr-code-img {
+        max-width: 120px;
+        max-height: 120px;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    .qr-details {
+        text-align: left;
+    }
+    
+    .equipment-name {
+        font-weight: 700;
+        color: #007bff;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .equipment-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .info-item i {
+        font-size: 14px;
+        color: #adb5bd;
+    }
+
+    /* Empty State */
+    .empty-state-icon {
+        font-size: 64px;
+        color: #6c757d;
+        opacity: 0.5;
+    }
+    
+    .empty-state-icon i {
+        display: block;
+    }
+
+    /* Badge Styling */
+    .badge.bg-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+    }
+    
+    .badge.bg-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    }
+
+    /* Button Enhancements */
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-lg:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn-success:disabled {
+        background: #6c757d;
+        border-color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    /* Form Controls */
+    .form-select-lg {
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .form-select-lg:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    /* Print Styles */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        #qrPrintArea, #qrPrintArea * {
+            visibility: visible;
+        }
+
+        #qrPrintArea {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            padding: 24px;
+            background: white;
+        }
+
+        .modal-header,
+        .selection-controls,
+        .filter-section,
+        .btn,
+        .qr-select-list,
+        #selectAllQrcodes,
+        .qr-select-checkbox,
+        .form-check,
+        .equipment-list-card,
+        .qr-preview-card .card-header {
+            display: none !important;
+        }
+
+        .qr-print-preview {
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+        }
+
+        .print-header {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #000;
+        }
+
+        .qr-preview-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+            gap: 1.5rem !important;
+        }
+
+        .qr-preview-item {
+            page-break-inside: avoid;
+            border: 2px solid #000 !important;
+            padding: 1rem !important;
+        }
+
+        .qr-preview-item:only-child {
+            grid-column: 1 / -1;
+        }
+        
+        .qr-preview-item.unselected {
+            display: none !important;
+        }
+    }
+
+    /* QR Grid */
+    .qr-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1.25rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 576px) {
+        /* Extra Small Devices */
+        .equipment-list-card,
+        .qr-preview-card {
+            height: 350px;
+        }
+        
+        .qr-select-list,
+        .qr-print-preview {
+            max-height: 280px;
+        }
+        
+        .qr-preview-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .selection-controls .row {
+            flex-direction: row !important;
+            gap: 1rem;
+        }
+        
+        .selection-controls .text-center,
+        .selection-controls .text-md-end {
+            text-align: center !important;
+        }
+        
+        .selection-controls .col-12 {
+            order: 2;
+        }
+        
+        .selection-controls .col-12:first-child {
+            order: 1;
+        }
+        
+        .selection-controls .col-12:last-child {
+            order: 3;
+        }
+        
+        .btn-lg {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+        
+        .form-select-lg {
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+        }
+    }
+
+    @media (min-width: 577px) and (max-width: 768px) {
+        /* Small Devices */
+        .equipment-list-card,
+        .qr-preview-card {
+            height: 400px;
+        }
+        
+        .qr-select-list,
+        .qr-print-preview {
+            max-height: 320px;
+        }
+        
+        .qr-preview-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+        
+        .selection-controls .row {
+            flex-direction: row !important;
+            gap: 1rem;
+        }
+    }
+
+    @media (min-width: 769px) and (max-width: 992px) {
+        /* Medium Devices */
+        .equipment-list-card,
+        .qr-preview-card {
+            height: 450px;
+        }
+        
+        .qr-select-list,
+        .qr-print-preview {
+            max-height: 370px;
+        }
+        
+        .qr-preview-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+    }
+
+    @media (min-width: 993px) and (max-width: 1200px) {
+        /* Large Devices */
+        .equipment-list-card,
+        .qr-preview-card {
+            height: 480px;
+        }
+        
+        .qr-select-list,
+        .qr-print-preview {
+            max-height: 400px;
+        }
+        
+        .qr-preview-grid {
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 1.25rem;
+        }
+    }
+
+    @media (min-width: 1201px) {
+        /* Extra Large Devices */
+        .equipment-list-card,
+        .qr-preview-card {
+            height: 500px;
+        }
+        
+        .qr-select-list,
+        .qr-print-preview {
+            max-height: 420px;
+        }
+        
+        .qr-preview-grid {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.25rem;
+        }
+    }
+
+    /* Print Styles */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        #qrPrintArea, #qrPrintArea * {
+            visibility: visible;
+        }
+
+        #qrPrintArea {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            padding: 24px;
+            background: white;
+        }
+
+        .modal-header,
+        .selection-controls,
+        .filter-section,
+        .btn,
+        .qr-select-list,
+        #selectAllQrcodes,
+        .qr-select-checkbox,
+        .form-check,
+        .equipment-list-card,
+        .qr-preview-card .card-header {
+            display: none !important;
+        }
+
+        .qr-print-preview {
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+        }
+
+        .print-header {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #000;
+        }
+
+        .qr-preview-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+            gap: 1.5rem !important;
+        }
+
+        .qr-preview-item {
+            page-break-inside: avoid;
+            border: 2px solid #000 !important;
+            padding: 1rem !important;
+        }
+
+        .qr-preview-item:only-child {
+            grid-column: 1 / -1;
+        }
+        
+        .qr-preview-item.unselected {
+            display: none !important;
+        }
+    }
+</style>

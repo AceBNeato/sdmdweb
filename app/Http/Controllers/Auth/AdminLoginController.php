@@ -27,6 +27,19 @@ class AdminLoginController extends Controller
      */
     public function showLoginForm()
     {
+        // Check if user is already authenticated with any guard
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('admin.qr-scanner');
+        }
+        
+        if (Auth::guard('staff')->check()) {
+            return redirect()->route('staff.equipment.index');
+        }
+        
+        if (Auth::guard('technician')->check()) {
+            return redirect()->route('technician.qr-scanner');
+        }
+        
         // Check if this is a blocked access attempt
         if (request()->has('blocked') || request()->has('logout')) {
             // Mark session as blocked to prevent back button access
@@ -112,6 +125,28 @@ class AdminLoginController extends Controller
             // Check for too many login attempts
             $this->ensureIsNotRateLimited($request);
 
+            // First, check if any user is already authenticated across all guards
+            $existingUser = null;
+            $existingGuard = null;
+            $guards = ['web', 'staff', 'technician'];
+            
+            foreach ($guards as $guard) {
+                if (Auth::guard($guard)->check()) {
+                    $existingUser = Auth::guard($guard)->user();
+                    $existingGuard = $guard;
+                    break;
+                }
+            }
+            
+            // If someone is already logged in, redirect to their dashboard
+            if ($existingUser) {
+                $redirectRoute = $existingGuard === 'web' ? 'admin.qr-scanner' : 
+                                ($existingGuard === 'staff' ? 'staff.equipment.index' : 'technician.qr-scanner');
+                
+                return redirect()->route($redirectRoute)->with('info', 
+                    "User {$existingUser->name} is already logged in. Redirected to their dashboard.");
+            }
+
             $credentials = $request->only('email', 'password');
             $remember = $request->boolean('remember');
 
@@ -160,6 +195,9 @@ class AdminLoginController extends Controller
 
                 // Clear any lockout session data
                 session()->forget(['lockout', 'remaining_seconds', 'remaining_attempts']);
+                
+                // IMPORTANT: Logout from all other guards to prevent session conflicts
+                $this->logoutFromOtherGuards('web');
 
                 // Check if admin is active
                 if (!$user->is_active) {
@@ -179,7 +217,11 @@ class AdminLoginController extends Controller
                 Activity::logUserLogin($user);
 
                 // Redirect to admin QR scanner
-                return redirect()->intended(route('admin.qr-scanner'));
+                return redirect()->intended(route('admin.qr-scanner'))->with('session_sync', [
+                    'type' => 'login',
+                    'user' => $user->toArray(),
+                    'redirectUrl' => route('admin.qr-scanner')
+                ]);
             }
 
             // If we get here, authentication failed
@@ -229,5 +271,32 @@ class AdminLoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login/admin');
+    }
+    
+    /**
+     * Logout from all guards except the specified one to prevent session conflicts
+     *
+     * @param string $currentGuard
+     * @return void
+     */
+    private function logoutFromOtherGuards($currentGuard)
+    {
+        $guards = ['web', 'staff', 'technician'];
+        $logoutPerformed = false;
+        
+        foreach ($guards as $guard) {
+            if ($guard !== $currentGuard && Auth::guard($guard)->check()) {
+                // Logout without invalidating the session to prevent CSRF issues
+                Auth::guard($guard)->logout();
+                $logoutPerformed = true;
+            }
+        }
+        
+        if ($logoutPerformed) {
+            // Mark that guard logout was performed so we don't regenerate session unnecessarily
+            session(['guard_logout_performed' => true]);
+            // Regenerate session token to prevent session fixation but keep session data
+            session()->regenerateToken();
+        }
     }
 }

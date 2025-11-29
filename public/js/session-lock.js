@@ -39,7 +39,12 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.lockoutTimeoutMinutes !== undefined && data.lockoutTimeoutMinutes !== lockoutTimeoutMinutes) {
                     lockoutTimeoutMinutes = data.lockoutTimeoutMinutes;
@@ -55,6 +60,7 @@
             })
             .catch(error => {
                 console.log('Failed to fetch updated session settings:', error);
+                // Don't show error to user - just use existing settings
             });
     }
 
@@ -79,28 +85,30 @@
 
         isLocked = true;
 
+        // Clear password field first
+        unlockPassword.value = '';
+        unlockError.classList.add('d-none');
+
+        // Show modal
         lockModal.style.display = 'flex';
 
         // Force reflow to ensure proper rendering
         lockModal.offsetHeight;
 
-        // Ensure the input is accessible after modal is displayed
-        setTimeout(() => {
-            unlockPassword.disabled = false;
-            unlockPassword.removeAttribute('disabled');
-        }, 50);
+        // Emit session lock event
+        document.dispatchEvent(new CustomEvent('sessionLockShown'));
 
         // Persist lock state across page reloads
         sessionStorage.setItem('session_locked', 'true');
 
         // Focus on password field after modal is fully rendered
         setTimeout(() => {
+            // Ensure field is enabled and focused
+            unlockPassword.disabled = false;
+            unlockPassword.removeAttribute('disabled');
             unlockPassword.focus();
-        }, 200); // Increased delay to ensure animations complete
-
-        // Clear password field
-        unlockPassword.value = '';
-        unlockError.classList.add('d-none');
+            unlockPassword.select();
+        }, 100);
     }
 
     function hideLockModal() {
@@ -111,6 +119,9 @@
 
         // Clear persistent lock state
         sessionStorage.removeItem('session_locked');
+
+        // Emit session lock hidden event
+        document.dispatchEvent(new CustomEvent('sessionLockHidden'));
     }
 
     function unlockSession() {
@@ -143,8 +154,10 @@
                 hideLockModal();
                 resetLockoutTimer();
                 
-                // Show SweetAlert success message
-                if (typeof Swal !== 'undefined') {
+                // Show SweetAlert success message using safe method
+                if (typeof window.safeToast !== 'undefined') {
+                    window.safeToast('success', 'Session unlocked successfully!');
+                } else if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'success',
                         title: 'Session Unlocked!',

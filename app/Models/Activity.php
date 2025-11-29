@@ -14,7 +14,8 @@ class Activity extends Model
         'user_id',
         'type',
         'description',
-        'equipment_history_id',
+        'ip_address',
+        'user_agent',
     ];
 
     /**
@@ -51,6 +52,8 @@ class Activity extends Model
                 $createdUser->position,
                 $createdUser->office?->name ?? 'Unknown'
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -84,6 +87,8 @@ class Activity extends Model
             'user_id' => $actor?->id,
             'type' => 'user_updated',
             'description' => $description,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -98,13 +103,15 @@ class Activity extends Model
             'user_id' => $actor?->id,
             'type' => 'user_role_changed',
             'description' => sprintf(
-                'Changed role for %s %s (%s) from %s to %s',
+                'Changed role for user %s %s (%s) from %s to %s',
                 $user->first_name,
                 $user->last_name,
                 $user->email,
-                $oldRole?->name ?? 'none',
-                $newRole?->name ?? 'none'
+                $oldRole->name,
+                $newRole->name
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -121,11 +128,13 @@ class Activity extends Model
             'type' => 'user_status_toggled',
             'description' => sprintf(
                 '%s user account for %s %s (%s)',
-                ucfirst($status),
+                $user->is_active ? 'Activated' : 'Deactivated',
                 $user->first_name,
                 $user->last_name,
                 $user->email
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -147,6 +156,8 @@ class Activity extends Model
                 $deletedUser->position,
                 $deletedUser->office?->name ?? 'Unknown'
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -165,6 +176,8 @@ class Activity extends Model
                 $user->email,
                 request()->ip()
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -182,6 +195,8 @@ class Activity extends Model
                 $user->last_name,
                 $user->email
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -203,6 +218,8 @@ class Activity extends Model
                 $equipment->category?->name ?? 'Unknown',
                 $equipment->office?->name ?? 'Unknown'
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -236,6 +253,8 @@ class Activity extends Model
             'user_id' => $actor?->id,
             'type' => 'equipment_updated',
             'description' => $description,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -257,6 +276,8 @@ class Activity extends Model
                 $equipment->category?->name ?? 'Unknown',
                 $equipment->office?->name ?? 'Unknown'
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -271,13 +292,14 @@ class Activity extends Model
             'user_id' => $actor?->id,
             'type' => 'equipment_assigned',
             'description' => sprintf(
-                'Assigned equipment %s %s (%s) to %s %s',
+                'Assigned equipment %s %s (%s) to %s',
                 $equipment->brand,
                 $equipment->model_number,
                 $equipment->serial_number,
-                $assignedTo->first_name ?? 'Unknown',
-                $assignedTo->last_name ?? ''
+                $assignedTo->full_name ?? $assignedTo->name ?? 'Unknown'
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -297,6 +319,8 @@ class Activity extends Model
                 $equipment->model_number,
                 $equipment->serial_number
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -312,14 +336,15 @@ class Activity extends Model
             'type' => 'equipment_history_created',
             'description' => sprintf(
                 'Added history entry for equipment: %s - Action: %s, Status: %s, JO: %s',
-                $history->equipment?->serial_number ?? 'Unknown',
+                $history->equipment->serial_number,
                 $history->action_taken,
-                $history->remarks ?? 'No remarks',
-                $history->jo_number ?? 'No JO number'
+                $history->status,
+                $history->job_order
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
-
     /**
      * Log maintenance log creation activity
      */
@@ -336,6 +361,8 @@ class Activity extends Model
                 $maintenance->maintenance_type,
                 number_format($maintenance->cost, 2)
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -367,6 +394,8 @@ class Activity extends Model
             'user_id' => $actor?->id,
             'type' => 'maintenance_updated',
             'description' => $description,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 
@@ -710,6 +739,8 @@ class Activity extends Model
                 $equipment->model_number ?? $equipment->equipment_model ?? 'Unknown',
                 $equipment->serial_number ?? 'Unknown'
             ),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
         ]);
     }
 

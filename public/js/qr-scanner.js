@@ -51,7 +51,6 @@ domReady(function () {
                 + '<h5 class="alert-heading">Unable to initialize scanner</h5>'
                 + '<p class="mb-1">The scanner library could not be loaded in this browser.</p>'
                 + '<p class="mb-2">You can still scan using your phone\'s camera or any QR app, then open ' + recommendedUrl + ' in your browser to view the equipment.</p>'
-                + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
                 + '<a href="' + recommendedUrl + '/public/qr-scanner" class="btn btn-primary btn-sm">Try Public Scanner</a>'
                 + '</div>';
             return;
@@ -87,7 +86,6 @@ domReady(function () {
                     + '<h5 class="alert-heading">Camera access required</h5>'
                     + '<p class="mb-2">Please allow camera access to scan QR codes.</p>'
                     + '<div class="mb-3">'
-                    + '<a href="/public/qr-setup" class="btn btn-outline-primary btn-sm me-2" target="_blank">Setup Guide</a>'
                     + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
                     + '</div>'
                     + '<p class="mb-0 text-muted">Or use your phone\'s camera app and open: <br><code>' + (isSecure ? window.location.origin : ("https://" + window.location.host)) + '/public/qr-scanner</code></p>'

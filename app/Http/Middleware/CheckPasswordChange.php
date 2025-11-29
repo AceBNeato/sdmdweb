@@ -22,8 +22,8 @@ class CheckPasswordChange
         if (Auth::check()) {
             $user = Auth::user();
             
-            // Check if user needs to change password (only for User model, not Staff/Technician)
-            if ($user instanceof User && $user->must_change_password) {
+            // Check if user needs to change password (for all user models)
+            if ($user && isset($user->must_change_password) && $user->must_change_password) {
                 // Store session flag for SweetAlert (only if not already shown in this session)
                 if (!session('must_change_password')) {
                     session(['must_change_password' => true]);

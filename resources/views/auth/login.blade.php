@@ -167,6 +167,7 @@ particlesJS('particles-js', {
 });
 </script>
 <script src="{{ asset('js/login.js') }}"></script>
+<script src="{{ asset('js/session-sync.js') }}"></script>
 
 <!-- Show SweetAlert if role was changed -->
 @if(session('swal'))

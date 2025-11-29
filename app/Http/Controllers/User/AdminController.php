@@ -207,7 +207,7 @@ class AdminController extends Controller
             'skills' => 'nullable|string',
             'current_password' => 'nullable|string',
             'new_password' => 'nullable|string|min:8',
-            'new_password_confirmation' => 'nullable|string|min:8|same:new_password',
+            'new_password_confirmation' => 'nullable|required_with:new_password|string|min:8|same:new_password',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
 

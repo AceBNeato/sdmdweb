@@ -24,7 +24,9 @@ window.AjaxHelper = {
 
         // Show loading if requested
         let loadingAlert = null;
-        if (config.showLoading && window.Swal) {
+        if (config.showLoading && typeof window.safeLoading !== 'undefined') {
+            loadingAlert = window.safeLoading(config.loadingMessage);
+        } else if (config.showLoading && window.Swal) {
             loadingAlert = Swal.fire({
                 title: config.loadingMessage,
                 allowOutsideClick: false,
@@ -47,7 +49,9 @@ window.AjaxHelper = {
             },
             success: (response) => {
                 // Close loading
-                if (loadingAlert) {
+                if (loadingAlert && typeof window.closeLoading !== 'undefined') {
+                    window.closeLoading();
+                } else if (loadingAlert && Swal) {
                     Swal.close();
                 }
 
@@ -75,7 +79,9 @@ window.AjaxHelper = {
             },
             error: (xhr) => {
                 // Close loading
-                if (loadingAlert) {
+                if (loadingAlert && typeof window.closeLoading !== 'undefined') {
+                    window.closeLoading();
+                } else if (loadingAlert && Swal) {
                     Swal.close();
                 }
 
@@ -87,7 +93,12 @@ window.AjaxHelper = {
                     const errors = xhr.responseJSON.errors;
                     errorMessage = Object.values(errors).flat().join('\n');
                     
-                    if (window.Swal && window.SweetAlert) {
+                    if (typeof window.safeToast !== 'undefined') {
+                        window.safeToast('error', 'Validation Error', {
+                            text: errorMessage,
+                            confirmButtonColor: '#ef4444'
+                        });
+                    } else if (window.Swal && window.SweetAlert) {
                         window.SweetAlert.error('Validation Error', {
                             text: errorMessage,
                             confirmButtonColor: '#ef4444'
@@ -97,12 +108,16 @@ window.AjaxHelper = {
                     // Server error message
                     errorMessage = xhr.responseJSON.message;
                     
-                    if (window.Swal && window.SweetAlert) {
+                    if (typeof window.safeToast !== 'undefined') {
+                        window.safeToast('error', errorMessage);
+                    } else if (window.Swal && window.SweetAlert) {
                         window.SweetAlert.error(errorMessage);
                     }
                 } else {
                     // Generic error
-                    if (window.Swal && window.SweetAlert) {
+                    if (typeof window.safeToast !== 'undefined') {
+                        window.safeToast('error', errorMessage);
+                    } else if (window.Swal && window.SweetAlert) {
                         window.SweetAlert.error(errorMessage);
                     }
                 }

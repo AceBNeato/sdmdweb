@@ -155,11 +155,22 @@ function togglePassword(fieldId) {
             .then(response => {
                 // Check if response is JSON or redirect
                 const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json().then(data => ({ type: 'json', data }));
+                
+                // Any 2xx status means success, regardless of content type
+                if (response.ok) {
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => ({ type: 'json', data }));
+                    } else {
+                        // It's a redirect response, treat as success
+                        return response.text().then(html => ({ type: 'redirect', html }));
+                    }
                 } else {
-                    // It's a redirect response, treat as success
-                    return response.text().then(html => ({ type: 'redirect', html }));
+                    // Handle error responses
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => ({ type: 'json', data }));
+                    } else {
+                        throw new Error('Server returned error response');
+                    }
                 }
             })
             .then(result => {
@@ -186,7 +197,7 @@ function togglePassword(fieldId) {
                             window.location.reload();
                         });
                     } else {
-                        // Show error SweetAlert
+                        // Show error SweetAlert with server message
                         Swal.fire({
                             icon: 'error',
                             title: 'Update Failed',
@@ -219,7 +230,15 @@ function togglePassword(fieldId) {
             })
             .catch(error => {
                 console.error('Profile update error:', error);
-                // Show error SweetAlert
+                
+                // Don't show error if it's likely a successful redirect that got caught
+                if (error.message === 'Server returned error response') {
+                    // This might actually be success, try to refresh
+                    window.location.reload();
+                    return;
+                }
+                
+                // Show error SweetAlert for actual errors
                 Swal.fire({
                     icon: 'error',
                     title: 'Update Failed',

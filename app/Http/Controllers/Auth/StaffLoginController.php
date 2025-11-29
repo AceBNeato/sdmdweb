@@ -32,6 +32,19 @@ class StaffLoginController extends Controller
      */
     public function showLoginForm()
     {
+        // Check if user is already authenticated with any guard
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('admin.qr-scanner');
+        }
+        
+        if (Auth::guard('staff')->check()) {
+            return redirect()->route('staff.equipment.index');
+        }
+        
+        if (Auth::guard('technician')->check()) {
+            return redirect()->route('technician.qr-scanner');
+        }
+        
         return view('auth.welcome');
     }
 
@@ -46,6 +59,28 @@ class StaffLoginController extends Controller
     // app/Http/Controllers/Auth/StaffLoginController.php
 public function login(Request $request)
 {
+    // First, check if any user is already authenticated across all guards
+    $existingUser = null;
+    $existingGuard = null;
+    $guards = ['web', 'staff', 'technician'];
+    
+    foreach ($guards as $guard) {
+        if (Auth::guard($guard)->check()) {
+            $existingUser = Auth::guard($guard)->user();
+            $existingGuard = $guard;
+            break;
+        }
+    }
+    
+    // If someone is already logged in, redirect to their dashboard
+    if ($existingUser) {
+        $redirectRoute = $existingGuard === 'web' ? 'admin.qr-scanner' : 
+                        ($existingGuard === 'staff' ? 'staff.equipment.index' : 'technician.qr-scanner');
+        
+        return redirect()->route($redirectRoute)->with('info', 
+            "User {$existingUser->name} is already logged in. Redirected to their dashboard.");
+    }
+
     $credentials = $request->validate([
         'email' => ['required', 'email'],
         'password' => ['required'],
@@ -55,6 +90,9 @@ public function login(Request $request)
         $request->session()->regenerate();
 
         $staff = Auth::guard('staff')->user();
+        
+        // IMPORTANT: Logout from all other guards to prevent session conflicts
+        $this->logoutFromOtherGuards('staff');
 
         // Check if user has staff role
         if (!$staff->hasRole('staff')) {
@@ -82,7 +120,11 @@ public function login(Request $request)
         // Log to activity table using new method
         Activity::logUserLogin($staff);
 
-        return redirect(route('staff.equipment.index'));
+        return redirect(route('staff.equipment.index'))->with('session_sync', [
+            'type' => 'login',
+            'user' => $staff->toArray(),
+            'redirectUrl' => route('staff.equipment.index')
+        ]);
     }
 
     return back()->withErrors([
@@ -207,5 +249,32 @@ public function login(Request $request)
         $staff = null; // No separate staff record needed
 
         return view('staff.profile', compact('user', 'staff'));
+    }
+    
+    /**
+     * Logout from all guards except the specified one to prevent session conflicts
+     *
+     * @param string $currentGuard
+     * @return void
+     */
+    private function logoutFromOtherGuards($currentGuard)
+    {
+        $guards = ['web', 'staff', 'technician'];
+        $logoutPerformed = false;
+        
+        foreach ($guards as $guard) {
+            if ($guard !== $currentGuard && Auth::guard($guard)->check()) {
+                // Logout without invalidating the session to prevent CSRF issues
+                Auth::guard($guard)->logout();
+                $logoutPerformed = true;
+            }
+        }
+        
+        if ($logoutPerformed) {
+            // Mark that guard logout was performed so we don't regenerate session unnecessarily
+            session(['guard_logout_performed' => true]);
+            // Regenerate session token to prevent session fixation but keep session data
+            session()->regenerateToken();
+        }
     }
 }

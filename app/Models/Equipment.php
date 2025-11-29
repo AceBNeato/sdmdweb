@@ -32,7 +32,6 @@ class Equipment extends Model
         'campus_id',
         'category_id',
         'status',
-        'notes',
         'assigned_by_id',
     ];
 

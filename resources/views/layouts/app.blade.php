@@ -250,6 +250,17 @@
     <!-- System updates checker (silent auto-reload on new Activity logs) -->
     <script src="{{ asset('js/system-updates-check.js') }}" defer></script>
 
+    <!-- Session sync for cross-tab communication -->
+    <script src="{{ asset('js/session-sync.js') }}"></script>
+    <script src="{{ asset('js/session-sync-handler.js') }}"></script>
+    
+    <!-- Session sync data (hidden element for JavaScript access) -->
+    @if(session('session_sync'))
+        <script type="application/json" id="session-sync-data">
+            {!! json_encode(session('session_sync')) !!}
+        </script>
+    @endif
+
     @php
         $isTechnician = auth('technician')->check();
         $isStaff = auth('staff')->check();
@@ -285,7 +296,7 @@
         ]) !!};
         
         // Check if user needs to change password
-        @if(session('must_change_password'))
+        @if(session('must_change_password') && auth()->check() && auth()->user()->must_change_password)
             Swal.fire({
                 title: '🔐 Password Change Recommended',
                 html: 'For better security, we recommend changing your password from the default one provided in your email.<br><br>You can change your password anytime in your profile settings.',
@@ -309,6 +320,7 @@
         @endif
     </script>
     <script src="{{ asset('js/sweetalert-system.js') }}"></script>
+    <script src="{{ asset('js/sweetalert-queue-manager.js') }}"></script>
     <script src="{{ asset('js/ajax-sweetalert-helper.js') }}"></script>
     <script src="{{ asset('js/ui-functionality.js') }}"></script>
 

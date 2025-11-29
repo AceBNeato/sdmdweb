@@ -54,5 +54,5 @@ $isStaff = $prefix === 'staff';
             document.head.appendChild(script);
         })();
     </script>
-    <script src="{{ asset('js/qr-scanner.js') }}"></script>
+    <script src="{{ asset('js/qr-scanner.js?v=' . filemtime(public_path('js/qr-scanner.js'))) }}"></script>
 @endsection

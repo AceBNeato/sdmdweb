@@ -10,7 +10,7 @@
                 <form id="unlock-form">
                     <div class="mb-3">
                         <label for="unlock-password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="unlock-password" required>
+                        <input type="password" class="form-control" id="unlock-password" autocomplete="current-password" required>
                     </div>
                     <div id="unlock-error" class="alert alert-danger d-none"></div>
                 </form>

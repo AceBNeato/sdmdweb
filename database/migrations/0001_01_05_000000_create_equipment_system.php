@@ -15,7 +15,6 @@ return new class extends Migration
         Schema::create('equipment_types', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
-            $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
@@ -31,23 +30,18 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('purchase_date')->nullable();
             $table->decimal('cost_of_purchase', 10, 2)->nullable();
+            $table->string('condition')->nullable();
+            $table->string('status')->default('serviceable');
             $table->foreignId('office_id')->constrained()->onDelete('cascade');
             $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
-            $table->string('assigned_to_type')->nullable();
-            $table->unsignedBigInteger('assigned_to_id')->nullable();
+            $table->foreignId('equipment_type_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('assigned_by_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('assigned_at')->nullable();
-            $table->string('status')->default('serviceable');
-            $table->string('condition')->nullable();
-            $table->text('notes')->nullable();
             $table->string('qr_code')->unique()->nullable();
             $table->string('qr_code_image_path')->nullable();
-            $table->foreignId('equipment_type_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index(['assigned_to_type', 'assigned_to_id']);
             $table->index(['office_id']);
             $table->index(['assigned_by_id']);
             $table->index(['status']);

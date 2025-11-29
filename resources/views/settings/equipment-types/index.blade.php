@@ -12,7 +12,7 @@
             <i class='bx bx-arrow-back me-1'></i> Back to Settings
         </a>
         @if(auth()->user()->hasPermissionTo('settings.manage'))
-        <a href="{{ route('admin.settings.system.equipment-types.create') }}" class="btn btn-primary btn-sm">
+        <a href="{{ route('admin.settings.equipment-types.create') }}" class="btn btn-primary btn-sm">
             <i class='bx bx-plus me-1'></i> Add Equipment Type
         </a>
         @endif
@@ -21,7 +21,7 @@
     <!-- Search and Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <form action="{{ route('admin.settings.system.equipment-types.index') }}" method="GET" class="filter-form">
+            <form action="{{ route('admin.settings.equipment-types.index') }}" method="GET" class="filter-form">
                 <div class="filter-group">
                     <label for="search">Search</label>
                     <div class="input-group">
@@ -35,7 +35,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class='bx bx-filter-alt me-1'></i> Apply Filters
                     </button>
-                    <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('admin.settings.equipment-types.index') }}" class="btn btn-outline-secondary">
                         <i class='bx bx-reset me-1'></i> Reset
                     </a>
                 </div>
@@ -65,11 +65,11 @@
                         <td>
                             <div class="btn-group" role="group">
                                 @if(auth()->user()->hasPermissionTo('settings.manage'))
-                                <a href="{{ route('admin.settings.system.equipment-types.edit', $type) }}" class="btn btn-sm btn-outline-secondary">
+                                <a href="{{ route('admin.settings.equipment-types.edit', $type) }}" class="btn btn-sm btn-outline-secondary">
                                     <i class='bx bx-edit'></i>
                                 </a>
                                 @if($type->equipment->isEmpty())
-                                <form action="{{ route('admin.settings.system.equipment-types.destroy', $type) }}" method="POST" class="d-inline delete-form">
+                                <form action="{{ route('admin.settings.equipment-types.destroy', $type) }}" method="POST" class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-outline-secondary delete-btn">
@@ -89,7 +89,7 @@
                                 <h5>No Equipment Types Found</h5>
                                 <p>{{ request()->hasAny(['search']) ? 'Try adjusting your search criteria.' : 'Get started by adding your first equipment type.' }}</p>
                                 @if(auth()->user()->hasPermissionTo('settings.manage') && !request()->hasAny(['search']))
-                                <a href="{{ route('admin.settings.system.equipment-types.create') }}" class="btn btn-primary">
+                                <a href="{{ route('admin.settings.equipment-types.create') }}" class="btn btn-primary">
                                     <i class='bx bx-plus me-1'></i> Add Equipment Type
                                 </a>
                                 @endif

@@ -17,16 +17,13 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('type');
             $table->text('description');
-            $table->json('data')->nullable();
             $table->string('ip_address')->nullable();
             $table->string('user_agent')->nullable();
-            $table->unsignedBigInteger('equipment_history_id')->nullable();
             $table->timestamps();
             
             // Indexes
             $table->index(['user_id', 'created_at']);
             $table->index(['type', 'created_at']);
-            $table->index(['equipment_history_id']);
         });
 
         // Settings table

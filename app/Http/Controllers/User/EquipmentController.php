@@ -146,7 +146,6 @@ class EquipmentController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'status' => 'nullable|in:serviceable,for_repair,defective', // Optional for new equipment
             'condition' => 'nullable|in:good,not_working', // Optional for new equipment
-            'notes' => 'nullable|string',
         ]);
 
         // Auto-set condition based on status if not provided
@@ -293,7 +292,6 @@ class EquipmentController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'status' => 'nullable|in:serviceable,for_repair,defective',
             'condition' => 'nullable|in:good,not_working', // Now optional - auto-set based on status
-            'notes' => 'nullable|string',
         ]);
 
         // Track changes for logging
@@ -308,7 +306,7 @@ class EquipmentController extends Controller
         $equipment->update($validated);
 
         // Track field changes
-        foreach (['brand', 'model_number', 'serial_number', 'equipment_type_id', 'description', 'purchase_date', 'cost_of_purchase', 'office_id', 'category_id', 'status', 'condition', 'notes'] as $field) {
+        foreach (['brand', 'model_number', 'serial_number', 'equipment_type_id', 'description', 'purchase_date', 'cost_of_purchase', 'office_id', 'category_id', 'status', 'condition'] as $field) {
             if ($originalData[$field] != $equipment->$field) {
                 $oldValue = $originalData[$field];
                 $newValue = $equipment->$field;

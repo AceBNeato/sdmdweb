@@ -55,7 +55,6 @@ return new class extends Migration
         // Additional performance indexes
         Schema::table('equipment', function (Blueprint $table) {
             $table->index(['qr_code']);
-            $table->index(['assigned_to_type', 'assigned_to_id', 'assigned_at']);
         });
 
         Schema::table('activities', function (Blueprint $table) {

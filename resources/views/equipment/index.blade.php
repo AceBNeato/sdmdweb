@@ -71,6 +71,13 @@
                 <span>Print QR Codes</span>
             </button>
             @endif
+
+            @if($currentUser && $currentUser->hasPermissionTo('equipment.settings'))
+            <a href="{{ route('admin.equipment.settings.index') }}" class="btn btn-outline-info" title="Equipment Settings">
+                <i class='bx bx-cog me-1'></i>
+                <span>Equipment Settings</span>
+            </a>
+            @endif
         </div>
         <div class="card-body">
             <form action="{{ route($prefix . '.equipment.index') }}" method="GET" class="filter-form">

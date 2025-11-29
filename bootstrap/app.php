@@ -32,6 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'rbac.verify' => \App\Http\Middleware\RbacVerification::class,
             'aggressive.back.prevent' => \App\Http\Middleware\AggressiveBackButtonPrevention::class,
+            'guard.access' => \App\Http\Middleware\PreventGuardCrossAccess::class,
+            'login.session.check' => \App\Http\Middleware\HandleLoginWithExistingSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

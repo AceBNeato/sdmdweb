@@ -173,16 +173,52 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'position' => 'required|string|max:255',
-            'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
-            'office_id' => 'required|exists:offices,id',
-            'roles' => 'required|exists:roles,id',
-        ]);
+        // Check for duplicate email first
+        $existingUser = User::where('email', $request->email)->first();
+        if ($existingUser) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'duplicate_email',
+                    'message' => 'An account with this email address already exists. Please use a different email address or check if this user has already been created.',
+                    'existing_user' => [
+                        'name' => $existingUser->first_name . ' ' . $existingUser->last_name,
+                        'email' => $existingUser->email,
+                        'position' => $existingUser->position,
+                        'role' => $existingUser->role?->display_name,
+                        'is_active' => $existingUser->is_active,
+                        'created_at' => $existingUser->created_at->format('M d, Y')
+                    ]
+                ], 422);
+            }
+            return redirect()->back()
+                ->with('error', 'An account with this email address already exists.')
+                ->withInput();
+        }
+
+        // Validate the request
+        try {
+            $validated = $request->validate([
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'position' => 'required|string|max:255',
+                'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
+                'office_id' => 'required|exists:offices,id',
+                'roles' => 'required|exists:roles,id',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'validation',
+                    'message' => 'Please fix the validation errors.',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
 
         // For staff users, validate that the selected office is within their campus/office
         if (auth()->user()->hasRole('staff')) {

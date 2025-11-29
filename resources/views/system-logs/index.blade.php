@@ -264,7 +264,7 @@
                                     <span class="badge">{{ $activity->type }}</span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary view-log-btn" 
+                                    <button class="btn btn-sm btn-outline-secondary view-log-btn" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#logModal"
                                             data-user-name="{{ $activity->user->name ?? 'Unknown User' }}"

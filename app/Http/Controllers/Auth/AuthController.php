@@ -66,6 +66,19 @@ class AuthController extends Controller
 
     public function showLoginForm()
     {
+        // Check if user is already authenticated with any guard
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('admin.qr-scanner');
+        }
+        
+        if (Auth::guard('staff')->check()) {
+            return redirect()->route('staff.equipment.index');
+        }
+        
+        if (Auth::guard('technician')->check()) {
+            return redirect()->route('technician.qr-scanner');
+        }
+        
         // Check if this is a blocked access attempt
         if (request()->has('blocked') || request()->has('logout')) {
             // Mark session as blocked to prevent back button access
@@ -151,6 +164,28 @@ class AuthController extends Controller
             // Check for too many login attempts
             $this->ensureIsNotRateLimited($request);
 
+            // First, check if any user is already authenticated across all guards
+            $existingUser = null;
+            $existingGuard = null;
+            $guards = ['web', 'staff', 'technician'];
+            
+            foreach ($guards as $guard) {
+                if (Auth::guard($guard)->check()) {
+                    $existingUser = Auth::guard($guard)->user();
+                    $existingGuard = $guard;
+                    break;
+                }
+            }
+            
+            // If someone is already logged in, redirect to their dashboard
+            if ($existingUser) {
+                $redirectRoute = $existingGuard === 'web' ? 'admin.qr-scanner' : 
+                                ($existingGuard === 'staff' ? 'staff.equipment.index' : 'technician.qr-scanner');
+                
+                return redirect()->route($redirectRoute)->with('info', 
+                    "User {$existingUser->name} is already logged in. Redirected to their dashboard.");
+            }
+
             $credentials = $request->only('email', 'password');
             $remember = $request->boolean('remember');
 
@@ -223,7 +258,15 @@ class AuthController extends Controller
 
             // Try to authenticate with the appropriate guard
             if (Auth::guard($guard)->attempt($credentials, $remember)) {
-                $request->session()->regenerate();
+                // IMPORTANT: Logout from other guards to prevent session conflicts
+                $this->logoutFromOtherGuards($guard);
+                
+                // Only regenerate session if needed (not if other guards were logged out)
+                if (!session()->has('guard_logout_performed')) {
+                    $request->session()->regenerate();
+                } else {
+                    session()->forget('guard_logout_performed');
+                }
 
                 // Clear rate limiter on successful login
                 RateLimiter::clear($throttleKey);
@@ -262,13 +305,29 @@ class AuthController extends Controller
 
                 // Redirect based on user roles
                 if ($user->is_admin) {
-                    return redirect()->intended(route('admin.qr-scanner'));
+                    return redirect()->intended(route('admin.qr-scanner'))->with('session_sync', [
+                        'type' => 'login',
+                        'user' => $user->toArray(),
+                        'redirectUrl' => route('admin.qr-scanner')
+                    ]);
                 } elseif ($user->is_technician) {
-                    return redirect()->intended(route('technician.qr-scanner'));
+                    return redirect()->intended(route('technician.qr-scanner'))->with('session_sync', [
+                        'type' => 'login',
+                        'user' => $user->toArray(),
+                        'redirectUrl' => route('technician.qr-scanner')
+                    ]);
                 } elseif ($user->is_staff) {
-                    return redirect()->intended(route('staff.equipment.index'));
+                    return redirect()->intended(route('staff.equipment.index'))->with('session_sync', [
+                        'type' => 'login',
+                        'user' => $user->toArray(),
+                        'redirectUrl' => route('staff.equipment.index')
+                    ]);
                 } else {
-                    return redirect()->intended(route('welcome'));
+                    return redirect()->intended(route('welcome'))->with('session_sync', [
+                        'type' => 'login',
+                        'user' => $user->toArray(),
+                        'redirectUrl' => route('welcome')
+                    ]);
                 }
             }
 
@@ -515,5 +574,32 @@ class AuthController extends Controller
             'lockoutTimeoutMinutes' => \App\Models\Setting::getSessionLockoutMinutes(),
             'timeoutTimeoutMinutes' => \App\Models\Setting::getSessionTimeoutMinutes(),
         ]);
+    }
+
+    /**
+     * Logout from all guards except the specified one to prevent session conflicts
+     *
+     * @param string $currentGuard
+     * @return void
+     */
+    private function logoutFromOtherGuards($currentGuard)
+    {
+        $guards = ['web', 'staff', 'technician'];
+        $logoutPerformed = false;
+        
+        foreach ($guards as $guard) {
+            if ($guard !== $currentGuard && Auth::guard($guard)->check()) {
+                // Logout without invalidating the session to prevent CSRF issues
+                Auth::guard($guard)->logout();
+                $logoutPerformed = true;
+            }
+        }
+        
+        if ($logoutPerformed) {
+            // Mark that guard logout was performed so we don't regenerate session unnecessarily
+            session(['guard_logout_performed' => true]);
+            // Regenerate session token to prevent session fixation but keep session data
+            session()->regenerateToken();
+        }
     }
 }

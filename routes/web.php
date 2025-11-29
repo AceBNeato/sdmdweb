@@ -101,6 +101,7 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/login', [\App\Http\Controllers\Auth\AuthController::class, 'showLoginForm'])
         ->name('login');
     Route::post('/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])
+        ->middleware('login.session.check')
         ->name('login.submit');
 
     // Password Reset
@@ -138,6 +139,7 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/login/admin', [\App\Http\Controllers\Auth\AdminLoginController::class, 'showLoginForm'])
         ->name('admin.login.form');
     Route::post('/login/admin', [\App\Http\Controllers\Auth\AdminLoginController::class, 'login'])
+        ->middleware('login.session.check')
         ->name('admin.login');
 
     // Google OAuth Routes
@@ -154,29 +156,31 @@ Route::post('/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logou
 // Staff unlock session
 Route::post('/staff/unlock-session', [\App\Http\Controllers\Auth\AuthController::class, 'unlockSessionStaff'])
     ->name('staff.unlock.session')
-    ->middleware('auth:staff');
+    ->middleware(['auth:staff', 'guard.access:staff']);
 
 // Staff session settings
 Route::get('/staff/session-settings', [\App\Http\Controllers\Auth\AuthController::class, 'getSessionSettings'])
     ->name('staff.session.settings')
-    ->middleware('auth:staff');
+    ->middleware(['auth:staff', 'guard.access:staff']);
 
 // Technician unlock session
 Route::post('/technician/unlock-session', [AuthController::class, 'unlockSessionTechnician'])
     ->name('technician.unlock.session')
-    ->middleware('auth:technician');
+    ->middleware(['auth:technician', 'guard.access:technician']);
 
 // Technician session settings
 Route::get('/technician/session-settings', [\App\Http\Controllers\Auth\AuthController::class, 'getSessionSettings'])
     ->name('technician.session.settings')
-    ->middleware('auth:technician');
+    ->middleware(['auth:technician', 'guard.access:technician']);
 
 // Technician Login
 Route::post('/technician/login', [TechnicianLoginController::class, 'login'])
+    ->middleware('login.session.check')
     ->name('technician.login');
 
 // Staff Login
 Route::post('/staff/login', [StaffLoginController::class, 'login'])
+    ->middleware('login.session.check')
     ->name('staff.login');
 });
 
@@ -188,7 +192,7 @@ Route::post('/staff/login', [StaffLoginController::class, 'login'])
 
 
 
-Route::middleware(['auth:technician'])
+Route::middleware(['auth:technician', 'guard.access:technician'])
     ->prefix('technician')
     ->name('technician.')
     ->group(function () {
@@ -218,7 +222,7 @@ Route::middleware(['auth:technician'])
             ->name('logout');
 
         // Equipment
-        Route::prefix('equipment')->middleware('auth:technician')->group(function () {
+        Route::prefix('equipment')->middleware(['auth:technician', 'guard.access:technician'])->group(function () {
             Route::get('/', [\App\Http\Controllers\Technician\EquipmentController::class, 'index'])
                 ->name('equipment.index');
             
@@ -331,7 +335,7 @@ Route::middleware(['auth:technician'])
 | Admin Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'guard.access:web'])->prefix('admin')->name('admin.')->group(function () {
     // Admin Accounts
     Route::get('/accounts', [\App\Http\Controllers\Admin\AdminController::class, 'accounts'])
         ->name('accounts');
@@ -353,7 +357,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     });
 });
 
-    Route::middleware(['auth:staff'])
+    Route::middleware(['auth:staff', 'guard.access:staff'])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
@@ -670,34 +674,28 @@ Route::middleware(['auth'])
                 Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'update'])->name('update');
                 Route::get('/api/backup-settings', [\App\Http\Controllers\User\SettingsController::class, 'getBackupSettings'])->name('api.backup-settings');
 
-                // System Management (Categories & Equipment Types)
-                Route::prefix('system')->name('system.')->group(function () {
-                    // System Dashboard
-                    Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'systemIndex'])->name('index');
-
-                    // Category Management
-                    Route::prefix('categories')->name('categories.')->group(function () {
-                        Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'categories'])->name('index');
-                        Route::get('create', [\App\Http\Controllers\User\SettingsController::class, 'createCategory'])->name('create');
-                        Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'storeCategory'])->name('store');
-                        Route::get('{category}/edit', [\App\Http\Controllers\User\SettingsController::class, 'editCategory'])->name('edit');
-                        Route::put('{category}', [\App\Http\Controllers\User\SettingsController::class, 'updateCategory'])->name('update');
-                        Route::delete('{category}', [\App\Http\Controllers\User\SettingsController::class, 'destroyCategory'])->name('destroy');
-                        Route::post('{category}/toggle', [\App\Http\Controllers\User\SettingsController::class, 'toggleCategory'])->name('toggle');
-                    });
-
-                    // Equipment Type Management
-                    Route::prefix('equipment-types')->name('equipment-types.')->group(function () {
-                        Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'equipmentTypes'])->name('index');
-                        Route::get('create', [\App\Http\Controllers\User\SettingsController::class, 'createEquipmentType'])->name('create');
-                        Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'storeEquipmentType'])->name('store');
-                        Route::get('{equipmentType}/edit', [\App\Http\Controllers\User\SettingsController::class, 'editEquipmentType'])->name('edit');
-                        Route::put('{equipmentType}', [\App\Http\Controllers\User\SettingsController::class, 'updateEquipmentType'])->name('update');
-                        Route::delete('{equipmentType}', [\App\Http\Controllers\User\SettingsController::class, 'destroyEquipmentType'])->name('destroy');
-                        Route::post('{equipmentType}/toggle', [\App\Http\Controllers\User\SettingsController::class, 'toggleEquipmentType'])->name('toggle');
-                        Route::post('update-sort-order', [\App\Http\Controllers\User\SettingsController::class, 'updateSortOrder'])->name('update-sort-order');
-                    });
+                // Category Management
+                Route::prefix('categories')->name('categories.')->group(function () {
+                    Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'categories'])->name('index');
+                    Route::get('create', [\App\Http\Controllers\User\SettingsController::class, 'createCategory'])->name('create');
+                    Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'storeCategory'])->name('store');
+                    Route::get('{category}/edit', [\App\Http\Controllers\User\SettingsController::class, 'editCategory'])->name('edit');
+                    Route::put('{category}', [\App\Http\Controllers\User\SettingsController::class, 'updateCategory'])->name('update');
+                    Route::delete('{category}', [\App\Http\Controllers\User\SettingsController::class, 'destroyCategory'])->name('destroy');
+                    Route::post('{category}/toggle', [\App\Http\Controllers\User\SettingsController::class, 'toggleCategory'])->name('toggle');
                 });
+
+                // Equipment Type Management
+                Route::prefix('equipment-types')->name('equipment-types.')->group(function () {
+                    Route::get('/', [\App\Http\Controllers\User\SettingsController::class, 'equipmentTypes'])->name('index');
+                    Route::get('create', [\App\Http\Controllers\User\SettingsController::class, 'createEquipmentType'])->name('create');
+                    Route::post('/', [\App\Http\Controllers\User\SettingsController::class, 'storeEquipmentType'])->name('store');
+                    Route::get('{equipmentType}/edit', [\App\Http\Controllers\User\SettingsController::class, 'editEquipmentType'])->name('edit');
+                    Route::put('{equipmentType}', [\App\Http\Controllers\User\SettingsController::class, 'updateEquipmentType'])->name('update');
+                    Route::delete('{equipmentType}', [\App\Http\Controllers\User\SettingsController::class, 'destroyEquipmentType'])->name('destroy');
+                    Route::post('{equipmentType}/toggle', [\App\Http\Controllers\User\SettingsController::class, 'toggleEquipmentType'])->name('toggle');
+                });
+                Route::post('update-sort-order', [\App\Http\Controllers\User\SettingsController::class, 'updateSortOrder'])->name('update-sort-order');
             });
 
             // Database Backup & Restore (Super Admin Only)
