@@ -213,9 +213,29 @@ class SweetAlertSystem {
      * Override Laravel's default flash message handling
      */
     overrideFlashMessages() {
-        // Override any existing toast system calls
+        // Override any existing toast system calls with new signature: showToast(type, message)
         window.showToast = (type, message) => this.toast(type, message);
         window.showNotification = (type, message) => this.show(type, message);
+        
+        // Add universal AJAX response handler
+        window.handleToastResponse = (response, fallbackType = 'success') => {
+            if (!response) {
+                return;
+            }
+
+            if (typeof response === 'string') {
+                this.toast(fallbackType, response);
+                return;
+            }
+
+            const message = response.message || response.error || response.statusText;
+            if (!message) {
+                return;
+            }
+
+            const type = (response.success === false || response.error) ? 'error' : (response.toastType || fallbackType);
+            this.toast(type, message);
+        };
         
         // Override jQuery AJAX success/error handlers if they exist
         if (window.$) {
@@ -312,6 +332,144 @@ class SweetAlertSystem {
 document.addEventListener('DOMContentLoaded', () => {
     new SweetAlertSystem();
 });
+
+// Universal AJAX Response Interceptor for SweetAlert Notifications
+// This catches ALL AJAX calls (XMLHttpRequest, fetch, jQuery.ajax) at the browser level
+(function() {
+    // Store original methods
+    const originalXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
+    const originalXMLHttpRequestSend = XMLHttpRequest.prototype.send;
+    const originalFetch = window.fetch;
+
+    // Track XMLHttpRequest instances
+    const xhrInstances = new WeakMap();
+
+    // Override XMLHttpRequest.open to capture method and URL
+    XMLHttpRequest.prototype.open = function(method, url, ...args) {
+        xhrInstances.set(this, { method: method.toUpperCase(), url: url });
+        return originalXMLHttpRequestOpen.apply(this, [method, url, ...args]);
+    };
+
+    // Override XMLHttpRequest.send to intercept responses
+    XMLHttpRequest.prototype.send = function(body) {
+        const xhr = this;
+        const requestInfo = xhrInstances.get(xhr) || {};
+
+        // Override onreadystatechange to catch responses
+        const originalOnReadyStateChange = this.onreadystatechange;
+        this.onreadystatechange = function(e) {
+            if (xhr.readyState === 4 && xhr.status !== 0) {
+                // Only process JSON responses or responses with message content
+                let responseData = null;
+                let shouldShowAlert = false;
+
+                try {
+                    // Try to parse as JSON
+                    if (xhr.responseText && xhr.getResponseHeader('content-type')?.includes('application/json')) {
+                        responseData = JSON.parse(xhr.responseText);
+                        // Check if response has message, error, or success fields
+                        if (responseData.message || responseData.error || responseData.success !== undefined) {
+                            shouldShowAlert = true;
+                        }
+                    }
+                    // Also check for plain text responses that might be error messages
+                    else if (xhr.responseText && xhr.status >= 400) {
+                        responseData = { message: xhr.responseText, error: true };
+                        shouldShowAlert = true;
+                    }
+                } catch (parseError) {
+                    // If JSON parsing fails but we have a non-200 status, show the status text
+                    if (xhr.status >= 400) {
+                        responseData = { message: xhr.statusText || 'Request failed', error: true };
+                        shouldShowAlert = true;
+                    }
+                }
+
+                if (shouldShowAlert && responseData && window.handleToastResponse) {
+                    // Use setTimeout to ensure this runs after the current call stack
+                    setTimeout(function() {
+                        window.handleToastResponse(responseData);
+                    }, 0);
+                }
+            }
+
+            // Call original handler
+            if (originalOnReadyStateChange) {
+                originalOnReadyStateChange.apply(this, arguments);
+            }
+        };
+
+        return originalXMLHttpRequestSend.apply(this, arguments);
+    };
+
+    // Override fetch for modern browsers
+    if (originalFetch) {
+        window.fetch = function(input, init) {
+            const url = typeof input === 'string' ? input : input.url;
+            const method = (init?.method || 'GET').toUpperCase();
+
+            return originalFetch.apply(this, arguments).then(function(response) {
+                // Clone the response so we can read it without consuming it
+                const responseClone = response.clone();
+
+                // Only process JSON responses
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    return responseClone.json().then(function(data) {
+                        // Check if response has toast-relevant fields
+                        if ((data.message || data.error || data.success !== undefined) && window.handleToastResponse) {
+                            setTimeout(function() {
+                                window.handleToastResponse(data);
+                            }, 0);
+                        }
+                        // Return original response for chaining
+                        return response;
+                    }).catch(function() {
+                        // JSON parsing failed, return original response
+                        return response;
+                    });
+                }
+
+                return response;
+            });
+        };
+    }
+})();
+
+// Keep jQuery handlers as fallback for jQuery-specific features
+if (window.jQuery) {
+    const $document = jQuery(document);
+
+    // Only handle jQuery events that bypass our universal interceptor
+    $document.on('ajaxSuccess', function(event, xhr) {
+        // This will be redundant with our universal interceptor, but kept as fallback
+        if (!xhr || !xhr.responseJSON) {
+            return;
+        }
+
+        const data = xhr.responseJSON;
+        if (!data.message && !data.error && data.success === undefined) {
+            return;
+        }
+
+        if (window.handleToastResponse) {
+            window.handleToastResponse(data);
+        }
+    });
+
+    $document.on('ajaxError', function(event, jqXHR) {
+        if (!jqXHR || jqXHR.status === 0) {
+            return;
+        }
+
+        const payload = jqXHR.responseJSON || {
+            message: jqXHR.statusText || 'An unexpected error occurred.'
+        };
+
+        if (window.handleToastResponse) {
+            window.handleToastResponse(payload, 'error');
+        }
+    });
+}
 
 // Export for use in other scripts
 window.SweetAlertSystem = SweetAlertSystem;

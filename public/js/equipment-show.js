@@ -24,11 +24,11 @@ $(document).ready(function() {
     // Equipment status update functionality
     window.updateEquipmentStatus = function() {
         // admin-specific status update modal or functionality
-        showToast('Status update feature coming soon for admins!', 'info');
+        showToast('info', 'Status update feature coming soon for admins!');
     };
 
-    // Toast functionality for equipment show page
-    function showToast(message, type = 'info') {
+    // Toast functionality for equipment show page (type, message)
+    function showToast(type = 'info', message) {
         const toastContainer = document.querySelector('.toast-container') || createToastContainer();
 
         const toastId = 'toast-' + Date.now();

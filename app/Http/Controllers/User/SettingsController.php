@@ -124,11 +124,11 @@ class SettingsController extends Controller
             );
         }
 
-        // Handle AJAX requests for backup settings form
+        // Handle AJAX requests for both session and backup settings forms
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => true,
-                'message' => 'Backup settings updated successfully!'
+                'message' => 'Settings updated successfully!'
             ]);
         }
 

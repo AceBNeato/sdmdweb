@@ -257,13 +257,25 @@
                     scanResult.style.display = 'flex';
                     const recommendedUrl = isSecure ? window.location.origin : ('https://' + window.location.host);
                     scanResult.innerHTML = '<div class="text-center p-4">'
-                        + '<div class="alert alert-warning">'
+                        + '<div class="alert alert-info">'
                         + '<h5 class="alert-heading">Camera access required</h5>'
                         + '<p class="mb-2">Please allow camera access to scan QR codes.</p>'
                         + '<div class="mb-3">'
-                        + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
+                        + '<button class="btn btn-primary btn-sm me-2" onclick="location.reload()">Try Again</button>'
+                        + '<button class="btn btn-outline-primary btn-sm" onclick="window.open(\'' + recommendedUrl + '/public/qr-scanner\', \'_blank\')">Open Scanner</button>'
                         + '</div>'
-                        + '<p class="mb-0 text-muted">Or use your phone\'s camera app and open: <br><code>' + recommendedUrl + '/public/qr-scanner</code></p>'
+                        + '<div class="alert alert-light mt-3 border-0">'
+                        + '<small class="text-muted d-block mb-2"><i class="bx bx-info-circle me-1"></i>PUT HTTPS IN THE URL TO MAKE THE SCANNER WORK</small>'
+                        + '<h6 class="alert-heading text-primary"><i class="bx bx-mobile-alt me-2"></i>Using Your Phone</h6>'
+                        + '<p class="mb-2">Use your phone\'s camera app to scan the QR code, then:</p>'
+                        + '<div class="d-flex align-items-center justify-content-center p-2 bg-light rounded">'
+                        + '<i class="bx bx-link-external me-2 text-primary"></i>'
+                        + '<code class="flex-grow-1 text-break">' + recommendedUrl + '/public/qr-scanner</code>'
+                        + '<button class="btn btn-sm btn-outline-secondary ms-2" onclick="navigator.clipboard.writeText(\'' + recommendedUrl + '/public/qr-scanner\')">'
+                        + '<i class="bx bx-copy"></i>'
+                        + '</button>'
+                        + '</div>'
+                        + '</div>'
                         + '</div>'
                         + '</div>';
                 });
@@ -324,18 +336,14 @@
         function showFallbackWithRetry(message) {
             scannerWrapper.style.display = 'none';
             scanResult.style.display = 'flex';
-            const recommendedUrl = isSecure ? window.location.origin : ('https://' + window.location.host);
             scanResult.innerHTML = '<div class="text-center p-4">'
-                + '<div class="alert alert-warning">'
+                + '<div class="alert alert-info">'
                 + '<h5 class="alert-heading">Scanner Not Working</h5>'
                 + '<p class="mb-2">' + message + '</p>'
                 + '<div class="mb-3">'
-                + '<strong>Alternative:</strong> Use your phone\'s camera app to scan the QR code, then tap the link that appears.'
+                + '<small class="text-muted"><i class="bx bx-info-circle me-1"></i>Try using your phone\'s camera app to scan the QR code instead.</small>'
                 + '</div>'
-                + '<div class="mb-3">'
                 + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
-                + '</div>'
-                + '<p class="mb-0 text-muted">Or open directly: <br><code>' + recommendedUrl + '/public/qr-scanner</code></p>'
                 + '</div>'
                 + '</div>';
         }

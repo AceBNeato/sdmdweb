@@ -8,7 +8,7 @@
 <div class="content">
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-outline-secondary btn-sm">
+        <a href="{{ route('admin.settings.equipment-types.index') }}" class="btn btn-outline-secondary btn-sm">
             <i class='bx bx-arrow-back me-1'></i> Back to Equipment Types
         </a>
     </div>
@@ -21,7 +21,7 @@
                     <h5 class="mb-0">Equipment Type Information</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.settings.system.equipment-types.store') }}" method="POST">
+                    <form action="{{ route('admin.settings.equipment-types.store') }}" method="POST">
                         @csrf
 
                         <div class="mb-3">
@@ -37,7 +37,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class='bx bx-save me-1'></i> Create Equipment Type
                             </button>
-                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('admin.settings.equipment-types.index') }}" class="btn btn-outline-secondary">
                                 <i class='bx bx-x me-1'></i> Cancel
                             </a>
                         </div>

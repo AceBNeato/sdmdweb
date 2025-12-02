@@ -466,17 +466,14 @@ $(document).ready(function() {
 
                 // Check if response is JSON with success/message
                 if (response && typeof response === 'object' && response.success) {
-                    // Show success toast directly
-                    showToast(response.message, 'success');
+                    SweetAlert.success(response.message);
 
                     // Redirect after a short delay to allow toast to be seen
-                    setTimeout(function() {
-                        if (response.redirect) {
-                            window.location.href = response.redirect;
-                        } else {
-                            location.reload();
-                        }
-                    }, 1000);
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        location.reload();
+                    }
                 } else {
                     // Fallback to page reload for backward compatibility
                     location.reload();
@@ -499,7 +496,7 @@ $(document).ready(function() {
                     });
                 } else if (xhr.responseJSON && xhr.responseJSON.message) {
                     // Show error toast for JSON error responses
-                    showToast(xhr.responseJSON.message, 'error');
+                    showToast('error', xhr.responseJSON.message);
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -530,65 +527,17 @@ $(document).ready(function() {
 
                 // Check if response is JSON with success/message
                 if (response && typeof response === 'object' && response.success) {
-                    // Show success toast directly
-                    showToast(response.message, 'success');
+                    SweetAlert.success(response.message);
 
                     // Redirect after a short delay to allow toast to be seen
-                    setTimeout(function() {
-                        if (response.redirect) {
-                            window.location.href = response.redirect;
-                        } else {
-                            location.reload();
-                        }
-                    }, 1000);
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        location.reload();
+                    }
                 } else {
                     // Fallback to page reload for backward compatibility
                     location.reload();
-                }
-            },
-            error: function(xhr) {
-                // Handle errors - show validation errors
-                if (xhr.status === 422) {
-                    var errors = xhr.responseJSON.errors;
-                    // Display validation errors with SweetAlert
-                    var errorMessages = [];
-                    for (var field in errors) {
-                        errorMessages.push(errors[field][0]);
-                    }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation Error',
-                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
-                        confirmButtonColor: '#3085d6'
-                    });
-                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error_type === 'no_categories') {
-                    // Close modal and show SweetAlert for no categories
-                    $('#addEquipmentModal').modal('hide');
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Cannot Add Equipment',
-                        text: xhr.responseJSON.message,
-                        confirmButtonText: 'Go to Settings',
-                        showCancelButton: true,
-                        cancelButtonText: 'Cancel',
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#6c757d'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Redirect to settings page
-                            window.location.href = '/settings';
-                        }
-                    });
-                } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                    // Show error toast for JSON error responses
-                    showToast(xhr.responseJSON.message, 'error');
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'An error occurred. Please try again.',
-                        confirmButtonColor: '#3085d6'
-                    });
                 }
             }
         });
@@ -612,17 +561,14 @@ $(document).ready(function() {
 
                 // Check if response is JSON with success/message
                 if (response && typeof response === 'object' && response.success) {
-                    // Show success toast directly
-                    showToast(response.message, 'success');
+                    SweetAlert.success(response.message);
 
                     // Redirect after a short delay to allow toast to be seen
-                    setTimeout(function() {
-                        if (response.redirect) {
-                            window.location.href = response.redirect;
-                        } else {
-                            location.reload();
-                        }
-                    }, 1000);
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        location.reload();
+                    }
                 } else {
                     // Fallback to page reload for backward compatibility
                     location.reload();
@@ -645,7 +591,7 @@ $(document).ready(function() {
                     });
                 } else if (xhr.responseJSON && xhr.responseJSON.message) {
                     // Show error toast for JSON error responses
-                    showToast(xhr.responseJSON.message, 'error');
+                    showToast('error', xhr.responseJSON.message);
                 } else {
                     Swal.fire({
                         icon: 'error',

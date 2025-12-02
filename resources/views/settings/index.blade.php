@@ -940,6 +940,86 @@
                 });
             });
         }
+
+        // Handle session settings form submission
+        const sessionSettingsForm = document.querySelector('form[action*="settings/update"]');
+        if (sessionSettingsForm && sessionSettingsForm.querySelector('input[name="section"][value="session"]')) {
+            sessionSettingsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Settings Saved!',
+                            html: `
+                                <div class="text-left">
+                                    <p class="mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Session settings have been updated successfully.</p>
+                                    <div class="bg-gray-50 p-3 rounded text-sm">
+                                        <strong>Changes Applied:</strong><br>
+                                        ✓ Session lockout changed to ${formData.get('session_lockout_minutes')} minutes
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'success',
+                            confirmButtonColor: '#10b981',
+                            confirmButtonText: '<i class="fas fa-check mr-2"></i>Great!'
+                        }).then(() => {
+                            // Optionally refresh the page to show updated status
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            html: `
+                                <div class="text-left">
+                                    <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Failed to save session settings.</p>
+                                    <p class="text-sm text-gray-600">${data.message || 'An unknown error occurred.'}</p>
+                                </div>
+                            `,
+                            icon: 'error',
+                            confirmButtonColor: '#ef4444',
+                            confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Network Error!',
+                        html: `
+                            <div class="text-left">
+                                <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>A network error occurred while saving settings.</p>
+                                <p class="text-sm text-gray-600">Please check your connection and try again.</p>
+                            </div>
+                        `,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
+                    });
+                })
+                .finally(() => {
+                    // Restore button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
+            });
+        }
     });
 </script>
 

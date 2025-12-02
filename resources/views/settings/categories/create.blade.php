@@ -8,7 +8,7 @@
 <div class="content">
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <a href="{{ route('admin.settings.system.categories.index') }}" class="btn btn-outline-secondary btn-sm">
+        <a href="{{ route('admin.settings.categories.index') }}" class="btn btn-outline-secondary btn-sm">
             <i class='bx bx-arrow-back me-1'></i> Back to Categories
         </a>
     </div>
@@ -21,7 +21,7 @@
                     <h5 class="mb-0">Category Information</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.settings.system.categories.store') }}" method="POST">
+                    <form action="{{ route('admin.settings.categories.store') }}" method="POST">
                         @csrf
 
                         <div class="mb-3">
@@ -37,7 +37,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class='bx bx-save me-1'></i> Create Category
                             </button>
-                            <a href="{{ route('admin.settings.system.categories.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('admin.settings.categories.index') }}" class="btn btn-outline-secondary">
                                 <i class='bx bx-x me-1'></i> Cancel
                             </a>
                         </div>

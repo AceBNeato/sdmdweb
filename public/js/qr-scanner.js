@@ -82,13 +82,12 @@ domReady(function () {
             })
             .catch(function(err) {
                 console.warn('Camera permission denied:', err);
-                container.innerHTML = '<div class="alert alert-warning">'
+                container.innerHTML = '<div class="alert alert-info">'
+                 + '<small class="text-danger d-block mb-2 text-center fw-bold"><i class="bx bx-info-circle me-1"></i>PUT HTTPS IN THE URL TO MAKE THE SCANNER WORK</small>'
                     + '<h5 class="alert-heading">Camera access required</h5>'
                     + '<p class="mb-2">Please allow camera access to scan QR codes.</p>'
-                    + '<div class="mb-3">'
-                    + '<button class="btn btn-primary btn-sm" onclick="location.reload()">Try Again</button>'
-                    + '</div>'
-                    + '<p class="mb-0 text-muted">Or use your phone\'s camera app and open: <br><code>' + (isSecure ? window.location.origin : ("https://" + window.location.host)) + '/public/qr-scanner</code></p>'
+                    + '<div class="mb-3 text-center">'
+                    + '<button class="btn btn-primary btn-sm me-2 align-items-center justify-content-center" onclick="location.reload()">Try Again</button>'
                     + '</div>';
             });
     }

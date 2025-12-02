@@ -171,7 +171,7 @@
                 } else {
                     // Fallback to toast if SweetAlert not available
                     try {
-                        showToast('Session unlocked successfully!', 'success');
+                        showToast('success', 'Session unlocked successfully!');
                     } catch (e) {
                         console.error('Toast error:', e);
                     }
@@ -197,10 +197,10 @@
         unlockPassword.select();
     }
 
-    function showToast(message, type = 'success') {
+    function showToast(type = 'success', message) {
         // Use existing toast system if available
         if (typeof window.showToast === 'function') {
-            window.showToast(message, type);
+            window.showToast(type, message);
         }
     }
 

@@ -16,6 +16,12 @@ class AutoBackupTimer {
     async init() {
         try {
             await this.loadSettings();
+
+            if (!this.settings || !this.settings.enabled) {
+                console.log('Automatic backups are disabled; auto backup timer not started.');
+                return;
+            }
+
             this.startTimer();
             console.log('Auto backup timer initialized');
         } catch (error) {
@@ -67,7 +73,6 @@ class AutoBackupTimer {
 
     async checkBackupTime() {
         if (!this.settings || !this.settings.enabled) {
-            console.log('Backup disabled or settings not loaded');
             return;
         }
 
@@ -268,8 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
             window.autoBackupTimer.triggerAutoBackup();
         }
     };
-    
-    console.log('Auto backup timer initialized. Use testAutoBackup() to test manually.');
 });
 
 // Export for manual control
