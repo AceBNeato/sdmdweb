@@ -328,28 +328,14 @@ function selectRole(roleId) {
                 });
                 
                 if (missingFields.length > 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Missing Required Fields',
-                        html: `Please fill in the following required fields:<br><br><strong>${missingFields.join('<br>')}</strong>`,
-                        confirmButtonColor: '#dc3545'
-                    });
+                    window.SweetAlert.warning(`Please fill in the following required fields:<br><br><strong>${missingFields.join('<br>')}</strong>`);
                 }
                 
                 return;
             }
 
             // Show loading SweetAlert
-            Swal.fire({
-                title: 'Creating User...',
-                text: 'Please wait while we create the user account.',
-                icon: 'info',
-                showConfirmButton: false,
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+            window.SweetAlert.loading('Creating User...', 'Please wait while we create the user account.');
 
             // Prevent default form submission to handle via AJAX
             event.preventDefault();
@@ -391,6 +377,9 @@ function selectRole(roleId) {
                             confirmButtonColor: '#dc3545'
                         });
                         
+                        // Close loading SweetAlert
+                        window.SweetAlert.close();
+                        
                         // Don't continue to success handler
                         throw new Error('Validation failed');
                     });
@@ -402,45 +391,28 @@ function selectRole(roleId) {
                 console.log('Response data:', data);
                 
                 // Close loading SweetAlert first
-                Swal.close();
+                window.SweetAlert.close();
                 
                 if (data.success) {
-                    // Show success SweetAlert
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Account Successfully Created!',
-                        text: data.message,
-                        confirmButtonColor: '#28a745',
-                        timer: 3000,
-                        timerProgressBar: true,
-                        showConfirmButton: true
-                    }).then(() => {
-                        // Redirect to accounts index
-                        window.location.href = data.redirect || '{{ route("accounts.index") }}';
-                    });
+                    // Show success SweetAlert with redirect
+                    window.SweetAlert.successWithRedirect(
+                        data.message, 
+                        data.redirect || '{{ route("accounts.index") }}', 
+                        3000
+                    );
                 } else {
                     // Show error message
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'An error occurred while creating the user.',
-                        confirmButtonColor: '#dc3545'
-                    });
+                    window.SweetAlert.error(data.message || 'An error occurred while creating the user.');
                 }
             })
             .catch(error => {
                 console.error('Fetch error:', error);
                 
                 // Close loading SweetAlert
-                Swal.close();
+                window.SweetAlert.close();
                 
                 if (error.message !== 'Validation failed') { // Only show generic error if not a validation error
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'An unexpected error occurred. Please try again.',
-                        confirmButtonColor: '#dc3545'
-                    });
+                    window.SweetAlert.error('An unexpected error occurred. Please try again.');
                 }
             });
 

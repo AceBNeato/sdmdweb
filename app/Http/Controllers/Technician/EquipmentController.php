@@ -187,11 +187,6 @@ class EquipmentController extends BaseController
 
         $user = Auth::guard('technician')->user();
         
-        // Permission check - technicians have access based on authentication
-        // if ($user->user && !$user->user->can('equipment.create')) {
-        //     return redirect()->route('technician.equipment.index')
-        //         ->with('error', 'You do not have permission to create equipment.');
-        // }
         
         $equipment = new Equipment();
         $categories = Category::orderBy('name')->pluck('name', 'id');
@@ -231,11 +226,7 @@ class EquipmentController extends BaseController
 
         $user = Auth::guard('technician')->user();
         
-        // Permission check - technicians have access based on authentication
-        // if ($user->user && !$user->user->can('equipment.create')) {
-        //     return redirect()->route('technician.equipment.index')
-        //         ->with('error', 'You do not have permission to create equipment.');
-        // }
+
         
         $validated = $request->validate([
             'brand' => 'required|string|max:100',
@@ -262,10 +253,6 @@ class EquipmentController extends BaseController
             $validated['condition'] = 'good';
         }
 
-        // Technicians can now create equipment for any office
-        // if ($validated['office_id'] != $user->office_id) {
-        //     return back()->withErrors(['office_id' => 'You can only create equipment for your assigned office.']);
-        // }
 
         // Track who added this equipment so DB triggers can attribute correctly
         $validated['assigned_by_id'] = $user->id;

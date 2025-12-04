@@ -231,35 +231,34 @@ function handleUserUpdate(event, button) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show success message
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message || 'User updated successfully',
-                timer: 2000,
-                showConfirmButton: false
-            });
+            // Aggressively clear ALL session messages immediately
+            if (window.sessionMessages) {
+                window.sessionMessages = {
+                    success: null,
+                    error: null,
+                    warning: null,
+                    info: null
+                };
+            }
             
-            // If current user's role was changed, force logout and reload
+            // Also clear any pending SweetAlert
+            if (window.SweetAlert) {
+                window.SweetAlert.close();
+            }
+            
+            // Show success message with redirect
             if (isCurrentUserRoleChange && data.logout_required) {
-                setTimeout(() => {
-                    window.location.href = data.redirect_url || '/login';
-                }, 2000);
+                window.SweetAlert.successWithRedirect(data.message || 'User updated successfully', data.redirect_url || '/login', 2000);
             } else {
-                // Close modal and reload page to show changes
+                // Close modal first
                 const modal = bootstrap.Modal.getInstance(document.querySelector('#editUserModal'));
                 if (modal) modal.hide();
                 
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                // Show success and then reload
+                window.SweetAlert.successWithRedirect(data.message || 'User updated successfully', window.location.href, 2000);
             }
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: data.message || 'Failed to update user'
-            });
+            window.SweetAlert.error(data.message || 'Failed to update user');
         }
     })
     .catch(error => {

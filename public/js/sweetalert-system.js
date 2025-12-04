@@ -10,11 +10,10 @@ class SweetAlertSystem {
             position: 'center',
             showConfirmButton: true,
             timer: 3000,
-            timerProgressBar: false,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer)
-                toast.addEventListener('mouseleave', Swal.resumeTimer)
-            }
+            timerProgressBar: true,
+            allowOutsideClick: false,
+            allowEscapeKey: true,
+            allowEnterKey: true
         };
         
         this.init();
@@ -49,29 +48,20 @@ class SweetAlertSystem {
     }
 
     /**
-     * Show a SweetAlert notification
+     * Show a SweetAlert notification (always centered modal)
      */
     show(type, message, options = {}) {
         console.log(`Showing SweetAlert: ${type} - ${message}`);
-        const config = this.getConfig(type, message, options);
         
-        if (config.toast) {
-            // For toast-style notifications
-            Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
-            })(config);
-        } else {
-            // For modal-style notifications
-            Swal.fire(config);
-        }
+        // Force modal mode - never allow toast
+        const config = {
+            ...this.defaultOptions,
+            ...this.getConfig(type, message, options),
+            toast: false  // Explicitly force modal mode
+        };
+        
+        // Always use Swal.fire for centered modals
+        Swal.fire(config);
     }
 
     /**
@@ -161,26 +151,21 @@ class SweetAlertSystem {
             cancelButtonText: 'Cancel',
             confirmButtonColor: '#10b981',
             cancelButtonColor: '#ef4444',
-            reverseButtons: true
+            reverseButtons: true,
+            toast: false,
+            position: 'center'
         };
 
         return Swal.fire({ ...defaultConfirmOptions, ...options });
     }
 
     /**
-     * Show toast notification (small, top-right)
+     * Show toast notification (small, top-right) - DISABLED
+     * This method is disabled to force all notifications to be centered modals
      */
     toast(type, message, options = {}) {
-        const toastConfig = {
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            ...this.getConfig(type, message, options)
-        };
-
-        Swal.fire(toastConfig);
+        console.warn('toast() method is disabled. Using show() instead for centered modal.');
+        this.show(type, message, options);
     }
 
     /**
@@ -196,6 +181,8 @@ class SweetAlertSystem {
             didOpen: () => {
                 Swal.showLoading();
             },
+            toast: false,
+            position: 'center',
             ...options
         };
 
@@ -214,57 +201,41 @@ class SweetAlertSystem {
      */
     overrideFlashMessages() {
         // Override any existing toast system calls with new signature: showToast(type, message)
-        window.showToast = (type, message) => this.toast(type, message);
+        window.showToast = (type, message) => this.show(type, message);
         window.showNotification = (type, message) => this.show(type, message);
         
-        // Add universal AJAX response handler
+        // Universal AJAX response handler (handles redirect/reload)
         window.handleToastResponse = (response, fallbackType = 'success') => {
             if (!response) {
                 return;
             }
 
             if (typeof response === 'string') {
-                this.toast(fallbackType, response);
+                this.show(fallbackType, response);
                 return;
             }
 
-            const message = response.message || response.error || response.statusText;
+            let message = response.message;
+            const type = (response.success === false || response.error) ? 'error' : (response.toastType || fallbackType);
+            if (type === 'error') {
+                message = message || response.error;
+            }
             if (!message) {
                 return;
             }
 
-            const type = (response.success === false || response.error) ? 'error' : (response.toastType || fallbackType);
-            this.toast(type, message);
-        };
-        
-        // Override jQuery AJAX success/error handlers if they exist
-        if (window.$) {
-            $(document).ajaxSuccess((event, xhr, settings) => {
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    this.success(xhr.responseJSON.message);
-                }
-            });
+            // Handle special actions
+            if (response.redirect) {
+                this.successWithRedirect(message, response.redirect, response.delay || 0);
+                return;
+            }
+            if (response.reload) {
+                this.successWithReload(message, response.delay || 0);
+                return;
+            }
 
-            $(document).ajaxError((event, xhr, settings) => {
-                // Only show SweetAlert for AJAX requests that specifically want it
-                // Check if the request has a custom header or data property indicating SweetAlert handling
-                if (settings.data && typeof settings.data === 'string' && settings.data.includes('use_sweetalert=1')) {
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        this.error(xhr.responseJSON.message);
-                    } else if (xhr.status !== 0) {
-                        this.error('An error occurred while processing your request.');
-                    }
-                }
-                // Also handle requests with custom header
-                if (settings.headers && settings.headers['X-SweetAlert'] === 'true') {
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        this.error(xhr.responseJSON.message);
-                    } else if (xhr.status !== 0) {
-                        this.error('An error occurred while processing your request.');
-                    }
-                }
-            });
-        }
+            this.show(type, message);
+        };
     }
 
     /**
@@ -297,14 +268,42 @@ class SweetAlertSystem {
     }
 
     /**
-     * Show success with redirect
+     * Show success with redirect (only on confirm or timer)
      */
-    successWithRedirect(message, redirectUrl, delay = 1500) {
-        this.success(message, {
-            timer: delay,
-            showConfirmButton: false,
-            didClose: () => {
+    successWithRedirect(message, redirectUrl, delay = null) {
+        const config = {
+            ...this.getConfig('success', message),
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            timer: delay || undefined,
+            timerProgressBar: !!delay
+        };
+
+        return Swal.fire(config).then((result) => {
+            if (result.isConfirmed || result.dismiss === 'timer') {
                 window.location.href = redirectUrl;
+            }
+        });
+    }
+
+    /**
+     * Show success with reload (only on confirm or timer)
+     */
+    successWithReload(message, delay = null) {
+        const config = {
+            ...this.getConfig('success', message),
+            showConfirmButton: true,
+            confirmButtonText: 'Reload Page',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            timer: delay || undefined,
+            timerProgressBar: !!delay
+        };
+
+        return Swal.fire(config).then((result) => {
+            if (result.isConfirmed || result.dismiss === 'timer') {
+                window.location.reload();
             }
         });
     }
@@ -334,142 +333,115 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Universal AJAX Response Interceptor for SweetAlert Notifications
-// This catches ALL AJAX calls (XMLHttpRequest, fetch, jQuery.ajax) at the browser level
+// Catches ALL AJAX (XHR, fetch, jQuery under the hood) ONCE with opt-in for errors
 (function() {
-    // Store original methods
-    const originalXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
-    const originalXMLHttpRequestSend = XMLHttpRequest.prototype.send;
+    // Override setRequestHeader to detect opt-in
+    const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+    XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
+        if (name.toLowerCase() === 'x-sweetalert') {
+            this._useSweetAlert = value === 'true';
+        }
+        return originalSetRequestHeader.apply(this, [name, value]);
+    };
+
+    const originalOpen = XMLHttpRequest.prototype.open;
+    const originalSend = XMLHttpRequest.prototype.send;
     const originalFetch = window.fetch;
 
-    // Track XMLHttpRequest instances
-    const xhrInstances = new WeakMap();
-
-    // Override XMLHttpRequest.open to capture method and URL
     XMLHttpRequest.prototype.open = function(method, url, ...args) {
-        xhrInstances.set(this, { method: method.toUpperCase(), url: url });
-        return originalXMLHttpRequestOpen.apply(this, [method, url, ...args]);
+        this._useSweetAlert = false;
+        return originalOpen.apply(this, [method, url, ...args]);
     };
 
-    // Override XMLHttpRequest.send to intercept responses
     XMLHttpRequest.prototype.send = function(body) {
         const xhr = this;
-        const requestInfo = xhrInstances.get(xhr) || {};
+        let useSweetAlert = this._useSweetAlert || false;
+        if (!useSweetAlert && typeof body === 'string') {
+            useSweetAlert = body.includes('use_sweetalert=1');
+        }
 
-        // Override onreadystatechange to catch responses
         const originalOnReadyStateChange = this.onreadystatechange;
-        this.onreadystatechange = function(e) {
+        this.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status !== 0) {
-                // Only process JSON responses or responses with message content
-                let responseData = null;
-                let shouldShowAlert = false;
+                const contentType = xhr.getResponseHeader('content-type') || '';
+                let responseData;
 
-                try {
-                    // Try to parse as JSON
-                    if (xhr.responseText && xhr.getResponseHeader('content-type')?.includes('application/json')) {
+                if (contentType.includes('application/json')) {
+                    try {
                         responseData = JSON.parse(xhr.responseText);
-                        // Check if response has message, error, or success fields
-                        if (responseData.message || responseData.error || responseData.success !== undefined) {
-                            shouldShowAlert = true;
+                        const hasToastData = responseData.message || responseData.error || responseData.success !== undefined;
+                        if (!hasToastData) return;
+
+                        const isSuccess = xhr.status >= 200 && xhr.status < 300;
+                        const shouldHandle = isSuccess ? true : useSweetAlert;
+
+                        if (shouldHandle && window.handleToastResponse) {
+                            setTimeout(() => window.handleToastResponse(responseData), 0);
                         }
-                    }
-                    // Also check for plain text responses that might be error messages
-                    else if (xhr.responseText && xhr.status >= 400) {
-                        responseData = { message: xhr.responseText, error: true };
-                        shouldShowAlert = true;
-                    }
-                } catch (parseError) {
-                    // If JSON parsing fails but we have a non-200 status, show the status text
-                    if (xhr.status >= 400) {
-                        responseData = { message: xhr.statusText || 'Request failed', error: true };
-                        shouldShowAlert = true;
+                    } catch (e) {}
+                } else if (xhr.status >= 400 && useSweetAlert) {
+                    responseData = {
+                        message: (xhr.responseText || xhr.statusText || 'An error occurred').slice(0, 500),
+                        error: true
+                    };
+                    if (window.handleToastResponse) {
+                        setTimeout(() => window.handleToastResponse(responseData), 0);
                     }
                 }
-
-                if (shouldShowAlert && responseData && window.handleToastResponse) {
-                    // Use setTimeout to ensure this runs after the current call stack
-                    setTimeout(function() {
-                        window.handleToastResponse(responseData);
-                    }, 0);
-                }
             }
-
-            // Call original handler
-            if (originalOnReadyStateChange) {
-                originalOnReadyStateChange.apply(this, arguments);
-            }
+            if (originalOnReadyStateChange) originalOnReadyStateChange.apply(this, arguments);
         };
 
-        return originalXMLHttpRequestSend.apply(this, arguments);
+        return originalSend.apply(this, arguments);
     };
 
-    // Override fetch for modern browsers
-    if (originalFetch) {
-        window.fetch = function(input, init) {
-            const url = typeof input === 'string' ? input : input.url;
-            const method = (init?.method || 'GET').toUpperCase();
+    // Override fetch
+    window.fetch = function(input, init = {}) {
+        let useSweetAlert = false;
+        const headers = init.headers;
+        if (headers) {
+            if (headers instanceof Headers) {
+                useSweetAlert = headers.get('X-SweetAlert') === 'true';
+            } else if (typeof headers === 'object') {
+                useSweetAlert = headers['X-SweetAlert'] === 'true';
+            }
+        }
+        if (!useSweetAlert && typeof init.body === 'string') {
+            useSweetAlert = init.body.includes('use_sweetalert=1');
+        }
 
-            return originalFetch.apply(this, arguments).then(function(response) {
-                // Clone the response so we can read it without consuming it
-                const responseClone = response.clone();
+        return originalFetch.call(this, input, init).then((response) => {
+            const clone = response.clone();
+            const contentType = response.headers.get('content-type') || '';
 
-                // Only process JSON responses
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    return responseClone.json().then(function(data) {
-                        // Check if response has toast-relevant fields
-                        if ((data.message || data.error || data.success !== undefined) && window.handleToastResponse) {
-                            setTimeout(function() {
-                                window.handleToastResponse(data);
-                            }, 0);
-                        }
-                        // Return original response for chaining
-                        return response;
-                    }).catch(function() {
-                        // JSON parsing failed, return original response
-                        return response;
+            if (contentType.includes('application/json')) {
+                return clone.json().then((data) => {
+                    const hasToastData = data.message || data.error || data.success !== undefined;
+                    if (!hasToastData) return response;
+
+                    const isSuccess = response.ok;
+                    const shouldHandle = isSuccess ? true : useSweetAlert;
+
+                    if (shouldHandle && window.handleToastResponse) {
+                        setTimeout(() => window.handleToastResponse(data), 0);
+                    }
+                    return response;
+                }).catch(() => response);
+            } else if (!response.ok && useSweetAlert) {
+                return clone.text().then((text) => {
+                    window.handleToastResponse({
+                        message: (text || response.statusText || 'An error occurred').slice(0, 500),
+                        error: true
                     });
-                }
-
-                return response;
-            });
-        };
-    }
+                    return response;
+                });
+            }
+            return response;
+        });
+    };
 })();
 
-// Keep jQuery handlers as fallback for jQuery-specific features
-if (window.jQuery) {
-    const $document = jQuery(document);
-
-    // Only handle jQuery events that bypass our universal interceptor
-    $document.on('ajaxSuccess', function(event, xhr) {
-        // This will be redundant with our universal interceptor, but kept as fallback
-        if (!xhr || !xhr.responseJSON) {
-            return;
-        }
-
-        const data = xhr.responseJSON;
-        if (!data.message && !data.error && data.success === undefined) {
-            return;
-        }
-
-        if (window.handleToastResponse) {
-            window.handleToastResponse(data);
-        }
-    });
-
-    $document.on('ajaxError', function(event, jqXHR) {
-        if (!jqXHR || jqXHR.status === 0) {
-            return;
-        }
-
-        const payload = jqXHR.responseJSON || {
-            message: jqXHR.statusText || 'An unexpected error occurred.'
-        };
-
-        if (window.handleToastResponse) {
-            window.handleToastResponse(payload, 'error');
-        }
-    });
-}
+// REMOVED: Redundant jQuery global handlers (universal interceptor handles everything ONCE)
 
 // Export for use in other scripts
 window.SweetAlertSystem = SweetAlertSystem;

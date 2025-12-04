@@ -118,12 +118,7 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Failed to Load',
-                    text: 'Failed to load QR codes. Please try again.',
-                    confirmButtonColor: '#3085d6'
-                });
+                window.SweetAlert.error('Failed to load QR codes. Please try again.');
             }
         });
     }
@@ -300,11 +295,8 @@ $(document).ready(function() {
                 if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error_type === 'no_categories') {
                     // Close modal if it's open
                     modal.modal('hide');
-                    // Show SweetAlert warning
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Cannot Add Equipment',
-                        text: xhr.responseJSON.message,
+                    // Show SweetAlert warning with redirect option
+                    window.SweetAlert.warning(xhr.responseJSON.message, {
                         confirmButtonText: 'Go to Settings',
                         showCancelButton: true,
                         cancelButtonText: 'Cancel',
@@ -317,12 +309,7 @@ $(document).ready(function() {
                         }
                     });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Failed to Load',
-                        text: 'Failed to load equipment form. Error: ' + xhr.status + ' - ' + error,
-                        confirmButtonColor: '#3085d6'
-                    });
+                    window.SweetAlert.error('Failed to load equipment form. Error: ' + xhr.status + ' - ' + error);
                 }
             }
         });
@@ -353,12 +340,7 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Failed to Load',
-                    text: 'Failed to load equipment details. Error: ' + xhr.status + ' - ' + error,
-                    confirmButtonColor: '#3085d6'
-                });
+                window.SweetAlert.error('Failed to load equipment details. Error: ' + xhr.status + ' - ' + error);
             }
         });
 
@@ -396,12 +378,7 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Failed to Load',
-                    text: 'Failed to load equipment form. Error: ' + xhr.status + ' - ' + error,
-                    confirmButtonColor: '#3085d6'
-                });
+                window.SweetAlert.error('Failed to load equipment form. Error: ' + xhr.status + ' - ' + error);
             }
         });
 
@@ -435,12 +412,7 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.log('AJAX Error:', xhr.status, xhr.responseText, error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Failed to Load',
-                    text: 'Failed to load history form. Error: ' + xhr.status + ' - ' + error,
-                    confirmButtonColor: '#3085d6'
-                });
+                window.SweetAlert.error('Failed to load history form. Error: ' + xhr.status + ' - ' + error);
             }
         });
 
@@ -460,23 +432,19 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
+            global: false,
+            headers: {
+                'X-No-Toast': 'true',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             success: function(response) {
                 // Close modal
                 $('#editEquipmentModal').modal('hide');
 
-                // Check if response is JSON with success/message
-                if (response && typeof response === 'object' && response.success) {
-                    SweetAlert.success(response.message);
-
-                    // Redirect after a short delay to allow toast to be seen
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    // Fallback to page reload for backward compatibility
-                    location.reload();
+                // Manually show SweetAlert with redirect and fixed timer
+                if (response.message) {
+                    const redirectUrl = response.redirect || window.location.href;
+                    window.SweetAlert.successWithRedirect(response.message, redirectUrl, 3000);
                 }
             },
             error: function(xhr) {
@@ -488,22 +456,12 @@ $(document).ready(function() {
                     for (var field in errors) {
                         errorMessages.push(errors[field][0]);
                     }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation Error',
-                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
-                        confirmButtonColor: '#3085d6'
-                    });
+                    window.SweetAlert.error('Validation Error:<br><br>' + errorMessages.join('<br>'));
                 } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                    // Show error toast for JSON error responses
-                    showToast('error', xhr.responseJSON.message);
+                    // Show error for JSON error responses
+                    window.SweetAlert.error(xhr.responseJSON.message);
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'An error occurred. Please try again.',
-                        confirmButtonColor: '#3085d6'
-                    });
+                    window.SweetAlert.error('An error occurred. Please try again.');
                 }
             }
         });
@@ -521,23 +479,36 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
+            global: false,
+            headers: {
+                'X-No-Toast': 'true',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             success: function(response) {
                 // Close modal
                 $('#addEquipmentModal').modal('hide');
 
-                // Check if response is JSON with success/message
-                if (response && typeof response === 'object' && response.success) {
-                    SweetAlert.success(response.message);
-
-                    // Redirect after a short delay to allow toast to be seen
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        location.reload();
+                // Manually show SweetAlert with redirect and fixed timer
+                if (response.message) {
+                    const redirectUrl = response.redirect || window.location.href;
+                    window.SweetAlert.successWithRedirect(response.message, redirectUrl, 3000);
+                }
+            },
+            error: function(xhr) {
+                // Handle errors - show validation errors
+                if (xhr.status === 422) {
+                    var errors = xhr.responseJSON.errors;
+                    // Display validation errors with SweetAlert
+                    var errorMessages = [];
+                    for (var field in errors) {
+                        errorMessages.push(errors[field][0]);
                     }
+                    window.SweetAlert.error('Validation Error:<br><br>' + errorMessages.join('<br>'));
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    // Show error for JSON error responses
+                    window.SweetAlert.error(xhr.responseJSON.message);
                 } else {
-                    // Fallback to page reload for backward compatibility
-                    location.reload();
+                    window.SweetAlert.error('An error occurred. Please try again.');
                 }
             }
         });
@@ -555,23 +526,19 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
+            global: false,
+            headers: {
+                'X-No-Toast': 'true',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             success: function(response) {
                 // Close modal
                 $('#historyEquipmentModal').modal('hide');
 
-                // Check if response is JSON with success/message
-                if (response && typeof response === 'object' && response.success) {
-                    SweetAlert.success(response.message);
-
-                    // Redirect after a short delay to allow toast to be seen
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    // Fallback to page reload for backward compatibility
-                    location.reload();
+                // Manually show SweetAlert with redirect and fixed timer
+                if (response.message) {
+                    const redirectUrl = response.redirect || window.location.href;
+                    window.SweetAlert.successWithRedirect(response.message, redirectUrl, 3000);
                 }
             },
             error: function(xhr) {
@@ -583,22 +550,12 @@ $(document).ready(function() {
                     for (var field in errors) {
                         errorMessages.push(errors[field][0]);
                     }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation Error',
-                        html: '<div style="text-align: left;">' + errorMessages.join('<br>') + '</div>',
-                        confirmButtonColor: '#3085d6'
-                    });
+                    window.SweetAlert.error('Validation Error:<br><br>' + errorMessages.join('<br>'));
                 } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                    // Show error toast for JSON error responses
-                    showToast('error', xhr.responseJSON.message);
+                    // Show error for JSON error responses
+                    window.SweetAlert.error(xhr.responseJSON.message);
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'An error occurred. Please try again.',
-                        confirmButtonColor: '#3085d6'
-                    });
+                    window.SweetAlert.error('An error occurred. Please try again.');
                 }
             }
         });
