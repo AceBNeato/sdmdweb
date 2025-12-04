@@ -6,97 +6,6 @@
 @push('styles')
 <link href="{{ asset('css/settings.css') }}" rel="stylesheet">
 
-<style>
-.settings-tabs {
-    display: flex;
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 2rem;
-}
-
-.settings-tab {
-    padding: 0.75rem 1.5rem;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    font-weight: 500;
-    color: #6b7280;
-    transition: all 0.2s;
-}
-
-.settings-tab.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
-}
-
-.settings-tab:hover {
-    color: #374151;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-.management-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.management-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 2rem;
-    text-align: center;
-    transition: all 0.2s;
-}
-
-.management-card:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.management-card-icon {
-    margin-bottom: 1rem;
-}
-
-.management-card-content h5 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #374151;
-}
-
-.management-card-content p {
-    color: #6b7280;
-    margin-bottom: 1.5rem;
-}
-
-.quick-actions {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-top: 2rem;
-}
-
-.quick-actions h5 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: #374151;
-}
-
-.quick-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-</style>
 @endpush
 
 @push('scripts')
@@ -237,19 +146,6 @@
                             </div>
                         </div>
 
-                        @if(auth()->user()->hasPermissionTo('settings.manage'))
-                        <div class="quick-actions">
-                            <h5>Quick Actions</h5>
-                            <div class="quick-actions-grid">
-                                <a href="{{ url('admin/settings/categories/create') }}" class="btn btn-outline-primary">
-                                    <i class="fas fa-plus mr-2"></i> Add New Category
-                                </a>
-                                <a href="{{ url('admin/settings/equipment-types/create') }}" class="btn btn-outline-success">
-                                    <i class="fas fa-plus mr-2"></i> Add New Equipment Type
-                                </a>
-                            </div>
-                        </div>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -941,86 +837,7 @@
             });
         }
 
-        // Handle session settings form submission
-        const sessionSettingsForm = document.querySelector('form[action*="settings/update"]');
-        if (sessionSettingsForm && sessionSettingsForm.querySelector('input[name="section"][value="session"]')) {
-            sessionSettingsForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                
-                // Show loading state
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            title: 'Settings Saved!',
-                            html: `
-                                <div class="text-left">
-                                    <p class="mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Session settings have been updated successfully.</p>
-                                    <div class="bg-gray-50 p-3 rounded text-sm">
-                                        <strong>Changes Applied:</strong><br>
-                                        ✓ Session lockout changed to ${formData.get('session_lockout_minutes')} minutes
-                                    </div>
-                                </div>
-                            `,
-                            icon: 'success',
-                            confirmButtonColor: '#10b981',
-                            confirmButtonText: '<i class="fas fa-check mr-2"></i>Great!'
-                        }).then(() => {
-                            // Optionally refresh the page to show updated status
-                            window.location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            html: `
-                                <div class="text-left">
-                                    <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Failed to save session settings.</p>
-                                    <p class="text-sm text-gray-600">${data.message || 'An unknown error occurred.'}</p>
-                                </div>
-                            `,
-                            icon: 'error',
-                            confirmButtonColor: '#ef4444',
-                            confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
-                        });
-                    }
-                })
-                .catch(error => {
-                    Swal.fire({
-                        title: 'Network Error!',
-                        html: `
-                            <div class="text-left">
-                                <p class="mb-2"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>A network error occurred while saving settings.</p>
-                                <p class="text-sm text-gray-600">Please check your connection and try again.</p>
-                            </div>
-                        `,
-                        icon: 'error',
-                        confirmButtonColor: '#ef4444',
-                        confirmButtonText: '<i class="fas fa-times mr-2"></i>Understood'
-                    });
-                })
-                .finally(() => {
-                    // Restore button state
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                });
-            });
-        }
-    });
+        });
 </script>
 
 <script>
@@ -1043,6 +860,7 @@
             });
         });
     });
-
     </script>
+    
+    <script src="{{ asset('js/settings-session.js') }}"></script>
 @endsection

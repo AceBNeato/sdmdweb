@@ -72,7 +72,7 @@ class ReportController extends Controller
             // Get the latest history entry for this equipment
             $latestHistory = EquipmentHistory::with('user')
                 ->where('equipment_id', $group->equipment_id)
-                ->orderBy('created_at', 'desc')
+                ->orderBy('created_at', 'asc')
                 ->first();
 
             $group->equipment = $equipment;
@@ -84,7 +84,7 @@ class ReportController extends Controller
             
         // Get recent history (first 5 equipment groups) - technicians see all history like admin
         $recentHistory = EquipmentHistory::with(['equipment', 'user'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->take(5)
             ->get();
 
@@ -133,7 +133,7 @@ class ReportController extends Controller
 
         // Technicians have access to all equipment across all offices
         $equipment->load(['office', 'equipmentType', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
+            $query->orderBy('created_at', 'asc');
         }, 'history.user']);
 
         return view('reports.history', compact('equipment'));
@@ -147,11 +147,15 @@ class ReportController extends Controller
         
         $history = $equipment->history()
             ->with('user')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('jo_number', 'asc')
             ->get();
 
-        // Calculate total pages needed (16 items per page)
-        $perPage = 16;
+        // REVERSE it so newest is first (for correct printed page order)
+        $history = $history->reverse();
+
+        // Calculate total pages needed (20 items per page)
+        $perPage = 20;
         $totalPages = ceil($history->count() / $perPage);
         $currentPage = request()->get('page', 1);
         
@@ -181,7 +185,7 @@ class ReportController extends Controller
         $equipment->load([
             'office', 
             'history' => function($query) {
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('created_at', 'asc');
             }, 
             'history.user',
             'history.corrections' => function($query) {

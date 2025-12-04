@@ -72,7 +72,7 @@
                                 <form action="{{ route('admin.settings.equipment-types.destroy', $type) }}" method="POST" class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="button" class="btn btn-sm btn-outline-secondary delete-btn">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary delete-btn">
                                         <i class='bx bx-trash'></i>
                                     </button>
                                 </form>
@@ -110,4 +110,45 @@
     </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+// Delete confirmation with SweetAlert
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('.delete-form');
+            const typeName = form.closest('tr').querySelector('.fw-medium').textContent;
+
+            Swal.fire({
+                title: 'Delete Equipment Type?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-3">Are you sure you want to delete <strong>"${typeName}"</strong>?</p>
+                        <div class="bg-red-50 border border-red-200 p-3 rounded">
+                            <p class="text-red-700 text-sm mb-2">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                <strong>Warning:</strong> This action is permanent and cannot be undone.
+                            </p>
+                            <p class="text-red-600 text-xs">All data associated with this equipment type will be permanently removed.</p>
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash mr-2"></i>Delete Permanently',
+                cancelButtonText: '<i class="fas fa-times mr-2"></i>Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush
 @endsection

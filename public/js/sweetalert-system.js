@@ -75,8 +75,9 @@ class SweetAlertSystem {
                 text: message,
                 confirmButtonText: 'Great!',
                 confirmButtonColor: '#10b981',
-                background: '#f0fdf4',
-                color: '#065f46'
+                background: '#ffffff',
+                color: '#065f46',
+                position: 'center'
             },
             error: {
                 icon: 'error',
@@ -85,7 +86,8 @@ class SweetAlertSystem {
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#ef4444',
                 background: '#fef2f2',
-                color: '#991b1b'
+                color: '#991b1b',
+                position: 'center'
             },
             warning: {
                 icon: 'warning',
@@ -94,7 +96,8 @@ class SweetAlertSystem {
                 confirmButtonText: 'Understood',
                 confirmButtonColor: '#f59e0b',
                 background: '#fffbeb',
-                color: '#92400e'
+                color: '#92400e',
+                position: 'center'
             },
             info: {
                 icon: 'info',
@@ -103,7 +106,8 @@ class SweetAlertSystem {
                 confirmButtonText: 'Got it',
                 confirmButtonColor: '#3b82f6',
                 background: '#eff6ff',
-                color: '#1e40af'
+                color: '#1e40af',
+                position: 'center'
             }
         };
 

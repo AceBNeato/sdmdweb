@@ -260,7 +260,7 @@
     </div>
 
     @php
-        $logs = $equipment->maintenanceLogs;
+        $logs = $equipment->history->sortBy('created_at');
         $perPage = 25;
         $logChunks = $logs->count() ? $logs->chunk($perPage) : collect([collect()]);
     @endphp
@@ -324,19 +324,21 @@
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Date & Time</th>
-                            <th>Action</th>
-                            <th>Details</th>
-                            <th>User</th>
+                            <th>Date</th>
+                            <th>JO Number</th>
+                            <th>Actions Taken</th>
+                            <th>Remarks</th>
+                            <th>Responsible SDMD Personnel</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($pageLogs as $log)
                         <tr>
-                            <td>{{ $log->created_at->format('M d, Y H:i') }}</td>
-                            <td>{{ ucfirst(str_replace('_', ' ', $log->action)) }}</td>
-                            <td>{{ $log->details }}</td>
-                            <td>{{ $log->user ? $log->user->name : 'System' }}</td>
+                            <td>{{ $log->created_at->format('m/d/Y') }}</td>
+                            <td>{{ $log->jo_number ?? '' }}</td>
+                            <td>{{ $log->action_taken ?? '' }}</td>
+                            <td>{{ $log->remarks ?? '' }}</td>
+                            <td>{{ $log->responsible_person ?? ($log->user ? $log->user->name : '') }}</td>
                         </tr>
                         @endforeach
                     </tbody>

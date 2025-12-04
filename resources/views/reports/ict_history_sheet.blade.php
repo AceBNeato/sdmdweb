@@ -4,250 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ICT Equipment History Sheet</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 0.25in;
-        }
-
-        :root {
-            --border-color: #000;
-            --body-font: 'Times New Roman', Times, serif;
-            --script-font: 'Old English Text MT', 'Goudy Old Style', 'Times New Roman', serif;
-        }
-
-        body {
-            margin: 0;
-            color: #000;
-            font-family: var(--body-font);
-            font-size: 11pt;
-            background: linear-gradient(135deg, #1d3041ff 0%, #4e657aff 100%);
-        }
-
-        .page {
-            width: 8.27in;
-            min-height: 11.69in;
-            margin: 0 auto;
-            border: 1.2px solid var(--border-color);
-            box-sizing: border-box;
-            padding: 0.2in 0.25in 0.2in;
-            background: #fff;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            border-bottom: 3px double var(--border-color);
-            padding-bottom: 12px;
-        }
-
-        .header-left img {
-            width: 95px;
-            height: 95px;
-            object-fit: contain;
-        }
-
-        .header-center {
-            flex: 1;
-            text-align: center;
-            line-height: 1.35;
-        }
-
-        .header-center .republic {
-            font-size: 11pt;
-            letter-spacing: 0.4px;
-        }
-
-        .header-center .university {
-            font-family: var(--script-font);
-            font-size: 15pt;
-            margin: 3px 0 4px;
-        }
-
-        .header-center .details {
-            font-size: 10pt;
-        }
-
-        .header-center .details .link {
-            text-decoration: underline;
-        }
-
-        .header-right {
-            width: 220px;
-        }
-
-        .form-info-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-        }
-
-        .form-info-table td {
-            border: 1px solid var(--border-color);
-            padding: 4px 6px;
-            white-space: nowrap;
-        }
-
-        .title {
-            text-align: center;
-            font-size: 15pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin: 18px 0 14px;
-        }
-
-        .equipment-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 14px;
-            font-size: 11pt;
-        }
-
-        .equipment-table td {
-            border: 1px solid var(--border-color);
-            padding: 8px 12px;
-        }
-
-        .equipment-table .label {
-            width: 195px;
-            font-weight: bold;
-        }
-
-        .equipment-table .value {
-            height: 24px;
-        }
-
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-        }
-
-        .history-table th,
-        .history-table td {
-            border: 1px solid var(--border-color);
-            padding: 6px 8px;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .history-table th {
-            font-weight: bold;
-            background-color: #f5f5f5;
-        }
-
-        .history-table td.text-left {
-            text-align: left;
-        }
-
-        .footer-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: auto;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-color);
-            font-size: 9pt;
-            color: #666;
-        }
-
-        .content-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            margin: 0 5px;
-            text-decoration: none;
-            border: 1px solid #007bff;
-            border-radius: 1rem;
-            background-color: #007bff;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-        }
-
-        .btn i {
-            margin-right: 8px;
-        }
-
-        .pagination-controls {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .pagination-info {
-            font-weight: 600;
-            color: #495057;
-        }
-
-        .pagination-buttons {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .pagination-buttons .btn {
-            padding: 6px 12px;
-            font-size: 14px;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        .pagination-buttons .btn.active {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: white;
-        }
-
-        .pagination-buttons .btn-outline-primary {
-            background-color: white;
-            border-color: #007bff;
-            color: #007bff;
-        }
-
-        .pagination-buttons .btn-outline-primary:hover {
-            background-color: #007bff;
-            color: white;
-        }
-
-        @media print {
-            @page {
-                size: A4;
-                margin: 0.25in;
-            }
-            body { -webkit-print-color-adjust: exact; margin: 0; }
-            .page { 
-                margin: 0; 
-                border: none;
-                height: auto;
-                min-height: 11.69in;
-                page-break-inside: avoid;
-                overflow: visible;
-            }
-            .action-buttons { display: none; }
-            .pagination-controls { display: none; }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ asset('css/ict_history_sheet.css') }}">
 </head>
 <body>
     <div class="action-buttons">
@@ -289,50 +46,62 @@
     </div>
 
     <div class="page">
-        <div class="header">
-            <div class="header-left">
-                <img src="{{ asset('images/useplogo.png') }}" alt="University Seal">
-            </div>
-            <div class="header-center">
-                <div class="republic">Republic of the Philippines</div>
-                <div class="university">University of Southeastern Philippines</div>
-                <div class="details">
-                    Iñigo St., Bo. Obrero, Davao City 8000<br>
-                    Telephone: (082) 227-8192<br>
-                    Website: <span class="link">www.usep.edu.ph</span><br>
-                    Email: <span class="link">president@usep.edu.ph</span>
-                </div>
-            </div>
-            <div class="header-right">
-                <table class="form-info-table">
-                    <tr><td>Form No.</td><td>FM-USeP-ICT-04</td></tr>
-                    <tr><td>Issue Status</td><td>01</td></tr>
-                    <tr><td>Revision No.</td><td>00</td></tr>
-                    <tr><td>Date Effective</td><td>23 December 2022</td></tr>
-                    <tr><td>Approved by</td><td>President</td></tr>
-                </table>
-            </div>
-        </div>
-
-        <div class="content-area">
-            <div class="title">ICT EQUIPMENT HISTORY SHEET</div>
-
-            <table class="equipment-table">
+        <table class="unified-table">
+            <thead>
                 <tr>
-                    <td class="label">Equipment:</td>
-                    <td class="value">{{ $equipment->model_number }}</td>
+                    <th rowspan="5" class="logo-cell">
+                        <img src="{{ asset('images/useplogo.png') }}" alt="University Seal">
+                    </th>
+                    <th rowspan="5" class="university-cell">
+                        <div class="republic">Republic of the Philippines</div>
+                        <div class="university">University of Southeastern Philippines</div>
+                        <div class="details">
+                            Iñigo St., Bo. Obrero, Davao City 8000<br>
+                            Telephone: (082) 227-8192<br>
+                            Website: <span class="link">www.usep.edu.ph</span><br>
+                            Email: <span class="link">president@usep.edu.ph</span>
+                        </div>
+                    </th>
+                    <th class="form-label">Form No.</th>
+                    <th class="form-value">FM-USeP-ICT-04</th>
                 </tr>
                 <tr>
-                    <td class="label">Property/Serial Number:</td>
-                    <td class="value">{{ $equipment->serial_number }}</td>
+                    <th class="form-label">Issue Status</th>
+                    <th class="form-value">01</th>
                 </tr>
                 <tr>
-                    <td class="label">Location:</td>
-                    <td class="value">{{ $equipment->office->name ?? 'N/A' }}</td>
+                    <th class="form-label">Revision No.</th>
+                    <th class="form-value">00</th>
                 </tr>
-            </table>
+                <tr>
+                    <th class="form-label">Date Effective</th>
+                    <th class="form-value">23 December 2022</th>
+                </tr>
+                <tr>
+                    <th class="form-label">Approved by</th>
+                    <th class="form-value">President</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4" class="title-cell">ICT EQUIPMENT HISTORY SHEET</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Equipment:</td>
+                    <td colspan="3" class="value-cell">{{ $equipment->model_number }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Property/Serial Number:</td>
+                    <td colspan="3" class="value-cell">{{ $equipment->serial_number }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Location:</td>
+                    <td colspan="3" class="value-cell">{{ $equipment->office->name ?? 'N/A' }}</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <table class="history-table">
+        <table class="history-table">
             <thead>
                 <tr>
                     <th width="10%">Date</th>
@@ -359,8 +128,8 @@
                 </tr>
                 @endforeach
                 @php
-                    // Calculate remaining rows to fill the page (15 rows per page)
-                    $remainingRows = 15 - $history->count();
+                    // Calculate remaining rows to fill the page (always 20 rows per page)
+                    $remainingRows = 20 - $history->count();
                 @endphp
                 @for($i = 0; $i < $remainingRows; $i++)
                 <tr>
@@ -373,7 +142,6 @@
                 @endfor
             </tbody>
         </table>
-        </div>
 
         <div class="footer-bar">
             <span>Systems and Data Management Division (SDMD)</span>

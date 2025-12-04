@@ -154,27 +154,14 @@
                 hideLockModal();
                 resetLockoutTimer();
                 
-                // Show SweetAlert success message using safe method
-                if (typeof window.safeToast !== 'undefined') {
-                    window.safeToast('success', 'Session unlocked successfully!');
-                } else if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Session Unlocked!',
-                        text: 'Welcome back! Your session has been unlocked successfully.',
-                        confirmButtonText: 'Continue',
-                        confirmButtonColor: '#28a745',
+                // Show centered SweetAlert using SweetAlertSystem
+                if (typeof window.SweetAlert !== 'undefined') {
+                    window.SweetAlert.success('Session unlocked successfully!', {
                         timer: 3000,
-                        timerProgressBar: true,
                         showConfirmButton: true
                     });
                 } else {
-                    // Fallback to toast if SweetAlert not available
-                    try {
-                        showToast('success', 'Session unlocked successfully!');
-                    } catch (e) {
-                        console.error('Toast error:', e);
-                    }
+                    console.log('Session unlocked successfully!');
                 }
             } else {
                 showUnlockError(data.message || 'Invalid password. Please try again.');

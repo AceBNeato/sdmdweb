@@ -71,7 +71,7 @@ domReady(function () {
     // Helper to request camera permissions and start scanner
     function requestCameraAndStart() {
         if (!hasMediaDevices) {
-            container.innerHTML = '<div class="alert alert-danger">Camera not supported on this device.</div>';
+            container.innerHTML = '<div class="alert alert-danger">Camera not supported on this device. Make sure to put https:// on the url or allow camera permission.</div>';
             return;
         }
 
@@ -83,9 +83,9 @@ domReady(function () {
             .catch(function(err) {
                 console.warn('Camera permission denied:', err);
                 container.innerHTML = '<div class="alert alert-info">'
-                 + '<small class="text-danger d-block mb-2 text-center fw-bold"><i class="bx bx-info-circle me-1"></i>PUT HTTPS IN THE URL TO MAKE THE SCANNER WORK</small>'
-                    + '<h5 class="alert-heading">Camera access required</h5>'
-                    + '<p class="mb-2">Please allow camera access to scan QR codes.</p>'
+                    + '<small class="text-danger d-block mb-2 text-center fw-bold"><i class="bx bx-info-circle me-1"></i>PUT HTTPS IN THE URL TO MAKE THE SCANNER WORK</small>'
+                    + '<h5 class="alert-heading" style="text-align: center;">Camera access required</h5>'
+                    + '<p class="mb-2" style="text-align: center;">Please allow camera access permission to scan QR codes.</p>'
                     + '<div class="mb-3 text-center">'
                     + '<button class="btn btn-primary btn-sm me-2 align-items-center justify-content-center" onclick="location.reload()">Try Again</button>'
                     + '</div>';

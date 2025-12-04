@@ -78,7 +78,7 @@ class ReportController extends BaseController
             // Get the latest history entry for this equipment
             $latestHistory = \App\Models\EquipmentHistory::with('user')
                 ->where('equipment_id', $group->equipment_id)
-                ->orderBy('created_at', 'desc')
+                ->orderBy('created_at', 'asc')
                 ->first();
 
             $group->equipment = $equipment;
@@ -96,7 +96,7 @@ class ReportController extends BaseController
     public function history($id)
     {
         $equipment = Equipment::with(['office', 'equipmentType', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
+            $query->orderBy('created_at', 'asc');
         }])->findOrFail($id);
 
         // Check if user is staff and equipment belongs to a different office
@@ -125,7 +125,7 @@ class ReportController extends BaseController
         $equipment->load([
             'office', 
             'history' => function($query) {
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('created_at', 'asc');
             },
             'history.user'
         ]);
@@ -143,37 +143,39 @@ class ReportController extends BaseController
      * @return \Illuminate\Http\Response
      */
     public function exportEquipmentHistory(Equipment $equipment)
-    {
-        // Check if user is staff and equipment belongs to a different office
-        // Super admins and admins can access all equipment history
-        if (Auth::user()->is_staff && !Auth::user()->is_admin && $equipment->office_id !== Auth::user()->office_id) {
-            abort(403, 'You do not have permission to access reports for this equipment.');
-        }
+{
+    // ... your auth checks ...
 
-        // Load equipment with paginated history (15 items per page)
-        $equipment->load(['office']);
-        
-        $history = $equipment->history()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->get();
+    $equipment->load(['office']);
 
-        // Calculate total pages needed (15 items per page)
-        $perPage = 16;
+    // Get ALL history ordered oldest → newest
+    $history = $equipment->history()
+        ->with('user')
+        ->orderBy('created_at', 'asc')
+        ->orderBy('jo_number', 'asc')
+        ->get();
+
+    // REVERSE it so newest is first (for correct printed page order)
+    $history = $history->reverse();       
+    // Calculate total pages needed (20 items per page)
+        $perPage = 20;
         $totalPages = ceil($history->count() / $perPage);
         $currentPage = request()->get('page', 1);
         
-        // Get items for current page
-        $currentPageItems = $history->forPage($currentPage, $perPage);
+        // Reverse pagination: page 1 gets newest data, page 3 gets oldest data
+        $reversedPage = $totalPages - $currentPage + 1;
+        
+        // Get items for current page using reversed page number
+        $currentPageItems = $history->forPage($reversedPage, $perPage);
 
-        return view('reports.ict_history_sheet', [
-            'equipment' => $equipment,
-            'history' => $currentPageItems,
-            'currentPage' => $currentPage,
-            'totalPages' => $totalPages,
-            'hasMorePages' => $currentPage < $totalPages
-        ]);
-    }
+    return view('reports.ict_history_sheet', [
+        'equipment' => $equipment,
+        'history' => $currentPageItems,
+        'currentPage' => $currentPage,
+        'totalPages' => $totalPages,
+        'hasMorePages' => $currentPage < $totalPages
+    ]);
+}
 
     /**
      * Generate PDF for equipment history (legacy method)
@@ -184,7 +186,7 @@ class ReportController extends BaseController
     private function generateEquipmentHistoryPdf(Equipment $equipment)
     {
         $equipment->load(['office', 'history' => function($query) {
-            $query->orderBy('created_at', 'desc');
+            $query->orderBy('created_at', 'asc');
         }]);
 
         // Format history data for PDF
@@ -274,16 +276,22 @@ class ReportController extends BaseController
             fputcsv($file, ['Office', $equipment->office ? $equipment->office->name : 'N/A']);
             fputcsv($file, []);
 
-            // Maintenance history
-            fputcsv($file, ['Maintenance History']);
-            fputcsv($file, ['Date', 'Action', 'Details', 'User']);
+            // Equipment history (using history() relationship with asc order)
+            fputcsv($file, ['Equipment History']);
+            fputcsv($file, ['Date', 'Action Taken', 'Remarks', 'Responsible Person', 'User']);
 
-            foreach ($equipment->maintenanceLogs as $log) {
+            $history = $equipment->history()
+                ->with('user')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($history as $item) {
                 fputcsv($file, [
-                    $log->created_at->format('Y-m-d H:i:s'),
-                    $log->action,
-                    $log->details,
-                    $log->user ? $log->user->name : 'System'
+                    $item->created_at->format('Y-m-d H:i:s'),
+                    $item->action_taken,
+                    $item->remarks,
+                    $item->responsible_person,
+                    $item->user ? $item->user->name : 'System'
                 ]);
             }
 

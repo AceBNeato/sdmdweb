@@ -59,13 +59,18 @@ class SettingsController extends Controller
             );
 
             // Log session settings update
-            Activity::logSettingsUpdate(
-                'Session Settings',
-                'Updated session lockout duration',
-                $oldValues,
-                $newValues,
-                'Session lockout changed from ' . $oldValues['session_lockout_minutes'] . ' to ' . $newValues['session_lockout_minutes'] . ' minutes'
-            );
+            try {
+                Activity::logSettingsUpdate(
+                    'Session Settings',
+                    'Updated session lockout duration',
+                    $oldValues,
+                    $newValues,
+                    'Session lockout changed from ' . $oldValues['session_lockout_minutes'] . ' to ' . $newValues['session_lockout_minutes'] . ' minutes'
+                );
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                \Log::warning('Failed to log settings update activity: ' . $e->getMessage());
+            }
 
         } elseif ($section === 'backup') {
             $request->validate([
@@ -127,8 +132,7 @@ class SettingsController extends Controller
         // Handle AJAX requests for both session and backup settings forms
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
-                'success' => true,
-                'message' => 'Settings updated successfully!'
+                'success' => true
             ]);
         }
 
@@ -206,7 +210,7 @@ class SettingsController extends Controller
                 ->with('error', 'Cannot delete category that has equipment assigned!');
         }
 
-        $category->delete();
+        $category->forceDelete();
 
         return redirect()->route('admin.settings.categories.index')
             ->with('success', 'Category deleted successfully!');

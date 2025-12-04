@@ -148,8 +148,8 @@
                     </div>
                 </div>
             </div>
- <!-- Roles Section (Only visible to superadmin) -->
-            @if(auth()->user()->is_super_admin)
+ <!-- Roles Section (Only visible to superadmin and admin) -->
+            @if(auth()->user()->is_super_admin || auth()->user()->is_admin)
             <div class="form-section">
                 <h6 class="form-section-title">
                     <i class='bx bx-shield'></i>
