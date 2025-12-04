@@ -282,7 +282,7 @@
                                 <label for="action_taken" class="form-label required">Action Taken</label>
                                 <textarea class="form-control @error('action_taken') is-invalid @enderror"
                                           id="action_taken" name="action_taken" rows="4"
-                                          placeholder="Describe the maintenance or service action performed..." required>{{ old('action_taken', $history->action_taken) }}</textarea>
+                                          placeholder="Describe the maintenance or service action performed..." required style="height: 100px;" >{{ old('action_taken', $history->action_taken) }}</textarea>
                                 @error('action_taken')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
