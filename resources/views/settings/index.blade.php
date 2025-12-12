@@ -24,7 +24,7 @@
                 <i class="fas fa-tools mr-2"></i>Equipment Settings
             </div>
             <div class="settings-tab" data-tab="backup">
-                <i class="fas fa-hdd mr-2"></i>Backup and Restore
+                <i class="fas fa-hdd mr-2"></i>Manual Backup & Restore
             </div>
         </div>
 
@@ -156,12 +156,8 @@
             <!-- Settings Grid -->
             <div class="settings-grid">
 
-                <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6 backup-settings-form">
-                    @csrf
-                    <input type="hidden" name="section" value="backup">
-
-                <!-- Database Backup Section -->
-                <div class="settings-section">
+                
+                <div class="settings-section" style="display: none;">
                     <div class="settings-section-header">
                         <i class="fas fa-database settings-section-icon"></i>
                         <h3>Database Backups</h3>
@@ -238,7 +234,7 @@
                     </div>
                 </div>
 
-                <div class="settings-actions">
+                <div class="settings-actions" style="display: none;">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save mr-2"></i>
                         Save Settings
@@ -251,7 +247,7 @@
                     <div class="settings-section">
                         <div class="settings-section-header">
                             <i class="fas fa-database settings-section-icon"></i>
-                            <h3>Database Backup & Restore</h3>
+                            <h3>Manual Database Backup & Restore</h3>
                         </div>
                         <div class="settings-section-content">
                             <div class="backup-toolbar">

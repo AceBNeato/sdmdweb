@@ -17,7 +17,6 @@ return [
     */
 
     'default' => env('DB_CONNECTION', 'sqlite'),
-
     /*
     |--------------------------------------------------------------------------
     | Database Connections

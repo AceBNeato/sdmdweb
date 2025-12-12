@@ -494,7 +494,7 @@ class UserController extends Controller
             'phone' => 'nullable|regex:/^[0-9]+$/|max:15',
             'position' => 'required|string|max:255',
             'office_id' => 'required|exists:offices,id',
-            'roles' => auth()->user()->is_super_admin ? 'nullable|exists:roles,id' : '',
+            'roles' => auth()->user()->is_admin ? 'nullable|exists:roles,id' : '',
         ]);
 
         // For staff users, validate that the selected office is within their campus/office
@@ -558,9 +558,9 @@ class UserController extends Controller
             $changes['password'] = ['[old password]', '[new password]'];
         }
 
-        // Update roles if provided and user is superadmin
+        // Update roles if provided and user is admin
         $roleChanged = false;
-        if (isset($validated['roles']) && auth()->user()->is_super_admin) {
+        if (isset($validated['roles']) && auth()->user()->is_admin) {
             // Prevent non-admins from assigning admin role
             if (!auth()->user()->is_super_admin) {
                 $adminRole = Role::where('name', 'admin')->first();

@@ -40,7 +40,7 @@
                         <i class='bx bx-history'></i> HISTORY
                     </a>
                 @endif
-
+                
                 @if($currentUser && $currentUser->hasPermissionTo('equipment.delete') && Route::has($prefix . '.equipment.destroy'))
                     <form action="{{ route($prefix . '.equipment.destroy', $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this equipment?')">
                         @csrf

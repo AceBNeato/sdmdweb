@@ -385,8 +385,8 @@ class BackupService
         }
 
         // First, rebuild the schema from migrations so that all expected tables
-        // and database objects (views, procedures, etc.) exist.
-        $exitCode = Artisan::call('migrate:fresh', ['--force' => true]);
+        // and database objects (views, procedures, etc.) exist, but skip seeding
+        $exitCode = Artisan::call('migrate:fresh', ['--force' => true, '--seed' => false]);
         if ($exitCode !== 0) {
             throw new \RuntimeException('Database migration (migrate:fresh) failed before restore.');
         }
@@ -473,6 +473,11 @@ class BackupService
                             if (!isset($truncatedTables[$tableName])) {
                                 try {
                                     $pdo->exec('TRUNCATE TABLE ' . $safeName);
+                                    
+                                    // For users table, reset auto-increment to ensure IDs match backup
+                                    if ($tableName === 'users') {
+                                        $pdo->exec('ALTER TABLE ' . $safeName . ' AUTO_INCREMENT = 1');
+                                    }
                                 } catch (\Throwable $e) {
                                     // If table does not exist or cannot be truncated, skip truncation
                                 }
