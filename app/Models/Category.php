@@ -47,7 +47,7 @@ class Category extends Model
      */
     public function getAvailableEquipmentCountAttribute(): int
     {
-        return $this->equipment()->where('status', Equipment::STATUS_AVAILABLE)->count();
+        return $this->equipment()->where('status', Equipment::STATUS_SERVICEABLE)->count();
     }
 
     /**

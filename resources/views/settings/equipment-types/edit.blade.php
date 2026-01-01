@@ -8,7 +8,7 @@
 <div class="content">
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-outline-secondary btn-sm">
+        <a href="{{ route('admin.settings.equipment-types.index') }}" class="btn btn-outline-secondary btn-sm">
             <i class='bx bx-arrow-back me-1'></i> Back to Equipment Types
         </a>
     </div>
@@ -21,7 +21,7 @@
                     <h5 class="mb-0">Equipment Type Information</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.settings.system.equipment-types.update', $equipmentType) }}" method="POST">
+                    <form action="{{ route('admin.settings.equipment-types.update', $equipmentType) }}" method="POST">
                         @csrf
                         @method('PUT')
 
@@ -34,24 +34,12 @@
                             @enderror
                         </div>
 
-                        <!-- Equipment Type Statistics -->
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h6 class="card-title">Equipment Type Statistics</h6>
-                                <div class="row text-center">
-                                    <div class="col-12">
-                                        <div class="h4 mb-0">{{ $equipmentType->equipment_count }}</div>
-                                        <small class="text-muted">Total Equipment</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                        
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class='bx bx-save me-1'></i> Update Equipment Type
                             </button>
-                            <a href="{{ route('admin.settings.system.equipment-types.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('admin.settings.equipment-types.index') }}" class="btn btn-outline-secondary">
                                 <i class='bx bx-x me-1'></i> Cancel
                             </a>
                         </div>

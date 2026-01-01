@@ -204,9 +204,14 @@
     </div>
 
     <!-- Summary Stats -->
+    @php
+        $visibleRoles = $roles->filter(function($role) {
+            return $role->name !== 'super-admin';
+        });
+    @endphp
     <div class="summary-stats">
         <div class="stat-card">
-            <div class="stat-number">{{ $roles->count() }}</div>
+            <div class="stat-number">{{ $visibleRoles->count() }}</div>
             <div class="stat-label">Total Roles</div>
         </div>
         <div class="stat-card">
@@ -214,7 +219,7 @@
             <div class="stat-label">Total Permissions</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">{{ $roles->sum(function($role) { return $role->permissions->count(); }) }}</div>
+            <div class="stat-number">{{ $visibleRoles->sum(function($role) { return $role->permissions->count(); }) }}</div>
             <div class="stat-label">Total Assignments</div>
         </div>
     </div>
@@ -243,8 +248,11 @@
                     <tr>
                         <th class="role-header">Permission / Role</th>
                         @foreach($roles as $role)
+                            @if($role->name === 'super-admin')
+                                @continue
+                            @endif
                             <th class="role-column" data-role-id="{{ $role->id }}">
-                                <span class="role-name {{ $role->name === 'super-admin' || $role->name === 'admin' ? 'admin-role' : '' }}">
+                                <span class="role-name {{ $role->name === 'admin' ? 'admin-role' : '' }}">
                                     {{ $role->display_name }}
                                 </span>
                                 <div class="role-count">{{ $role->permissions->count() }} perms</div>
@@ -278,8 +286,14 @@
                     @endphp
                     
                     @foreach($groupedPermissions as $group => $groupPermissions)
+                        @php
+                            $visibleRoles = $roles->filter(function($role) {
+                                return $role->name !== 'super-admin';
+                            });
+                            $colspanCount = $visibleRoles->count() + 1; // +1 for the permission name column
+                        @endphp
                         <tr>
-                            <td colspan="{{ $roles->count() + 1 }}" class="permission-group-header">
+                            <td colspan="{{ $colspanCount }}" class="permission-group-header">
                                 @switch($group)
                                     @case('users')
                                         <i class="fas fa-users me-2"></i>User Management
@@ -316,6 +330,9 @@
                                 </td>
                                 
                                 @foreach($roles as $role)
+                                    @if($role->name === 'super-admin')
+                                        @continue
+                                    @endif
                                     @php
                                         $isStaffRole = $role->name === 'staff';
                                         $isTechnicianRole = $role->name === 'technician';
@@ -414,8 +431,11 @@ document.getElementById('permissionsForm').addEventListener('submit', function(e
     formData.append('_token', document.querySelector('input[name="_token"]').value);
     
     // Collect all role permissions (including locked ones for admin/superadmin)
-    const roles = @json($roles->pluck('id'));
-    roles.forEach(roleId => {
+    const allRoles = @json($roles);
+    const visibleRoles = allRoles.filter(role => role.name !== 'super-admin');
+    const roleIds = visibleRoles.map(role => role.id);
+    
+    roleIds.forEach(roleId => {
         // Include ALL checked permissions for this role (locked or not)
         const checkedBoxes = document.querySelectorAll(`input[data-role="${roleId}"]:checked`);
         const permissionIds = Array.from(checkedBoxes).map(cb => cb.value);

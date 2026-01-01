@@ -136,7 +136,7 @@
 
                 <input type="hidden" name="email" value="{{ old('email', $email) }}">
                 <div class="mb-4">
-                    <label>New Password</label>
+                    <label>New Password <span class="text-danger">*required</span></label>
                     <div class="password-group">
                         <input type="password" 
                                name="new_password" 
@@ -153,7 +153,7 @@
                 </div>
 
                 <div class="mb-4">
-                    <label>Confirm New Password</label>
+                    <label>Confirm New Password <span class="text-danger">*required</span></label>
                     <div class="password-group">
                         <input type="password" 
                                name="new_password_confirmation" 

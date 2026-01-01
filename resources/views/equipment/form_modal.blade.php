@@ -28,7 +28,7 @@
         <div class="row g-3">
             <div class="col-md-4">
                 <div class="field-container">
-                    <label for="brand" class="form-label required">Brand</label>
+                    <label for="brand" class="form-label required">Brand <span class="text-danger">*required</span></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-tag'></i></span>
                         <input type="text" class="form-control @error('brand') is-invalid @enderror"
@@ -44,7 +44,7 @@
 
             <div class="col-md-4">
                 <div class="field-container">
-                    <label for="model_number" class="form-label required">Model</label>
+                    <label for="model_number" class="form-label required">Model <span class="text-danger">*required</span></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-chip'></i></span>
                         <input type="text" class="form-control @error('model_number') is-invalid @enderror"
@@ -60,20 +60,20 @@
 
             <div class="col-md-4">
                 <div class="field-container">
-                    <label for="equipment_model_display" class="form-label">Equipment Model</label>
+                    <label for="equipment_model_display" class="form-label">Brand + Model (auto-generated)</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-show'></i></span>
                         <input type="text" class="form-control" id="equipment_model_display"
-                               value="{{ old('brand', $equipment->brand ?? '') . old('model_number', $equipment->model_number ?? '') }}"
+                               value="{{ old('brand', $equipment->brand ?? '') . ' ' .old('model_number', $equipment->model_number ?? '') }}"
                                readonly placeholder="Auto-generated">
                     </div>
-                    <small class="text-muted">Brand + Model (auto-generated)</small>
+                    
                 </div>
             </div>
 
             <div class="col-md-6">
                 <div class="field-container">
-                    <label for="serial_number" class="form-label required">Serial Number</label>
+                    <label for="serial_number" class="form-label required">Serial Number <span class="text-danger">*required</span></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-barcode'></i></span>
                         <input type="text" class="form-control @error('serial_number') is-invalid @enderror"
@@ -88,7 +88,7 @@
 
             <div class="col-md-6">
                  <div class="field-container">
-                    <label for="office_id" class="form-label required">Office</label>
+                    <label for="office_id" class="form-label required">Office <span class="text-danger">*required</span></label>
 
 
                     @if(auth()->user() && auth()->user()->is_staff)
@@ -136,7 +136,7 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <div class="field-container">
-                    <label for="equipment_type_id" class="form-label required">Equipment Type</label>
+                    <label for="equipment_type_id" class="form-label required">Equipment Type <span class="text-danger">*required</span></label>
                     <select class="form-select @error('equipment_type_id') is-invalid @enderror"
                             id="equipment_type_id" name="equipment_type_id" required>
                         <option value="" disabled {{ !old('equipment_type_id', $equipment->equipment_type_id) ? 'selected' : '' }}>Select Type</option>

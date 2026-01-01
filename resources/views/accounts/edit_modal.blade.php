@@ -29,7 +29,7 @@
 
                 <div class="form-row">
                     <div class="form-group required">
-                        <label for="first_name">First Name</label>
+                        <label for="first_name">First Name <span class="text-danger">*required</span></label>
                         <input type="text" class="form-control @error('first_name') is-invalid @enderror"
                                id="first_name" name="first_name" value="{{ old('first_name', $user->first_name) }}" required
                                placeholder="Enter first name">
@@ -38,7 +38,7 @@
                         @enderror
                     </div>
                     <div class="form-group required">
-                        <label for="last_name">Last Name</label>
+                        <label for="last_name">Last Name <span class="text-danger">*required</span></label>
                         <input type="text" class="form-control @error('last_name') is-invalid @enderror"
                                id="last_name" name="last_name" value="{{ old('last_name', $user->last_name) }}" required
                                placeholder="Enter last name">
@@ -48,7 +48,7 @@
                     </div>
 
                     <div class="form-group required">
-                        <label for="email">Email Address</label>
+                        <label for="email">Email Address <span class="text-danger">*required</span></label>
                         <input type="email" class="form-control @error('email') is-invalid @enderror"
                                id="email" name="email" value="{{ old('email', $user->email) }}" required
                                placeholder="Enter email address">
@@ -60,7 +60,7 @@
 
                 <div class="form-row">
                     <div class="form-group required">
-                        <label for="position">Position</label>
+                        <label for="position">Position <span class="text-danger">*required</span></label>
                         <input type="text" class="form-control @error('position') is-invalid @enderror"
                                id="position" name="position" value="{{ old('position', $user->position) }}" required
                                placeholder="Job title or position">
@@ -128,7 +128,7 @@
 
                 <div class="form-row">
                     <div class="form-group required">
-                        <label for="office_id">Office</label>
+                        <label for="office_id">Office <span class="text-danger">*required</span></label>
                         <select class="form-select @error('office_id') is-invalid @enderror"
                                 id="office_id" name="office_id" required>
                             <option value="">Select Office</option>

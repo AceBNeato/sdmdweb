@@ -39,7 +39,7 @@
                 @csrf
 
                 <div class="mb-4">
-                    <label>Email</label>
+                    <label>Email </label>
                     <input type="email" name="email" placeholder="Enter your email" value="{{ old('email') }}" required autofocus>
                 </div>
 

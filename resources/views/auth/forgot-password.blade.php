@@ -62,7 +62,7 @@
                 <div class="form-group">
                     <label class="form-label" for="email">
                         <i class='bx bx-envelope'></i>
-                        <span>Email</span>
+                        <span>Email <span class="text-danger">*required</span></span>
                     </label>
                     <div class="input-wrapper">
                         <input id="email" type="email" name="email" class="enhanced-input" value="{{ old('email') }}" required autofocus>

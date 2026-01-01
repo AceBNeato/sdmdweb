@@ -8,7 +8,7 @@
     <span class="current">Add User</span>
 @endsection
 
-@section('page_title', 'Accounts Managesment')
+@section('page_title', 'Accounts Management')
 @section('page_description', 'Manage all user accounts and permissions')
 
 
@@ -55,7 +55,7 @@
 
                     <div class="form-row">
                         <div class="form-group required">
-                            <label for="first_name">First Name</label>
+                            <label for="first_name" class="form-label">First Name <span class="text-danger">*required</span></label>
                             <input type="text" class="form-control @error('first_name') is-invalid @enderror"
                                    id="first_name" name="first_name" value="{{ old('first_name') }}" required
                                    placeholder="Enter first name">
@@ -66,7 +66,7 @@
 
 
                         <div class="form-group required">
-                            <label for="last_name">Last Name</label>
+                            <label for="last_name" class="form-label">Last Name <span class="text-danger">*required</span></label>
                             <input type="text" class="form-control @error('last_name') is-invalid @enderror"
                                    id="last_name" name="last_name" value="{{ old('last_name') }}" required
                                    placeholder="Enter last name">
@@ -76,7 +76,7 @@
                         </div>
 
                         <div class="form-group required">
-                            <label for="email">Email Address</label>
+                            <label for="email" class="form-label">Email Address <span class="text-danger">*required</span></label>
                             <input type="email" class="form-control @error('email') is-invalid @enderror"
                                    id="email" name="email" value="{{ old('email') }}" required
                                    placeholder="Enter email address">
@@ -88,7 +88,7 @@
 
                     <div class="form-row">
                         <div class="form-group required">
-                            <label for="position">Position</label>
+                            <label for="position" class="form-label">Position <span class="text-danger">*required</span></label>
                             <input type="text" class="form-control @error('position') is-invalid @enderror"
                                    id="position" name="position" value="{{ old('position') }}" required
                                    placeholder="Job title or position">
@@ -120,7 +120,7 @@
 
                     <div class="form-row">
                         <div class="form-group required">
-                            <label for="password">Password</label>
+                            <label for="password" class="form-label">Password <span class="text-danger">*required</span></label>
                             <input type="password" class="form-control @error('password') is-invalid @enderror"
                                    id="password" name="password" required
                                    placeholder="Enter password">
@@ -139,7 +139,7 @@
                         </div>
 
                         <div class="form-group required">
-                            <label for="password_confirmation">Confirm Password</label>
+                            <label for="password_confirmation" class="form-label">Confirm Password <span class="text-danger">*required</span></label>
                             <input type="password" class="form-control"
                                    id="password_confirmation" name="password_confirmation" required
                                    placeholder="Confirm password">
@@ -156,7 +156,7 @@
 
                     <div class="form-row">
                         <div class="form-group required">
-                            <label for="office_id">Office</label>
+                            <label for="office_id" class="form-label">Office <span class="text-danger">*required</span></label>
                             <select class="form-select @error('office_id') is-invalid @enderror"
                                     id="office_id" name="office_id" required>
                                 <option value="">Select Office</option>

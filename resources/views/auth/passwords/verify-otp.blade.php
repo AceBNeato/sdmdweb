@@ -113,7 +113,7 @@
                     <input type="hidden" name="email" value="{{ $email }}">
 
                     <div class="mb-4">
-                        <label>Enter 6-digit OTP</label>
+                        <label>Enter 6-digit OTP <span class="text-danger">*required</span></label>
                         <input type="text" 
                                name="otp" 
                                class="otp-input @error('otp') error @enderror" 

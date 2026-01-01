@@ -1184,3 +1184,34 @@ tr:hover td {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Lighter placeholder text */
+::placeholder {
+  color: #A0AEC0 !important;
+  opacity: 1 !important;
+  font-style: italic;
+}
+
+:-ms-input-placeholder {
+  color: #A0AEC0 !important;
+  font-style: italic;
+}
+
+::-ms-input-placeholder {
+  color: #A0AEC0 !important;
+  font-style: italic;
+}
+
+/* Form control placeholder styling */
+.form-control::placeholder,
+.form-select::placeholder {
+  color: #A0AEC0 !important;
+  opacity: 1 !important;
+  font-style: italic;
+}
+
+.enhanced-input::placeholder {
+  color: #A0AEC0 !important;
+  opacity: 1 !important;
+  font-style: italic;
+}

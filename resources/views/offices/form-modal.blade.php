@@ -14,7 +14,7 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <div class="field-container">
-                    <label for="create_name" class="form-label required">Office Name</label>
+                    <label for="create_name" class="form-label required">Office Name <span class="text-danger">*required</span></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bx bx-building"></i></span>
                         <input type="text" class="form-control" id="create_name" name="name" required minlength="3" maxlength="255" placeholder="e.g., SDMD Office">
@@ -23,7 +23,7 @@
             </div>
             <div class="col-md-6">
                 <div class="field-container">
-                    <label for="create_campus_id" class="form-label required">Campus</label>
+                    <label for="create_campus_id" class="form-label required">Campus <span class="text-danger">*required</span></label>
                     <select class="form-select" id="create_campus_id" name="campus_id" required>
                         <option value="" disabled selected>Select Campus</option>
                         @foreach($campuses as $campus)

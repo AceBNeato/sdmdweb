@@ -70,7 +70,9 @@ body {
     background-color: #d1fae5 !important;
 }
 
-
+.form-section{
+    margin: 2rem 0;
+}
 .status-for-repair {
     background-color: #fef3c7;
     color: #d97706 !important;

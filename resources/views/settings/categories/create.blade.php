@@ -25,7 +25,7 @@
                         @csrf
 
                         <div class="mb-3">
-                            <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                            <label for="name" class="form-label">Category Name <span class="text-danger">*required</span></label>
                             <input type="text" class="form-control @error('name') is-invalid @enderror"
                                    id="name" name="name" value="{{ old('name') }}" required>
                             @error('name')
