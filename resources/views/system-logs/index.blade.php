@@ -33,11 +33,6 @@
 @section('page_title', $typeLabel)
 @section('page_description', 'Monitor and track all user activities and system events')
 
-@section('breadcrumbs')
-    <a href="{{ route('accounts.index') }}">Accounts</a>
-    <span class="separator">/</span>
-    <span class="current">{{ $typeLabel }}</span>
-@endsection
 
 @push('styles')
   <link href="{{ asset('css/logs.css') }}" rel="stylesheet">

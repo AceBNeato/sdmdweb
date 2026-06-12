@@ -189,7 +189,7 @@
                 </div>
             </div>
             <footer class="footer">
-                Copyright 2025. All Rights Reserved.
+                Copyright {{ date('Y') }}. All Rights Reserved.
             </footer>
         </div>
         <div class="backdrop" id="backdrop"></div>

@@ -129,7 +129,7 @@
 
 <!-- Footer -->
 <footer>
-    Copyright  2025. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
+    Copyright {{ date('Y') }}. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
 </footer>
 <script>
 // Pass login data to JavaScript

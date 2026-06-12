@@ -81,6 +81,7 @@
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -848,7 +849,9 @@ tr:hover td {
   }
 
   .brand span,
-  .menu span:not(.badge) {
+  .brand .tt,
+  .menu span:not(.badge),
+  .profile-btn span {
     display: none;
   }
 

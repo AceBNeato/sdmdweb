@@ -2,7 +2,7 @@
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100vw !important;
+    width: 100% !important;
     height: 100vh !important;
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(30, 30, 60, 0.9)) !important;
     justify-content: center;

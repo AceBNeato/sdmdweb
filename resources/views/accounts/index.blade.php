@@ -17,13 +17,13 @@
 @else
     <div class="action-buttons">
         @if(auth()->user()->hasPermissionTo('users.create'))
-        <a href="{{ route('admin.accounts.form') }}" class="btn btn-primary btn-sm">
+        <button type="button" class="btn btn-primary add-user-btn" data-url="{{ route('admin.accounts.form') }}" title="Add User">
             <i class='bx bx-plus me-1'></i> Add User
-        </a>
+        </button>
         @endif
         
         @if(auth()->user()->is_admin)
-        <a href="{{ route('admin.rbac.roles.index') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ route('admin.rbac.roles.index') }}" class="btn btn-secondary">
             <i class='bx bx-shield-alt me-1'></i> RBAC Management
         </a>
         @endif
@@ -185,7 +185,7 @@
                                 </button>
                                 
                                 <button type="button"
-                                        class="btn btn-sm btn-primary toggle-status-btn {{ $user->is_active ? 'active' : 'inactive' }}"
+                                        class="btn btn-sm toggle-status-btn {{ $user->is_active ? 'active' : 'inactive' }}"
                                         data-user-id="{{ $user->id }}"
                                         data-url="{{ route('admin.accounts.toggle-status', $user) }}"
                                         title="{{ $user->is_active ? 'Deactivate Account' : 'Activate Account' }}">
@@ -256,6 +256,25 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="editUserContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Create Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="createUserContent">
                 <div class="text-center">
                     <div class="spinner-border" role="status">
                         <span class="visually-hidden">Loading...</span>

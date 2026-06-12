@@ -165,6 +165,10 @@ class UserController extends Controller
             }
         }
 
+        if (request()->ajax() || request()->wantsJson() || request()->boolean('modal') || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return view('accounts.create_modal', compact('roles', 'offices', 'campuses'));
+        }
+
         return view('accounts.form', compact('roles', 'offices', 'campuses'));
     }
 

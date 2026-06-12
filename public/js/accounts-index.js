@@ -1,5 +1,42 @@
 // Accounts Index Page JavaScript
 $(document).ready(function() {
+    // Handle ADD button clicks
+    $('.add-user-btn').on('click', function() {
+        var url = $(this).data('url');
+        var modal = $('#createUserModal');
+        var content = $('#createUserContent');
+
+        // Show loading spinner
+        content.html('<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><div class="mt-2">Loading create form...</div></div>');
+
+        // Load content via AJAX
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                content.html(response);
+            },
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', xhr.status, xhr.responseText, error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to Load',
+                    text: 'Failed to load create form. Error: ' + xhr.status + ' - ' + error,
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        });
+
+        // Show modal
+        if (!modal.parent().is('body')) {
+            modal.appendTo('body');
+        }
+        modal.modal('show');
+    });
+
     // Handle VIEW button clicks
     $('.view-user-btn').on('click', function() {
         var userId = $(this).data('user-id');

@@ -90,7 +90,7 @@
 
 <!-- Footer -->
 <footer>
-    Copyright 2025. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
+    Copyright {{ date('Y') }}. All Rights Reserved. | <a href="#">Terms of Use</a> | <a href="#">Privacy Policy</a>
 """ NOTE: Back button handling added to prevent navigating back in the reset flow. """
 
 </footer>

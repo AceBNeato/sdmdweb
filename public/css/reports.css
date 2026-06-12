@@ -391,7 +391,7 @@ body {
 }
 
 .pagination-section {
-    margin: 2rem 0;
+    /* margin: 2rem 0; */
     padding: 1.5rem 0;
     border-top: 1px solid #e9ecef;
     border-bottom: 1px solid #e9ecef;
@@ -563,7 +563,7 @@ body {
     .table .btn-group {
         flex-direction: row;
         gap: 0.125rem;
-        width: 100%;
+        width: auto;
         justify-content: center;
     }
 
