@@ -213,9 +213,14 @@ class BackupService
                 \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4',
             ]);
 
-            $sql = "-- SDMD Database Backup\n";
-            $sql .= '-- Generated on ' . now() . "\n\n";
-            $sql .= "SET FOREIGN_KEY_CHECKS = 0;\n\n";
+            $handle = fopen($path, 'w');
+            if (!$handle) {
+                throw new \RuntimeException('Unable to open backup file for writing.');
+            }
+
+            fwrite($handle, "-- SDMD Database Backup\n");
+            fwrite($handle, "-- Generated on " . now() . "\n\n");
+            fwrite($handle, "SET FOREIGN_KEY_CHECKS = 0;\n\n");
 
             // Get all tables first
             $tables = $pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN);
@@ -224,7 +229,7 @@ class BackupService
                 $table = trim($table);
 
                 if (empty($table) || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
-                    $sql .= "-- Skipping invalid table name: `$table`\n\n";
+                    fwrite($handle, "-- Skipping invalid table name: `$table`\n\n");
                     continue;
                 }
 
@@ -236,7 +241,7 @@ class BackupService
                         $createView = $result['Create Table'] ?? '';
                         if (stripos($createView, 'CREATE VIEW') === 0) {
                             $isView = true;
-                            $sql .= "-- Skipping view: `$table`\n\n";
+                            fwrite($handle, "-- Skipping view: `$table`\n\n");
                         }
                     }
                 } catch (\Exception $e) {
@@ -248,49 +253,62 @@ class BackupService
                     continue;
                 }
 
-                $sql .= "-- Table structure for `$table`\n";
-                $sql .= "DROP TABLE IF EXISTS `$table`;\n";
+                fwrite($handle, "-- Table structure for `$table`\n");
+                fwrite($handle, "DROP TABLE IF EXISTS `$table`;\n");
 
                 try {
                     $createTable = $pdo->query("SHOW CREATE TABLE `$table`")->fetch(\PDO::FETCH_ASSOC);
                     $createSql = array_values($createTable)[1] ?? null;
 
                     if (!$createSql) {
-                        $sql .= "-- Failed to retrieve CREATE statement for `$table`\n\n";
+                        fwrite($handle, "-- Failed to retrieve CREATE statement for `$table`\n\n");
                         continue;
                     }
 
-                    $sql .= $createSql . ";\n\n";
+                    fwrite($handle, $createSql . ";\n\n");
 
-                    $rows = $pdo->query("SELECT * FROM `$table`")->fetchAll(\PDO::FETCH_ASSOC);
+                    // Use unbuffered queries to prevent memory exhaustion for large tables
+                    $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+                    $stmt = $pdo->query("SELECT * FROM `$table`");
 
-                    if (!empty($rows)) {
-                        $sql .= "-- Data for `$table`\n";
-                        $sql .= 'INSERT INTO `' . $table . '` (`' . implode('`, `', array_keys($rows[0])) . '`) VALUES' . "\n";
-
-                        $valueLines = [];
-                        foreach ($rows as $row) {
-                            $values = [];
-                            foreach ($row as $value) {
-                                $values[] = $value === null ? 'NULL' : $pdo->quote($value);
-                            }
-                            $valueLines[] = '(' . implode(', ', $values) . ')';
+                    $first = true;
+                    while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                        if ($first) {
+                            fwrite($handle, "-- Data for `$table`\n");
+                            fwrite($handle, 'INSERT INTO `' . $table . '` (`' . implode('`, `', array_keys($row)) . '`) VALUES' . "\n");
+                            $first = false;
+                        } else {
+                            fwrite($handle, ",\n");
                         }
 
-                        $sql .= implode(",\n", $valueLines) . ";\n\n";
-                    } else {
-                        $sql .= "\n";
+                        $values = [];
+                        foreach ($row as $value) {
+                            $values[] = $value === null ? 'NULL' : $pdo->quote((string) $value);
+                        }
+                        fwrite($handle, '(' . implode(', ', $values) . ')');
                     }
+
+                    if (!$first) {
+                        fwrite($handle, ";\n\n");
+                    } else {
+                        fwrite($handle, "\n");
+                    }
+
+                    $stmt->closeCursor();
+                    $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+
                 } catch (\Exception $e) {
-                    $sql .= "-- Failed to backup table `$table`: " . $e->getMessage() . "\n\n";
+                    fwrite($handle, "-- Failed to backup table `$table`: " . $e->getMessage() . "\n\n");
                     Log::warning("Failed to backup table `$table`: " . $e->getMessage());
+                    // Re-enable buffered queries just in case
+                    $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
                     continue;
                 }
             }
 
-            $sql .= "SET FOREIGN_KEY_CHECKS = 1;\n";
+            fwrite($handle, "SET FOREIGN_KEY_CHECKS = 1;\n");
+            fclose($handle);
 
-            file_put_contents($path, $sql);
         } catch (\Throwable $exception) {
             throw new \RuntimeException('MySQL backup failed: ' . $exception->getMessage(), previous: $exception);
         }
@@ -438,15 +456,12 @@ class BackupService
                         }
 
                         if ($tableName) {
-                            // Whitelist allowed base tables for security
-                            $allowedTables = [
-                                'equipment', 'users', 'categories', 'campuses', 'offices',
-                                'equipment_types', 'activities', 'password_reset_tokens',
-                                'failed_jobs', 'migrations', 'sessions', 'cache',
-                                'job_batches', 'telescope_entries', 'telescope_monitoring',
-                                'permissions', 'roles', 'permission_role', 'permission_user',
-                                'equipment_history', 'personal_access_tokens', 'settings'
-                            ];
+                            // Whitelist dynamically allowed base tables for security
+                            static $allowedTables = null;
+                            if ($allowedTables === null) {
+                                $tables = $pdo->query('SHOW FULL TABLES WHERE Table_type = "BASE TABLE"')->fetchAll(\PDO::FETCH_COLUMN);
+                                $allowedTables = array_map('strtolower', $tables);
+                            }
 
                             // Views / derived summary tables that should never receive INSERTs
                             $ignoredViews = [
@@ -458,14 +473,14 @@ class BackupService
                                 'user_summary_view',
                             ];
 
-                            if (in_array($tableName, $ignoredViews, true)) {
+                            if (in_array(strtolower($tableName), $ignoredViews, true)) {
                                 // Skip silently; these are recomputed from base tables
                                 $statement = '';
                                 continue;
                             }
 
-                            if (!in_array($tableName, $allowedTables, true)) {
-                                throw new \Exception('Invalid table name: ' . $tableName);
+                            if (!in_array(strtolower($tableName), $allowedTables, true)) {
+                                throw new \Exception('Invalid table name or not a base table: ' . $tableName);
                             }
 
                             $safeName = '`' . str_replace('`', '``', $tableName) . '`';

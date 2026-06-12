@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\RoleRedirectMiddleware::class,
             \App\Http\Middleware\CheckPasswordChange::class,
+            \App\Http\Middleware\EnforceSessionLock::class,
         ]);
 
         $middleware->alias([

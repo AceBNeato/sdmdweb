@@ -101,6 +101,32 @@
         // Persist lock state across page reloads
         sessionStorage.setItem('session_locked', 'true');
 
+        // Hide all other content in the body
+        Array.from(document.body.children).forEach(child => {
+            if (child.id !== 'session-lock-modal' && child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE') {
+                child.dataset.originalDisplay = window.getComputedStyle(child).display;
+                child.style.display = 'none';
+            }
+        });
+
+        // Start anti-tamper interval
+        if (window.antiTamperInterval) clearInterval(window.antiTamperInterval);
+        window.antiTamperInterval = setInterval(() => {
+            if (!isLocked) return;
+            
+            // If they deleted the modal from the DOM, force reload to let backend block them
+            if (!document.body.contains(lockModal)) {
+                window.location.reload();
+                return;
+            }
+            
+            // Check if they tried to bypass via DevTools CSS (e.g. unchecking top: 0)
+            const computedStyle = window.getComputedStyle(lockModal);
+            if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || computedStyle.opacity === '0' || computedStyle.top !== '0px') {
+                window.location.reload();
+            }
+        }, 1000);
+
         // Focus on password field after modal is fully rendered
         setTimeout(() => {
             // Ensure field is enabled and focused
@@ -116,6 +142,23 @@
         lockModal.style.display = 'none';
         unlockPassword.value = '';
         unlockError.classList.add('d-none');
+
+        // Restore body content
+        Array.from(document.body.children).forEach(child => {
+            if (child.id !== 'session-lock-modal' && child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE') {
+                if (child.dataset.originalDisplay !== undefined) {
+                    child.style.display = child.dataset.originalDisplay;
+                    delete child.dataset.originalDisplay;
+                } else {
+                    child.style.display = '';
+                }
+            }
+        });
+
+        if (window.antiTamperInterval) {
+            clearInterval(window.antiTamperInterval);
+            window.antiTamperInterval = null;
+        }
 
         // Clear persistent lock state
         sessionStorage.removeItem('session_locked');
@@ -191,10 +234,30 @@
         }
     }
 
+    let lastHeartbeatTime = Date.now();
+    const HEARTBEAT_INTERVAL = 60000; // 1 minute
+
+    function sendHeartbeat() {
+        const now = Date.now();
+        if (now - lastHeartbeatTime > HEARTBEAT_INTERVAL) {
+            lastHeartbeatTime = now;
+            fetch('/session-heartbeat', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).catch(error => {
+                console.log('Failed to send session heartbeat:', error);
+            });
+        }
+    }
+
     // Track user activity
     function trackActivity() {
         if (!isLocked) {
             resetLockoutTimer();
+            sendHeartbeat();
         }
     }
 

@@ -465,23 +465,28 @@ document.getElementById('permissionsForm').addEventListener('submit', function(e
             // Clear unsaved changes flag to prevent browser warning on reload
             hasChanges = false;
             
-            // Show success message with Continue button
+            // Show a single success message with auto-close timer
             Swal.fire({
                 icon: 'success',
                 title: 'Success!',
                 text: data.message,
-                confirmButtonText: 'Continue',
-                confirmButtonColor: '#28a745',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false,
                 allowOutsideClick: false,
                 allowEscapeKey: false
             }).then(() => {
-                window.location.reload();
+                // Reload without flash session to avoid a second SweetAlert
+                window.location.href = window.location.pathname;
             });
         } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
-                text: data.message || 'Something went wrong'
+                text: data.message || 'Something went wrong',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false
             });
         }
     })
@@ -490,7 +495,10 @@ document.getElementById('permissionsForm').addEventListener('submit', function(e
         Swal.fire({
             icon: 'error',
             title: 'Error!',
-            text: 'Something went wrong while updating permissions'
+            text: 'Something went wrong while updating permissions',
+            timer: 3000,
+            timerProgressBar: true,
+            showConfirmButton: false
         });
     });
 });

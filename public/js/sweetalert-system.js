@@ -15,17 +15,33 @@ class SweetAlertSystem {
             allowEscapeKey: true,
             allowEnterKey: true
         };
-        
+
         this.init();
     }
 
     init() {
         // Process session messages on page load
         this.processSessionMessages();
-        
+
         // Override Laravel's flash message handling
         this.overrideFlashMessages();
-        
+
+        // Globally intercept ALL raw Swal.fire() calls to enforce timer: 3000 on success/error
+        const originalSwalFire = window.Swal.fire;
+        window.Swal.fire = function (...args) {
+            if (args.length > 0 && typeof args[0] === 'object') {
+                const config = args[0];
+                if ((config.icon === 'success' || config.icon === 'error') && config.timer === undefined) {
+                    // Only enforce if it's not explicitly a confirmation prompt
+                    if (!config.showCancelButton) {
+                        config.timer = 3000;
+                        config.timerProgressBar = true;
+                    }
+                }
+            }
+            return originalSwalFire.apply(this, args);
+        };
+
         // Set up global SweetAlert helper
         window.SweetAlert = this;
     }
@@ -52,14 +68,14 @@ class SweetAlertSystem {
      */
     show(type, message, options = {}) {
         console.log(`Showing SweetAlert: ${type} - ${message}`);
-        
+
         // Force modal mode - never allow toast
         const config = {
             ...this.defaultOptions,
             ...this.getConfig(type, message, options),
             toast: false  // Explicitly force modal mode
         };
-        
+
         // Always use Swal.fire for centered modals
         Swal.fire(config);
     }
@@ -207,7 +223,7 @@ class SweetAlertSystem {
         // Override any existing toast system calls with new signature: showToast(type, message)
         window.showToast = (type, message) => this.show(type, message);
         window.showNotification = (type, message) => this.show(type, message);
-        
+
         // Universal AJAX response handler (handles redirect/reload)
         window.handleToastResponse = (response, fallbackType = 'success') => {
             if (!response) {
@@ -248,7 +264,7 @@ class SweetAlertSystem {
     handleFormSubmit(form, options = {}) {
         const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
         const originalText = submitButton ? submitButton.textContent : '';
-        
+
         // Show loading
         this.loading(options.loadingMessage || 'Processing...', {
             didOpen: () => {
@@ -338,10 +354,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Universal AJAX Response Interceptor for SweetAlert Notifications
 // Catches ALL AJAX (XHR, fetch, jQuery under the hood) ONCE with opt-in for errors
-(function() {
+(function () {
     // Override setRequestHeader to detect opt-in
     const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
-    XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
+    XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
         if (name.toLowerCase() === 'x-sweetalert') {
             this._useSweetAlert = value === 'true';
         }
@@ -352,12 +368,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const originalSend = XMLHttpRequest.prototype.send;
     const originalFetch = window.fetch;
 
-    XMLHttpRequest.prototype.open = function(method, url, ...args) {
+    XMLHttpRequest.prototype.open = function (method, url, ...args) {
         this._useSweetAlert = false;
         return originalOpen.apply(this, [method, url, ...args]);
     };
 
-    XMLHttpRequest.prototype.send = function(body) {
+    XMLHttpRequest.prototype.send = function (body) {
         const xhr = this;
         let useSweetAlert = this._useSweetAlert || false;
         if (!useSweetAlert && typeof body === 'string') {
@@ -365,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const originalOnReadyStateChange = this.onreadystatechange;
-        this.onreadystatechange = function() {
+        this.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status !== 0) {
                 const contentType = xhr.getResponseHeader('content-type') || '';
                 let responseData;
@@ -382,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (shouldHandle && window.handleToastResponse) {
                             setTimeout(() => window.handleToastResponse(responseData), 0);
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 } else if (xhr.status >= 400 && useSweetAlert) {
                     responseData = {
                         message: (xhr.responseText || xhr.statusText || 'An error occurred').slice(0, 500),
@@ -400,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Override fetch
-    window.fetch = function(input, init = {}) {
+    window.fetch = function (input, init = {}) {
         let useSweetAlert = false;
         const headers = init.headers;
         if (headers) {

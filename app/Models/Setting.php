@@ -87,7 +87,7 @@ class Setting extends Model
      */
     public static function getSessionTimeoutMinutes(): int
     {
-        return static::getValue('session_timeout_minutes', 5);
+        return static::getValue('session_timeout_minutes', 1);
     }
 
     /**

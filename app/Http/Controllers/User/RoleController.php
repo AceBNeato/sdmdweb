@@ -111,6 +111,8 @@ class RoleController extends Controller
 
         DB::beginTransaction();
         try {
+            $changedRoles = [];
+
             foreach ($request->permissions as $roleId => $permissionIds) {
                 $role = Role::find($roleId);
                 if ($role) {
@@ -120,29 +122,46 @@ class RoleController extends Controller
                     $role->load('permissions');
                     $newPermissions = $role->permissions->pluck('name')->toArray();
 
-                    Activity::logSystemManagement(
-                        'RBAC Role Permissions Updated',
-                        'Updated permissions for role "' . $role->display_name . '" (ID: ' . $role->id . ')',
-                        'rbac',
-                        $role->id,
-                        [
-                            'permissions' => implode(', ', $newPermissions),
-                        ],
-                        [
-                            'permissions' => implode(', ', $originalPermissions),
-                        ],
-                        'RBAC'
-                    );
+                    // Only track roles that actually changed
+                    $added = array_diff($newPermissions, $originalPermissions);
+                    $removed = array_diff($originalPermissions, $newPermissions);
+
+                    if (!empty($added) || !empty($removed)) {
+                        $changedRoles[] = [
+                            'role' => $role->display_name,
+                            'added' => array_values($added),
+                            'removed' => array_values($removed),
+                        ];
+                    }
                 }
+            }
+
+            // Create a single consolidated activity log for all changes
+            if (!empty($changedRoles)) {
+                $roleNames = array_column($changedRoles, 'role');
+                $description = 'Updated permissions for ' . count($changedRoles) . ' role(s): ' . implode(', ', $roleNames);
+
+                Activity::logSystemManagement(
+                    'RBAC Permissions Updated',
+                    $description,
+                    'rbac',
+                    null,
+                    ['changes' => $changedRoles],
+                    null,
+                    'RBAC'
+                );
             }
 
             DB::commit();
             
             // Return JSON response for AJAX requests
             if ($request->ajax() || $request->wantsJson()) {
+                $msg = !empty($changedRoles)
+                    ? 'Permissions updated for ' . count($changedRoles) . ' role(s) successfully'
+                    : 'No permission changes detected';
                 return response()->json([
                     'success' => true,
-                    'message' => 'Role permissions updated successfully'
+                    'message' => $msg
                 ]);
             }
             

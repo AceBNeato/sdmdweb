@@ -577,6 +577,34 @@ class AuthController extends Controller
     }
 
     /**
+     * Update session last activity based on frontend heartbeat.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sessionHeartbeat(Request $request)
+    {
+        // Simply update the session last_activity.
+        // We only do this if there is an authenticated user.
+        $guards = ['web', 'staff', 'technician'];
+        $isAuthenticated = false;
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                $isAuthenticated = true;
+                break;
+            }
+        }
+
+        if ($isAuthenticated) {
+            session(['last_activity' => now()]);
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Not authenticated.'], 401);
+    }
+
+    /**
      * Logout from all guards except the specified one to prevent session conflicts
      *
      * @param string $currentGuard

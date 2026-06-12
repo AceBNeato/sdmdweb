@@ -738,12 +738,15 @@ class EquipmentController extends Controller
         $generatedAt = now();
         $generatedBy = optional(auth()->user())->name ?? 'SDMD System';
 
-        return view('equipment.qr-code-pdf', [
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('equipment.qr-code-pdf', [
             'equipments' => $equipments,
             'generatedAt' => $generatedAt,
             'generatedBy' => $generatedBy,
             'routePrefix' => 'admin',
         ]);
+
+        $pdf->setPaper('a4', 'portrait');
+        return $pdf->stream('equipment_qr_codes.pdf');
     }
 
     public function scanView()

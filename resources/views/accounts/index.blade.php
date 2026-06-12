@@ -178,14 +178,14 @@
                                 @endif
                                 @if(auth()->user()->hasPermissionTo('users.edit'))
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-secondary edit-user-btn"
+                                        class="btn btn-sm btn-primary edit-user-btn"
                                         data-url="{{ route('admin.accounts.edit', $user) }}"
                                         title="Edit">
                                     <i class='bx bx-edit'></i>
                                 </button>
                                 
                                 <button type="button"
-                                        class="btn btn-sm toggle-status-btn {{ $user->is_active ? 'active' : 'inactive' }}"
+                                        class="btn btn-sm btn-primary toggle-status-btn {{ $user->is_active ? 'active' : 'inactive' }}"
                                         data-user-id="{{ $user->id }}"
                                         data-url="{{ route('admin.accounts.toggle-status', $user) }}"
                                         title="{{ $user->is_active ? 'Deactivate Account' : 'Activate Account' }}">

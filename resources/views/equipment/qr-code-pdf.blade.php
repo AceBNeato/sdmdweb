@@ -9,7 +9,9 @@
 <head>
     <meta charset="utf-8">
     <title>Equipment QR Codes</title>
-    <link href="{{ asset('css/equipment-qr-code-pdf.css') }}" rel="stylesheet">
+    <style>
+        {!! file_get_contents(public_path('css/equipment-qr-code-pdf.css')) !!}
+    </style>
 </head>
 <body>
     <div class="actions">
@@ -53,7 +55,7 @@
                 <article class="qr-card">
                     <div class="qr-image">
                         @if($equipment->qr_code_image_path && Storage::disk('public')->exists($equipment->qr_code_image_path))
-                            <img src="{{ asset('storage/' . $equipment->qr_code_image_path) }}" alt="QR code for {{ $equipment->model_number }}">
+                            <img src="{{ public_path('storage/' . $equipment->qr_code_image_path) }}" alt="QR code for {{ $equipment->model_number }}">
                         @else
                             <img src="{{ route($routePrefix . '.equipment.qrcode', $equipment) }}" alt="QR code for {{ $equipment->model_number }}">
                         @endif

@@ -86,6 +86,9 @@ Route::prefix('email')->name('email.')->group(function () {
 // Session status check for auto-logout (works for any guard)
 Route::get('/session/check-status', [UserController::class, 'checkStatus'])->name('session.check-status');
 
+// Session heartbeat to keep backend lock in sync with frontend activity
+Route::post('/session-heartbeat', [AuthController::class, 'sessionHeartbeat'])->name('session.heartbeat');
+
 // System updates check (used by system-updates-check.js for silent page reloads)
 Route::get('/system/check-updates', [SystemLogController::class, 'checkUpdates'])->name('system.check-updates');
 
