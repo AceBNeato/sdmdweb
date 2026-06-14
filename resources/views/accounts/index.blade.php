@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link href="{{ asset('css/accounts/accounts.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/accounts/accounts-show.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/accounts/accounts.css') }}?v={{ filemtime(public_path('css/accounts/accounts.css')) }}" rel="stylesheet">
+    <link href="{{ asset('css/accounts/accounts-show.css') }}?v={{ filemtime(public_path('css/accounts/accounts-show.css')) }}" rel="stylesheet">
 @endpush
 
 @section('title', auth()->user()->is_admin ? 'SDMD Admin - Accounts' : (auth()->user()->role?->name === 'technician' ? 'SDMD Technician - Accounts' : (auth()->user()->role?->name === 'staff' ? 'SDMD Staff - Accounts' : 'SDMD Accounts')))
@@ -38,7 +38,13 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-search'></i></span>
                         <input type="text" id="search" name="search" class="form-control"
-                               placeholder="Search by name or email..." value="{{ request('search') }}">
+                               placeholder="Search by name or email..." value="{{ request('search') }}"
+                               hx-get="{{ route('accounts.index') }}"
+                               hx-target="#accounts-table-container"
+                               hx-trigger="keyup delay:500ms, search"
+                               hx-include=".filter-form"
+                               hx-push-url="true"
+                               hx-indicator=".loader-indicator">
                     </div>
                 </div>
 
@@ -59,7 +65,7 @@
                     <select id="office" name="office" class="form-select">
                         <option value="all">All Offices</option>
                         @foreach($campuses as $campus)
-                            <optgroup label="{{ $campus->name }} ({{ $campus->code }})">
+                            <optgroup label="{{ $campus->name }}{{ $campus->code ? ' (' . $campus->code . ')' : '' }}">
                                 @foreach($campus->offices->where('is_active', true) as $office)
                                     <option value="{{ $office->id }}" {{ request('office') == $office->id ? 'selected' : '' }}>
                                         {{ $office->name }}
@@ -85,8 +91,11 @@
 
 
                 <div class="flex items-end gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class='bx bx-filter-alt me-1'></i> Apply Filters
+                    <button type="submit" class="btn btn-primary loader-indicator">
+                        <i class='bx bx-filter-alt me-1 htmx-hide-loading'></i>
+                        <span class="spinner-border spinner-border-sm htmx-show-loading d-none" role="status" aria-hidden="true"></span>
+                        <span class="htmx-hide-loading">Apply Filters</span>
+                        <span class="htmx-show-loading d-none">Loading...</span>
                     </button>
                     <a href="{{ route('accounts.index') }}" class="btn btn-outline-secondary">
                         <i class='bx bx-reset me-1'></i> Reset
@@ -96,128 +105,10 @@
         </div>
     </div>
 
-    @if(request()->hasAny(['search', 'role', 'office', 'status']))
-        <div class="alert alert-info mb-3">
-            <i class='bx bx-info-circle me-2'></i>
-            Found {{ $users->total() }} user(s) matching your criteria.
-            @if(request()->has('search'))
-                <br>Search: <strong>{{ request('search') }}</strong>
-            @endif
-            @if(request()->has('role') && request('role') !== 'all')
-                <br>Role: <strong>{{ $roles->firstWhere('name', request('role'))->display_name ?? request('role') }}</strong>
-            @endif
-            @if(request()->has('office') && request('office') !== 'all')
-                @php
-                    $selectedOffice = null;
-                    foreach($campuses as $campus) {
-                        $office = $campus->offices->find(request('office'));
-                        if ($office) {
-                            $selectedOffice = $office;
-                            break;
-                        }
-                    }
-                @endphp
-                <br>Office: <strong>{{ $selectedOffice ? $selectedOffice->name : request('office') }}</strong>
-            @endif
-            @if(request()->has('status') && request('status') !== 'all')
-                <br>Status: <strong>{{ request('status') === 'active' ? 'Active' : 'Inactive' }}</strong>
-            @endif
-        </div>
-    @endif
-
-    <!-- Accounts Table -->
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Role</th>
-                    <th scope="col">Campus</th>
-                    <th scope="col">Office</th>
-                    <th scope="col">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($users as $user)
-                    <tr data-name="{{ $user->first_name . ' ' . $user->last_name }}" 
-                        data-email="{{ $user->email }}" 
-                        data-role="{{ $user->role?->display_name ?? '' }}" 
-                        data-campus="{{ $user->campus?->name ?? '' }}" 
-                        data-office="{{ $user->office?->name ?? '' }}">
-                        <td>
-                            <div class="fw-bold text-primary">{{ $user->first_name . ' ' . $user->last_name }}</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">{{ $user->email }}</div>
-                        </td>
-                        <td>
-                            <div class="text-truncate" style="max-width: 150px;" title="{{ $user->role?->display_name ?? 'No role' }}">
-                                {{ $user->role?->display_name ?? 'No role' }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-truncate" style="max-width: 120px;" title="{{ $user->campus?->name ?? 'N/A' }}">
-                                {{ $user->campus?->name ?? 'N/A' }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-truncate" style="max-width: 120px;" title="{{ $user->office?->name ?? 'N/A' }}">
-                                {{ $user->office?->name ?? 'N/A' }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                @if(auth()->user()->hasPermissionTo('users.view'))
-                                <button type="button" class="btn btn-sm btn-primary view-user-btn"
-                                        data-user-id="{{ $user->id }}"
-                                        data-url="{{ route('admin.accounts.show', $user) }}"
-                                        title="view">
-                                    <i class='bx bx-show-alt'></i>
-                                </button>
-                                @endif
-                                @if(auth()->user()->hasPermissionTo('users.edit'))
-                                <button type="button"
-                                        class="btn btn-sm btn-primary edit-user-btn"
-                                        data-url="{{ route('admin.accounts.edit', $user) }}"
-                                        title="Edit">
-                                    <i class='bx bx-edit'></i>
-                                </button>
-                                
-                                <button type="button"
-                                        class="btn btn-sm toggle-status-btn {{ $user->is_active ? 'active' : 'inactive' }}"
-                                        data-user-id="{{ $user->id }}"
-                                        data-url="{{ route('admin.accounts.toggle-status', $user) }}"
-                                        title="{{ $user->is_active ? 'Deactivate Account' : 'Activate Account' }}">
-                                    <i class='bx {{ $user->is_active ? 'bx-user-x' : 'bx-user-check' }}'></i>
-                                </button>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <div class="empty-equipment">
-                                <i class='bx bx-user-x'></i>
-                                <h5>No Users Found</h5>
-                                <p>Get started by adding a new user</p>
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+    <!-- HTMX Dynamic Table Container -->
+    <div id="accounts-table-container">
+        @include('accounts.partials.table')
     </div>
-
-    @if($users->hasPages())
-    <div class="pagination-section">
-        <div class="pagination-info">
-            Showing {{ $users->firstItem() }} to {{ $users->lastItem() }} of {{ $users->total() }} results
-        </div>
-        {{ $users->appends(request()->query())->links('pagination.admin') }}
-    </div>
-    @endif
 </div>
 
 
@@ -339,5 +230,35 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 @endpush
 
-@endsection
+@push('styles')
+<style>
+/* Fix modal z-index issues */
+.modal {
+    z-index: 1055 !important;
+}
 
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+.modal-dialog {
+    z-index: 1056 !important;
+}
+
+.modal-content {
+    z-index: 1057 !important;
+}
+
+/* Ensure modals are above everything */
+.modal.show {
+    z-index: 1055 !important;
+}
+
+/* Fix backdrop overlay */
+.modal-backdrop.show {
+    z-index: 1050 !important;
+}
+</style>
+@endpush
+
+@endsection

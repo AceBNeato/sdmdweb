@@ -47,14 +47,6 @@
             <label class="form-label">Employee ID</label>
             <input type="text" name="employee_id" class="form-control" value="{{ old('employee_id', $user->employee_id) }}">
         </div>
-        <div class="col-md-6">
-            <label class="form-label">Specialization</label>
-            <input type="text" name="specialization" class="form-control" value="{{ old('specialization', $user->specialization) }}">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Skills</label>
-            <textarea name="skills" rows="3" class="form-control">{{ old('skills', $user->skills) }}</textarea>
-        </div>
 
         <div class="col-md-6">
             <label class="form-label">Current Password</label>

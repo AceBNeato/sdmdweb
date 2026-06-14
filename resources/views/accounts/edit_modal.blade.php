@@ -9,9 +9,6 @@
                 <h5 class="mb-1">Edit User Information</h5>
                 <p class="text-sm text-gray-600 mb-0">Update user details, password, and roles</p>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" aria-label="Close">
-                <i class='bx bx-x'></i> Close
-            </button>
         </div>
     </div>
 
@@ -133,7 +130,7 @@
                                 id="office_id" name="office_id" required>
                             <option value="">Select Office</option>
                             @foreach(\App\Models\Campus::where('is_active', true)->orderBy('name')->get() as $campus)
-                                <optgroup label="{{ $campus->name }} ({{ $campus->code }})">
+                                <optgroup label="{{ $campus->name }}{{ $campus->code ? ' (' . $campus->code . ')' : '' }}">
                                     @foreach($campus->offices->where('is_active', true) as $office)
                                         <option value="{{ $office->id }}" {{ (old('office_id', $user->office_id) == $office->id) ? 'selected' : '' }}>
                                             {{ $office->name }}

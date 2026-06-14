@@ -34,7 +34,7 @@
                 @if($office->campus)
                 <div class="office-meta-item">
                     <i class='bx bx-school'></i>
-                    <span>{{ $office->campus->name }} ({{ $office->campus->code }})</span>
+                    <span>{{ $office->campus->name }}{{ $office->campus->code ? ' (' . $office->campus->code . ')' : '' }}</span>
                 </div>
                 @endif
                 <div class="office-meta-item">
@@ -75,7 +75,7 @@
                     </div>
                     <div class="detail-content">
                         <div class="detail-label">Campus</div>
-                        <div class="detail-value">{{ $office->campus->name }} <small class="text-muted">({{ $office->campus->code }})</small></div>
+                        <div class="detail-value">{{ $office->campus->name }} {!! $office->campus->code ? '<small class="text-muted">(' . $office->campus->code . ')</small>' : '' !!}</div>
                     </div>
                 </div>
                 @endif

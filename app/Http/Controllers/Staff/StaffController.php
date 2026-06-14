@@ -166,9 +166,7 @@ class StaffController extends Controller
             'address' => 'nullable|string|max:255',
             'current_password' => 'nullable|required_with:new_password|current_password:staff',
             'new_password' => 'nullable|min:8|confirmed',
-            'specialization' => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:50',
-            'skills' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
@@ -260,8 +258,6 @@ class StaffController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'specialization' => $validated['specialization'] ?? null,
-                'skills' => $validated['skills'] ?? null,
                 'is_active' => $validated['is_active'] ?? $user->is_active,
                 'employee_id' => $validated['employee_id'] ?? null,
                 'profile_photo_path' => $validated['profile_photo_path'] ?? $user->profile_photo_path,
@@ -278,6 +274,9 @@ class StaffController extends Controller
                 
                 // Log password change
                 Activity::logPasswordChange($user);
+
+                // Prevent the user from being logged out after password change
+                Auth::guard('staff')->login($user);
             }
 
             // Filter out null values but keep explicit keys (employee_id, profile_photo) even if empty string
@@ -324,9 +323,7 @@ class StaffController extends Controller
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'profile_photo_path' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
-                        'specialization' => $user->specialization,
-                        'employee_id' => $user->employee_id,
-                        'skills' => $user->skills
+                        'employee_id' => $user->employee_id
                     ]
                 ]);
             }

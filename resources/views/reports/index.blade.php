@@ -29,7 +29,15 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
                         <span class="input-group-text"><i class='bx bx-search'></i></span>
                         <input type="text" id="search" name="search" class="form-control"
                                placeholder="Search history records..."
-                               value="{{ request('search') }}">
+                               value="{{ request('search') }}"
+                               hx-get="{{ route($prefix . '.reports.index') }}"
+                               hx-target="#reports-table-container"
+                               hx-select="#reports-table-container"
+                               hx-swap="outerHTML"
+                               hx-trigger="keyup delay:500ms, search"
+                               hx-include=".filter-form"
+                               hx-push-url="true"
+                               hx-indicator=".loader-indicator">
                     </div>
                 </div>
 
@@ -72,6 +80,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
             </form>
         </div>
     </div>
+    <div id="reports-table-container">
     @if($equipmentHistory->count() > 0)
         <!-- Equipment History Table -->
         <div class="table-responsive">
@@ -137,6 +146,7 @@ $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->role?->name === 
             </a>
         </div>
     @endif
+    </div>
 </div>
 @endif
 

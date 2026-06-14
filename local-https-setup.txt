@@ -1,0 +1,58 @@
+========================================================================
+LOCAL HTTPS SETUP FOR QR CODE SCANNING (LAN IP: 10.0.254.2)
+========================================================================
+
+Why is this setup needed?
+-------------------------
+Modern mobile browsers (Chrome, Safari, etc.) restrict access to the camera API (navigator.mediaDevices.getUserMedia) to secure origins only. To test the QR Scanner on mobile devices connected to your LAN, the web server must run over HTTPS. 
+
+By default, "php artisan serve" only runs HTTP. To get HTTPS locally, we use XAMPP's built-in Apache server directly (Option 3).
+
+------------------------------------------------------------------------
+STEP-BY-STEP: HOW TO SET UP XAMPP APACHE FOR LOCAL HTTPS (OPTION 3)
+------------------------------------------------------------------------
+
+If you ever need to set this up on a new computer or update your IP address, follow these exact steps:
+
+STEP 1: Locate the XAMPP Virtual Hosts File
+Open your file explorer and navigate to:
+C:\xampp\apache\conf\extra\httpd-vhosts.conf
+
+STEP 2: Add the SSL Virtual Host Block
+Open `httpd-vhosts.conf` in a text editor (like Notepad or VS Code).
+At the very bottom of the file, paste the following block:
+
+<VirtualHost *:443>
+    ServerName localvaren.com
+    ServerAlias localvaren.com 10.0.254.2
+    DocumentRoot "C:\xampp\htdocs\sdmdweb\public"	
+    SSLEngine on
+    SSLCertificateFile "conf/ssl.crt/server.crt"
+    SSLCertificateKeyFile "conf/ssl.key/server.key"
+    <Directory "C:\xampp\htdocs\sdmdweb\public">	
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+
+(Note: If your local IP address changes from 10.0.254.2, simply change it on the "ServerAlias" line above).
+
+STEP 3: Restart Apache
+1. Open the XAMPP Control Panel.
+2. Click the "Stop" button next to Apache.
+3. Wait 2 seconds, then click the "Start" button next to Apache.
+
+STEP 4: Accessing the Application
+You do NOT need to run `php artisan serve` anymore. XAMPP handles it permanently.
+
+1. On your test device (e.g. phone or tablet), make sure you are connected to the same Wi-Fi/LAN network.
+2. Open your mobile browser and navigate directly to:
+   https://10.0.254.2
+
+3. Your browser will display a security warning ("Your connection is not private") because the SSL certificate is a local XAMPP self-signed certificate.
+4. Bypass the warning:
+   - On Chrome/Android: Tap "Advanced" -> "Proceed to 10.0.254.2 (unsafe)".
+   - On Safari/iOS: Tap "Show Details" -> "visit this website" -> confirm.
+
+5. The page will load successfully and the browser will now prompt you for camera permissions when starting the QR Scanner!

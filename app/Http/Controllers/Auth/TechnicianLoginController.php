@@ -200,9 +200,7 @@ class TechnicianLoginController extends Controller
             'current_password' => 'nullable|required_with:new_password|current_password:technician',
             'new_password' => 'nullable|min:8|confirmed',
             // Technician fields
-            'specialization' => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:50',
-            'skills' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
         ]);
@@ -249,13 +247,16 @@ class TechnicianLoginController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'password' => !empty($validated['new_password']) ? bcrypt($validated['new_password']) : $user->password,
-                'specialization' => $validated['specialization'] ?? null,
-                'skills' => $validated['skills'] ?? null,
                 'is_available' => $validated['is_active'] ?? true,
                 'employee_id' => $validated['employee_id'] ?? null,
                 'profile_photo_path' => $validated['profile_photo_path'] ?? $user->profile_photo_path,
             ];
+            
+            $passwordChanged = false;
+            if (!empty($validated['new_password'])) {
+                $updateData['password'] = bcrypt($validated['new_password']);
+                $passwordChanged = true;
+            }
 
             // Filter out null values but keep empty strings for employee_id and profile_photo
             $updateData = array_filter($updateData, function($value, $key) {
@@ -267,6 +268,10 @@ class TechnicianLoginController extends Controller
 
             // Perform a single update
             $user->update($updateData);
+
+            if ($passwordChanged) {
+                \Auth::guard('technician')->login($user);
+            }
             \Log::info('User updated successfully', ['user_id' => $user->id]);
 
             // Log the activity

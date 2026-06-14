@@ -27,7 +27,15 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-search'></i></span>
                         <input type="text" id="search" name="search" class="form-control"
-                               placeholder="Search categories..." value="{{ request('search') }}">
+                               placeholder="Search categories..." value="{{ request('search') }}"
+                               hx-get="{{ route('admin.settings.categories.index') }}"
+                               hx-target="#categories-table-container"
+                               hx-select="#categories-table-container"
+                               hx-swap="outerHTML"
+                               hx-trigger="keyup delay:500ms, search"
+                               hx-include=".filter-form"
+                               hx-push-url="true"
+                               hx-indicator=".loader-indicator">
                     </div>
                 </div>
 
@@ -44,7 +52,8 @@
     </div>
 
     <!-- Categories Table -->
-    <div class="table-responsive">
+    <div id="categories-table-container">
+        <div class="table-responsive">
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -109,6 +118,7 @@
         {{ $categories->appends(request()->query())->links('pagination.admin') }}
     </div>
     @endif
+    </div>
 </div>
 @endsection
 

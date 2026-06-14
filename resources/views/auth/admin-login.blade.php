@@ -26,17 +26,17 @@
     <!-- Left Section (Image + Text) -->
     <div class="left-section">
         <img src="{{ asset('images/SDMDlogo.png') }}" alt="Background Image">
-        <h1>Admin Login<br><span>SDMD System</span></h1>
-        <p>Administrative Access Only</p>
-        <div class="admin-badge">ADMIN PANEL</div>
+        <h1>SDMD<br><span>Core System</span></h1>
+        <p>Restricted Access Gateway</p>
+        <div class="admin-badge">ADMINISTRATOR</div>
     </div>
 
     <!-- Right Section (Login Form) -->
     <div class="right-section">
         <div class="login-card">
-            <h2>Hello Admin</h2>
-            <p>Welcome Back!</p>
-            <h3>Login to Admin Panel</h3>
+            <h2>SDMD Admin Portal</h2>
+            <p>Secure Access</p>
+            <h3>Please sign in to continue</h3>
 
             <form action="{{ route('admin.login') }}" method="POST" id="admin-login-form">
                 @csrf

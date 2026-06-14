@@ -1,24 +1,11 @@
 /* Admin Login Custom Styles */
 body {
     background: linear-gradient(180deg, #0f1419, #1a1f26, #2a2f36) !important;
-    margin: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
 }
 
 .container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 676px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    animation: fadeIn 1s ease-in-out;
-    overflow: auto;
+    /* Inherit layout from login.css to prevent X/Y scroll issues */
+    box-sizing: border-box;
 }
 
 .left-section {
@@ -89,66 +76,76 @@ body {
 }
 
 .login-card {
-    background: linear-gradient(135deg, #1f2937, #374151) !important;
-    border-radius: 15px;
-    padding: 30px;
+    background: rgba(0, 0, 0, 0.25) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px;
+    padding: 35px 30px;
     width: 100%;
-    max-width: 450px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-    border: 1px solid #4b5563;
+    max-width: 420px;
+    border: 1px solid rgba(248, 113, 113, 0.2) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
     animation: slideInUp 0.8s ease-in-out;
 }
 
 .login-card h2 {
-    font-size: 1.25rem;
-    color: #f87171 !important;
-    font-weight: bold;
+    font-size: 1.1rem;
+    color: #fca5a5 !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
     text-align: center;
     margin-bottom: 5px;
 }
 
 .login-card p {
-    font-size: 0.875rem;
-    color: #d1d5db !important;
-    margin: 5px 0 20px 0;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ffffff !important;
+    margin: 0 0 15px 0;
     text-align: center;
+    background: linear-gradient(90deg, #ffffff, #fca5a5) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
 }
 
 .login-card h3 {
-    font-size: 1rem;
-    color: #ef4444 !important;
-    font-weight: bold;
+    font-size: 0.95rem;
+    color: #fecaca !important;
+    font-weight: 400;
     margin-bottom: 25px;
     text-align: center;
 }
 
 .login-card label {
     display: block;
-    color: #e5e7eb !important;
+    color: #f8fafc !important;
     font-size: 13px;
     font-weight: 500;
+    margin-bottom: 8px;
 }
 
 .login-card input {
     width: 100%;
-    height: 40px;
-    border: 1px solid #4b5563 !important;
-    border-radius: 8px;
+    height: 45px;
+    border: 1px solid rgba(248, 113, 113, 0.2) !important;
+    border-radius: 10px;
     font-size: 0.95rem;
-    background: #374151 !important;
-    color: #f9fafb !important;
-    padding: 10px;
-    transition: all 0.2s;
+    background: rgba(0, 0, 0, 0.3) !important;
+    color: #ffffff !important;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
 }
 
 .login-card input:focus {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    border-color: #f87171 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 0 15px rgba(248, 113, 113, 0.3) !important;
     outline: none;
 }
 
 .login-card input::placeholder {
-    color: #9ca3af !important;
+    color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .login-card .password-container {
@@ -157,39 +154,44 @@ body {
 
 .login-card .password-container i {
     position: absolute;
-    right: 12px;
+    right: 15px;
     top: 50%;
-    color: #9ca3af;
+    color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     z-index: 10;
     pointer-events: auto;
+    transition: color 0.3s ease;
+}
+
+.login-card .password-container i:hover {
+    color: #ffffff;
 }
 
 .login-card .options {
     display: flex;
+    justify-content: flex-end;
     align-items: center;
-    margin: 15px 0;
-    font-size: 13px;
-    color: #d1d5db !important;
+    margin: 10px 0 25px 0;
 }
 
 .login-card button {
     width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    padding: 14px;
+    background: linear-gradient(135deg, #b91c1c, #ef4444) !important;
     color: #fff !important;
     border: none !important;
-    border-radius: 8px;
-    font-size: 0.875rem;
+    border-radius: 10px;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease !important;
     font-weight: 600;
+    box-shadow: 0 4px 15px rgba(185, 28, 28, 0.4) !important;
 }
 
 .login-card button:hover {
-    background: linear-gradient(135deg, #b91c1c, #991b1b) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+    background: linear-gradient(135deg, #991b1b, #dc2626) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6) !important;
 }
 
 /* Locked button styling for dark theme */
@@ -217,8 +219,8 @@ body {
 footer {
     text-align: center;
     color: #9ca3af;
-    font-size: 0.75rem;
-    padding: 15px;
+    /* font-size: 0.75rem; */
+    /* padding: 15px; */
     margin-top: auto;
 }
 

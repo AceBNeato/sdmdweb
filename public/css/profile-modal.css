@@ -1,67 +1,88 @@
-/* Profile modal shared styles */
+/* Dark Mode Profile Modal Styles */
 
-.profile-body{
-    padding: 1rem !important;
+#viewProfileModal .modal-content,
+#editProfileModal .modal-content {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
-.profile-modal .row,
-.profile-edit-form .row {
-    display: flex !important;
-    flex-direction: column !important;
-    margin-bottom: 1rem !important;
-    align-items: center !important;
+#viewProfileModal .modal-header,
+#editProfileModal .modal-header {
+    border-bottom: 1px solid #1e293b;
+    background-color: #0f172a;
+    border-radius: 16px 16px 0 0;
 }
 
-.profile-modal .col-md-8,
-.profile-edit-form .col-md-8 {
-    width: 100% !important;
-    height: auto !important;
+#viewProfileModal .modal-footer,
+#editProfileModal .modal-footer {
+    border-top: 1px solid #1e293b;
+    background-color: #0f172a;
+    border-radius: 0 0 16px 16px;
 }
 
-.profile-modal .col-md-4{
-    width: 100% !important;
+#viewProfileModal .modal-title,
+#editProfileModal .modal-title {
+    color: #f8fafc !important;
+    font-weight: 600;
 }
 
-
-.col-md-6{    
-    padding: 1rem !important;
-    margin-top: 0rem !important;
-    width: 95% !important;
+#viewProfileModal .text-muted,
+#editProfileModal .text-muted {
+    color: #94a3b8 !important;
 }
 
+#viewProfileModal .btn-close,
+#editProfileModal .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.profile-body {
+    padding: 1.5rem !important;
+}
 
 .profile-modal,
 .profile-edit-form {
     font-family: 'Inter', sans-serif !important;
 }
 
-.profile-modal .profile-avatar-wrapper {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    background-color: #e1eaff;
-    padding: 1rem !important;
-}
-
-.profile-edit-form .profile-avatar-wrapper {
+/* Avatar Styling (Dark) */
+.profile-avatar-wrapper {
     display: inline-flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    gap: 0.75rem !important;
     position: relative !important;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    padding: 2rem !important;
+    border-radius: 15px;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+    border: 1px solid #334155;
+    width: 100%;
+}
+
+.profile-edit-form .profile-avatar-wrapper {
+    max-width: 320px;
+    margin: 0 auto;
 }
 
 .profile-avatar {
     border-radius: 50% !important;
-    border: 3px solid #f0f0f0 !important;
+    border: 4px solid #334155 !important;
     object-fit: cover !important;
-    background-color: #fff !important;
+    background-color: #1e293b !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease;
+}
+
+.profile-avatar:hover {
+    transform: scale(1.05);
 }
 
 .profile-avatar-lg {
-    width: 140px !important;
-    height: 140px !important;
+    width: 150px !important;
+    height: 150px !important;
 }
 
 .profile-avatar-md {
@@ -69,34 +90,134 @@
     height: 120px !important;
 }
 
+/* Upload Button */
 .profile-avatar-upload-btn {
     position: absolute !important;
-    bottom: 0 !important;
-    right: 0 !important;
+    bottom: -15px !important;
+    right: 50% !important;
+    transform: translateX(50%) !important;
     border-radius: 50% !important;
-    width: 38px !important;
-    height: 38px !important;
+    width: 42px !important;
+    height: 42px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+    background: #3b82f6 !important;
+    border: 3px solid #0f172a !important;
+    color: white !important;
+    transition: all 0.2s ease !important;
+}
+
+.profile-avatar-upload-btn:hover {
+    background: #60a5fa !important;
+    transform: translateX(50%) scale(1.1) !important;
 }
 
 .profile-avatar-upload-btn i {
-    font-size: 1.1rem !important;
+    font-size: 1.2rem !important;
 }
 
+/* Information Grid (Dark) */
+.profile-info-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.profile-info-value {
+    font-size: 1rem;
+    color: #f1f5f9;
+    font-weight: 500;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #1e293b;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-info-value i {
+    color: #60a5fa;
+    font-size: 1.2rem;
+}
+
+/* Forms (Dark) */
 .profile-edit-form .form-label {
     font-weight: 600 !important;
+    color: #cbd5e1;
+}
+
+.profile-edit-form .form-control {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    padding: 0.6rem 1rem;
+    transition: all 0.2s;
+}
+
+.profile-edit-form .form-control:focus {
+    border-color: #3b82f6;
+    background-color: #0f172a !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.profile-edit-form .form-control::placeholder {
+    color: #64748b;
+}
+
+.profile-edit-form .input-group .btn-outline-secondary {
+    border-color: #334155;
+    color: #94a3b8;
+    background-color: #1e293b;
+}
+
+.profile-edit-form .input-group .btn-outline-secondary:hover {
+    background-color: #334155;
+    color: #f8fafc;
 }
 
 .profile-edit-form textarea.form-control {
     resize: vertical !important;
 }
 
+#viewProfileModal .btn-secondary,
+#editProfileModal .btn-secondary,
+#viewProfileModal .btn-light,
+#editProfileModal .btn-light {
+    background-color: #334155;
+    color: #f8fafc;
+    border: none;
+}
+
+#viewProfileModal .btn-secondary:hover,
+#editProfileModal .btn-secondary:hover,
+#viewProfileModal .btn-light:hover,
+#editProfileModal .btn-light:hover {
+    background-color: #475569;
+}
+
 @media (max-width: 576px) {
     .profile-modal .col-md-4,
     .profile-modal .col-md-8 {
         text-align: center !important;
+    }
+    
+    .profile-info-value {
+        justify-content: center;
+    }
+
+    .profile-avatar-wrapper {
+        padding: 1.5rem 1rem !important;
+        margin-bottom: 1rem;
+    }
+
+    .profile-avatar-lg {
+        width: 120px !important;
+        height: 120px !important;
     }
 }

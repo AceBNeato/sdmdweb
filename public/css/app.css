@@ -225,10 +225,11 @@ hr {
   top: 0;
   height: 100vh;
   padding: 24px 16px;
-  overflow-y: auto;
   box-shadow: var(--shadow-md);
   z-index: 10;
   transition: var(--transition-slow);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar::-webkit-scrollbar {
@@ -319,9 +320,13 @@ hr {
 
 /* Menu */
 .menu {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  margin-bottom: 24px;
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding-right: 5px; /* for scrollbar */
 }
 
 .menu-section {
@@ -786,8 +791,12 @@ tr:hover td {
 .empty-equipment,
 .empty-office {
   grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
+}
+
+
+
+.empty-equipment,
+.empty-office {
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -891,16 +900,54 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 
+  /* Restore text visibility for mobile slide-out sidebar */
+  .brand span,
+  .brand .tt,
+  .menu span:not(.badge) {
+    display: block; 
+  }
+  
+  .profile-btn span {
+    display: block;
+    flex: 1;
+    text-align: left;
+  }
+  
+  .menu a {
+    padding: 12px 16px;
+  }
+
 
   .profile-dropdown {
     z-index: 100;
-    position: absolute;
+    position: relative;
+    width: 100%;
+    margin-top: auto;
+    padding: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .filter-form {
     display: flex;
-    flex-wrap: wrap-reverse;
-    bottom: 0px;
-    left: 0;
-    right: 0;
-    padding: 20px 15px 20px 15px;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-group {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .filter-form .flex.items-end.gap-2 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .filter-form .btn {
+    width: 100%;
+    justify-content: center;
   }
 
 

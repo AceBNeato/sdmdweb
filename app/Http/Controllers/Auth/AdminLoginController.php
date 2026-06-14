@@ -190,6 +190,9 @@ class AdminLoginController extends Controller
             if (Auth::guard('web')->attempt($credentials, $remember)) {
                 $request->session()->regenerate();
 
+                // Invalidate all other active sessions for this user on this guard (Single Session Enforcement)
+                Auth::guard('web')->logoutOtherDevices($request->input('password'));
+
                 // Clear rate limiter on successful login
                 RateLimiter::clear($throttleKey);
 

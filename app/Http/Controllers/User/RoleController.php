@@ -30,8 +30,10 @@ class RoleController extends Controller
             })
             ->latest()
             ->get();
+            
+        $permissions = Permission::orderBy('group')->orderBy('name')->get();
 
-        return view('accounts.rbac.roles.index', compact('roles'));
+        return view('accounts.rbac.roles.index', compact('roles', 'permissions'));
     }
 
     public function edit(Role $role)
@@ -96,9 +98,7 @@ class RoleController extends Controller
 
     public function permissions()
     {
-        $roles = Role::with('permissions')->get();
-        $permissions = Permission::orderBy('group')->orderBy('name')->get();
-        return view('accounts.rbac.roles.permissions', compact('roles', 'permissions'));
+        return redirect()->route('admin.rbac.roles.index');
     }
 
     public function updatePermissions(Request $request)
@@ -166,7 +166,7 @@ class RoleController extends Controller
             }
             
             // Regular redirect for non-AJAX requests
-            return redirect()->route('admin.rbac.roles.permissions')
+            return redirect()->route('admin.rbac.roles.index')
                 ->with('success', 'Role permissions updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();

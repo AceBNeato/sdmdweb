@@ -29,7 +29,7 @@
                         <option value="" disabled>Select Campus</option>
                         @foreach($campuses as $campus)
                             <option value="{{ $campus->id }}" {{ old('campus_id', $office->campus_id) == $campus->id ? 'selected' : '' }}>
-                                {{ $campus->name }} ({{ $campus->code }})
+                                {{ $campus->name }}{{ $campus->code ? ' (' . $campus->code . ')' : '' }}
                             </option>
                         @endforeach
                     </select>

@@ -121,8 +121,6 @@ class TechnicianController extends Controller
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:255',
-            'specialization' => 'nullable|string|max:255',
-            'skills' => 'nullable|string',
             'current_password' => 'nullable|string',
             'new_password' => 'nullable|string|min:8',
             'new_password_confirmation' => 'nullable|required_with:new_password|string|min:8|same:new_password',
@@ -195,8 +193,6 @@ class TechnicianController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'employee_id' => $validated['employee_id'] ?? null,
-                'specialization' => $validated['specialization'] ?? null,
-                'skills' => $validated['skills'] ?? null,
                 'profile_photo_path' => $validated['profile_photo_path'] ?? $user->profile_photo_path,
             ];
 
@@ -211,6 +207,9 @@ class TechnicianController extends Controller
                 
                 // Log password change
                 Activity::logPasswordChange($user);
+
+                // Prevent the user from being logged out after password change
+                Auth::guard('technician')->login($user);
             }
 
             // Filter out null values but always keep employee_id and profile_photo keys
@@ -254,9 +253,7 @@ class TechnicianController extends Controller
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'profile_photo_path' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
-                        'specialization' => $user->specialization,
                         'employee_id' => $user->employee_id,
-                        'skills' => $user->skills,
                     ],
                 ]);
             }

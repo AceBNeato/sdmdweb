@@ -268,6 +268,9 @@ class AuthController extends Controller
                     session()->forget('guard_logout_performed');
                 }
 
+                // Invalidate all other active sessions for this user on this guard (Single Session Enforcement)
+                Auth::guard($guard)->logoutOtherDevices($request->input('password'));
+
                 // Clear rate limiter on successful login
                 RateLimiter::clear($throttleKey);
 

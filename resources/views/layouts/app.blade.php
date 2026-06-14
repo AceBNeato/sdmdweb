@@ -16,14 +16,16 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}" rel="stylesheet">
     <link href="{{ asset('css/session-lock.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/profile-modal.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/profile-modal.css') }}?v={{ filemtime(public_path('css/profile-modal.css')) }}" rel="stylesheet">
     <link href="{{ asset('css/animations.css') }}" rel="stylesheet">
     <link href="{{ asset('css/toast.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/profile-dropdown.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/profile-dropdown.css') }}?v={{ filemtime(public_path('css/profile-dropdown.css')) }}" rel="stylesheet">
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- HTMX for Dynamic Page Loads -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     @stack('styles')
 </head>
 
@@ -90,7 +92,7 @@
                 <!-- Accounts - only for admin -->
                 @if($currentUser && $currentUser->hasPermissionTo('users.view'))
                 @if($prefix === 'admin')
-                <a href="{{ route('admin.accounts.index') }}" class="{{ Route::currentRouteName() && str_starts_with(Route::currentRouteName(), 'admin.accounts') ? 'active' : '' }}">
+                <a href="{{ route('admin.accounts.index') }}" class="{{ Route::currentRouteName() && (str_starts_with(Route::currentRouteName(), 'admin.accounts') || Route::currentRouteName() === 'accounts.index') ? 'active' : '' }}">
                     <i class='bx bx-user'></i>Accounts
                 </a>
                 @endif

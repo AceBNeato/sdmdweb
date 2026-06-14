@@ -63,6 +63,12 @@ class OfficeController extends BaseController
         $offices = $query->paginate(10)->appends($request->except('page'));
         $campuses = \App\Models\Campus::where('is_active', true)->get();
 
+        if ($request->header('HX-Request')) {
+            $prefix = 'admin'; // offices are admin only usually
+            $currentUser = auth()->user();
+            return view('offices.partials.table', compact('offices', 'campuses', 'prefix', 'currentUser'));
+        }
+
         return view('offices.index', compact('offices', 'campuses'));
     }
 

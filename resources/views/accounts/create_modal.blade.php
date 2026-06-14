@@ -5,9 +5,6 @@
                 <h5 class="mb-1">Add New User</h5>
                 <p class="text-sm text-gray-600 mb-0">Fill in the details to create a new user account</p>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" aria-label="Close">
-                <i class='bx bx-x'></i> Close
-            </button>
         </div>
     </div>
 
@@ -108,7 +105,7 @@
                         <select class="form-select" id="create_office_id" name="office_id" required>
                             <option value="">Select Office</option>
                             @foreach($campuses as $campus)
-                                <optgroup label="{{ $campus->name }} ({{ $campus->code }})">
+                                <optgroup label="{{ $campus->name }}{{ $campus->code ? ' (' . $campus->code . ')' : '' }}">
                                     @foreach($campus->offices->where('is_active', true) as $office)
                                         <option value="{{ $office->id }}">
                                             {{ $office->name }}

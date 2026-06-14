@@ -34,7 +34,7 @@
                             <i class='bx bx-globe me-1'></i>All Offices
                         </option>
                         @foreach($campuses as $campus)
-                            <optgroup label="{{ $campus->name }} ({{ $campus->code }})">
+                            <optgroup label="{{ $campus->name }}{{ $campus->code ? ' (' . $campus->code . ')' : '' }}">
                                 @foreach($campus->offices as $office)
                                     <option value="{{ $office->id }}" {{ (string) $selectedOfficeId === (string) $office->id ? 'selected' : '' }}>
                                         {{ $office->name }}

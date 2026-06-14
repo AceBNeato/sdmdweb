@@ -24,16 +24,16 @@
     <!-- Left Section (Image + Text) -->
     <div class="left-section">
         <img src="{{ asset('images/SDMDlogo.png') }}" alt="Background Image">
-        <h1>Login into <br><span>your account</span></h1>
-        <p>SDMD Equipment Management System</p>
+        <h1>Equipment<br><span>Management</span></h1>
+        <p>SDMD Operations Gateway</p>
     </div>
 
     <!-- Right Section (Login Form) -->
     <div class="right-section">
         <div class="login-card">
-            <h2>Hello</h2>
-            <p>Welcome Back!</p>
-            <h3>Login your account</h3>
+            <h2>SDMD Portal</h2>
+            <p>Secure Access</p>
+            <h3>Please sign in to continue</h3>
 
             <form id="login-form" method="POST" action="{{ route('login.submit') }}">
                 @csrf
@@ -117,6 +117,18 @@
                     html: '{{ $errors->first('email') }}<br><br><small>Attempts remaining: <strong>{{ session('remaining_attempts', 3) }}/3</strong></small>',
                     icon: 'warning',
                     confirmButtonText: 'Try Again',
+                    confirmButtonColor: '#ffc107',
+                    backdrop: 'rgba(0,0,0,0.5)'
+                });
+            @endif
+
+            // Show session expired warning as SweetAlert if present
+            @if(session('session_expired'))
+                Swal.fire({
+                    title: '⚠️ SESSION EXPIRED ⚠️',
+                    html: '{{ session('session_expired') }}',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
                     confirmButtonColor: '#ffc107',
                     backdrop: 'rgba(0,0,0,0.5)'
                 });

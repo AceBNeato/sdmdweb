@@ -1208,8 +1208,7 @@ td {
 
 .row {
     display: flex;
-    flex-direction: column;
-    margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {
@@ -1239,4 +1238,31 @@ td {
         margin-bottom: 0.5rem;
         padding-bottom: 0.5rem;
     }
+}
+
+/* Fix modal z-index issues */
+.modal {
+    z-index: 1055 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+.modal-dialog {
+    z-index: 1056 !important;
+}
+
+.modal-content {
+    z-index: 1057 !important;
+}
+
+/* Ensure modals are above everything */
+.modal.show {
+    z-index: 1055 !important;
+}
+
+/* Fix backdrop overlay */
+.modal-backdrop.show {
+    z-index: 1050 !important;
 }

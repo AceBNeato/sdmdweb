@@ -76,7 +76,11 @@ class AdminController extends Controller
         $roles = Role::where('name', '!=', 'super-admin')->get();
         $campuses = \App\Models\Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
-      return view('accounts.index', compact('users', 'roles', 'campuses'));
+        if ($request->header('HX-Request')) {
+            return view('accounts.partials.table', compact('users', 'roles', 'campuses'));
+        }
+
+        return view('accounts.index', compact('users', 'roles', 'campuses'));
     }
 
     public function equipment(Request $request)
@@ -114,6 +118,12 @@ class AdminController extends Controller
         $equipmentTypes = EquipmentType::pluck('name', 'id');
         $categories = Category::pluck('name', 'id');
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
+
+        if ($request->header('HX-Request')) {
+            $prefix = 'admin';
+            $currentUser = auth()->user();
+            return view('equipment.partials.table', compact('equipment', 'prefix', 'currentUser'));
+        }
 
         return view('equipment.index', compact('equipment', 'equipmentTypes', 'categories', 'campuses'));
     }
@@ -203,8 +213,6 @@ class AdminController extends Controller
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:255',
-            'specialization' => 'nullable|string|max:255',
-            'skills' => 'nullable|string',
             'current_password' => 'nullable|string',
             'new_password' => 'nullable|string|min:8',
             'new_password_confirmation' => 'nullable|required_with:new_password|string|min:8|same:new_password',
@@ -229,8 +237,6 @@ class AdminController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'employee_id' => $validated['employee_id'] ?? null,
-                'specialization' => $validated['specialization'] ?? null,
-                'skills' => $validated['skills'] ?? null,
             ];
 
             $photoUpdated = false;
@@ -273,6 +279,9 @@ class AdminController extends Controller
                 
                 // Log password change
                 Activity::logPasswordChange($user);
+
+                // Prevent the user from being logged out after password change
+                \Auth::login($user);
             }
 
             // Log the activity

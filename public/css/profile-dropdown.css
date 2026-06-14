@@ -1,13 +1,13 @@
 /* Profile Dropdown */
 .profile-dropdown {
     z-index: 100;
-    position: absolute;
+    position: relative;
     display: flex;
     flex-wrap: wrap-reverse;
-    bottom: 0px;
-    left: 0;
-    right: 0;
-    padding: 20px 15px 20px 15px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .profile-btn {

@@ -212,6 +212,11 @@ public function login(Request $request)
             // Get updated user data
             $updatedUser = \App\Models\User::find($user->id);
 
+            // If password was changed, re-authenticate to prevent session drop
+            if (!empty($validated['new_password'])) {
+                Auth::guard('staff')->login($updatedUser);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profile updated successfully!',

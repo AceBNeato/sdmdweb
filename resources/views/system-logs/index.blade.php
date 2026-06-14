@@ -50,10 +50,19 @@
     <!-- Filters and Export Section -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" type="{{ $currentRoute }}" class="row g-3">
+            <form method="GET" action="{{ $currentRoute }}" class="row g-3 filter-form">
                 <div class="col-12 col-sm-6 col-md-3">
                     <label for="search" class="form-label">Search</label>
-                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Search types, descriptions, or users...">
+                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" 
+                           placeholder="Search types, descriptions, or users..."
+                           hx-get="{{ $currentRoute }}"
+                           hx-target="#logs-table-container"
+                           hx-select="#logs-table-container"
+                           hx-swap="outerHTML"
+                           hx-trigger="keyup delay:500ms, search"
+                           hx-include=".filter-form"
+                           hx-push-url="true"
+                           hx-indicator=".loader-indicator">
                 </div>
                 <div class="col-12 col-sm-6 col-md-2">
                     <label for="user_id" class="form-label">User</label>
@@ -233,7 +242,7 @@
     @endif
 
 
-    <div class="card logs-table-card">
+    <div class="card logs-table-card" id="logs-table-container">
         @if($activities->count() > 0)
             <div class="table-responsive">
                 <table id="logs-table" class="table align-middle">

@@ -27,7 +27,15 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class='bx bx-search'></i></span>
                         <input type="text" id="search" name="search" class="form-control"
-                               placeholder="Search equipment types..." value="{{ request('search') }}">
+                               placeholder="Search equipment types..." value="{{ request('search') }}"
+                               hx-get="{{ route('admin.settings.equipment-types.index') }}"
+                               hx-target="#equipment-types-table-container"
+                               hx-select="#equipment-types-table-container"
+                               hx-swap="outerHTML"
+                               hx-trigger="keyup delay:500ms, search"
+                               hx-include=".filter-form"
+                               hx-push-url="true"
+                               hx-indicator=".loader-indicator">
                     </div>
                 </div>
 
@@ -44,7 +52,8 @@
     </div>
 
     <!-- Equipment Types Table -->
-    <div class="table-responsive">
+    <div id="equipment-types-table-container">
+        <div class="table-responsive">
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -109,6 +118,7 @@
         {{ $equipmentTypes->appends(request()->query())->links('pagination.admin') }}
     </div>
     @endif
+    </div>
 </div>
 
 @push('scripts')

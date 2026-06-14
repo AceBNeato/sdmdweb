@@ -84,6 +84,12 @@ class EquipmentController extends Controller
 
         $campuses = Campus::with('offices')->where('is_active', true)->orderBy('name')->get();
 
+        if ($request->header('HX-Request')) {
+            $prefix = auth()->user()->is_admin ? 'admin' : (auth()->user()->hasRole('technician') ? 'technician' : 'staff');
+            $currentUser = auth()->user();
+            return view('equipment.partials.table', compact('equipment', 'prefix', 'currentUser'));
+        }
+
         return view('equipment.index', compact('equipment', 'equipmentTypes', 'campuses'));
     }
 
