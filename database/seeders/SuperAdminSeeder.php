@@ -98,6 +98,8 @@ class SuperAdminSeeder extends Seeder
         // Get roles
         $superAdminRole = Role::where('name', 'super-admin')->first();
         $adminRole = Role::where('name', 'admin')->first();
+        $technicianRole = Role::where('name', 'technician')->first();
+        $staffRole = Role::where('name', 'staff')->first();
 
         // Assign single roles using role_id
         if ($superAdminRole) {
@@ -111,10 +113,59 @@ class SuperAdminSeeder extends Seeder
             $admin->save();
         }
 
+        // Create technician user
+        $technician = User::updateOrCreate(
+            ['email' => 'technician@sdmd.ph'],
+            [
+                'first_name' => 'Tech',
+                'last_name' => 'Support',
+                'password' => Hash::make('technician123'),
+                'position' => 'IT Technician',
+                'phone' => '09123456781',
+                'address' => 'Tagum City, Davao del Norte, Philippines',
+                'office_id' => $sdmdOffice->id,
+                'campus_id' => $tagumCampus->id,
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+        if ($technicianRole) {
+            $technician->role_id = $technicianRole->id;
+            $technician->save();
+        }
+
+        // Create staff user
+        $staffUser = User::updateOrCreate(
+            ['email' => 'staff@sdmd.ph'],
+            [
+                'first_name' => 'Staff',
+                'last_name' => 'Member',
+                'password' => Hash::make('staff123'),
+                'position' => 'Office Staff',
+                'phone' => '09123456782',
+                'address' => 'Tagum City, Davao del Norte, Philippines',
+                'office_id' => $sdmdOffice->id,
+                'campus_id' => $tagumCampus->id,
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+        if ($staffRole) {
+            $staffUser->role_id = $staffRole->id;
+            $staffUser->save();
+        }
+
         // Output summary
         $this->command->info('Created/Updated Users:');
         $this->command->info('- Super Admin 1: ' . $superAdmin->first_name . ' ' . $superAdmin->last_name . ' (' . $superAdmin->email . ') - ' . $superAdmin->position . ' at ' . $superAdmin->campus->name . ' (' . $sdmdOffice->name . ') - Password: superadmin123');
         $this->command->info('- Super Admin 2: ' . $superAdmin2->first_name . ' ' . $superAdmin2->last_name . ' (' . $superAdmin2->email . ') - ' . $superAdmin2->position . ' at ' . $superAdmin2->campus->name . ' (' . $sdmdOffice->name . ') - Password: superadmin123');
         $this->command->info('- Admin: ' . $admin->first_name . ' ' . $admin->last_name . ' (' . $admin->email . ') - ' . $admin->position . ' at ' . $admin->campus->name . ' (' . $sdmdOffice->name . ') - Password: 12345678');
+        $this->command->info('- Technician: ' . $technician->first_name . ' ' . $technician->last_name . ' (' . $technician->email . ') - Password: technician123');
+        $this->command->info('- Staff: ' . $staffUser->first_name . ' ' . $staffUser->last_name . ' (' . $staffUser->email . ') - Password: staff123');
     }
 }
+

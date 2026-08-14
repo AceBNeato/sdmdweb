@@ -52,11 +52,9 @@ Route::middleware(['auth', 'guard.access:web'])->prefix('admin')->name('admin.')
         Route::get('{user}', [UserController::class, 'show'])->name('show');
         Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
         Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
-        Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
         
         // User Actions
         Route::post('{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status')->middleware('permission:users.edit');
-        Route::post('{user}/grant-temp-admin', [UserController::class, 'grantTempAdmin'])->name('grant-temp-admin')->middleware('auth');
         Route::post('{user}/resend-verification', [EmailVerificationController::class, 'sendVerificationEmail'])->name('resend-verification')->middleware('permission:users.edit');
     });
     
@@ -68,7 +66,6 @@ Route::middleware(['auth', 'guard.access:web'])->prefix('admin')->name('admin.')
         Route::get('{user}', [UserController::class, 'show'])->name('show');
         Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
         Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
-        Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
         
         // Staff Actions
         Route::post('{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status')->middleware('permission:users.edit');
@@ -83,7 +80,6 @@ Route::middleware(['auth', 'guard.access:web'])->prefix('admin')->name('admin.')
         Route::get('{user}', [UserController::class, 'show'])->name('show');
         Route::get('{user}/edit', [UserController::class, 'edit'])->name('edit')->middleware('permission:users.edit');
         Route::put('{user}', [UserController::class, 'update'])->name('update')->middleware('permission:users.edit');
-        Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy')->middleware('permission:users.delete');
     });
     
     // ============================================================================

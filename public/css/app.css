@@ -651,20 +651,6 @@ hr {
   border-color: var(--border);
 }
 
-.btn-outline-secondary {
-  color: #4a5568;
-  border: 1px solid #bbc6d5 !important;
-  background-color: white;
-}
-
-.btn-outline-secondary:hover {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-color: #cbd5e0;
-  transform: translateY(-1px);
-  color: #2c5282;
-  box-shadow: 0 6px 8px -1px rgba(66, 153, 225, 0.4);
-}
-
 .btn-icon {
   width: 36px;
   height: 36px;

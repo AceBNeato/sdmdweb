@@ -438,15 +438,11 @@ class BackupController extends Controller
                 }
             }
 
-            // Check if current time matches (within 30-second window: 15 seconds before to 15 seconds after)
-            $currentTime = $now;
-            $startWindow = $configuredTime->copy()->subSeconds(15);
-            $endWindow = $configuredTime->copy()->addSeconds(15);
-
-            if ($currentTime->lt($startWindow) || $currentTime->gt($endWindow)) {
+            // Check if current time matches (hour and minute match exactly)
+            if ($now->format('H:i') !== $settings['time']) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Current time {$now->format('H:i')} does not match backup time {$settings['time']} (window: {$startWindow->format('H:i')} - {$endWindow->format('H:i')})"
+                    'message' => "Current time {$now->format('H:i')} does not match backup time {$settings['time']}"
                 ]);
             }
 

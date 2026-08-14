@@ -32,7 +32,12 @@ class SessionSync {
     }
     
     checkAuthStatus() {
-        fetch('/session/check-status')
+        fetch('/session/check-status', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.authenticated && data.user) {

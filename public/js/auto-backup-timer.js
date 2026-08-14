@@ -141,7 +141,7 @@ class AutoBackupTimer {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             console.log('CSRF Token:', csrfToken ? 'found' : 'not found');
             
-            const response = await fetch('/admin/backup/auto', {
+            const response = await fetch('/backup/auto', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

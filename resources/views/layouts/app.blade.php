@@ -12,7 +12,7 @@
     <link rel="icon" href="{{ asset('images/SDMDlogo.png') }}" sizes="any">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:whttp://127.0.0.1:8000/accountsght@100..900&family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -298,7 +298,7 @@
         ]) !!};
         
         // Check if user needs to change password
-        @if(session('must_change_password') && auth()->check() && auth()->user()->must_change_password)
+        @if(session('must_change_password_alert') && auth()->check() && auth()->user()->must_change_password)
             Swal.fire({
                 title: '🔐 Password Change Recommended',
                 html: 'For better security, we recommend changing your password from the default one provided in your email.<br><br>You can change your password anytime in your profile settings.',
@@ -333,8 +333,10 @@
         </script>
         <script src="{{ asset('js/session-lock.js') }}"></script>
         
+        @if($isAdmin)
         <!-- Auto Backup Timer (temporarily on all pages for testing) -->
         <script data-auto-backup="true" src="{{ asset('js/auto-backup-timer.js') }}"></script>
+        @endif
     @endif
 
     <script src="{{ asset('js/profile-modals.js') }}"></script>

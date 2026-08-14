@@ -29,16 +29,7 @@ class User extends Authenticatable
      */
     protected static function booted()
     {
-        // Automatically hash password when setting it
-        static::saving(function ($user) {
-            if ($user->isDirty('password')) {
-                $user->password = Hash::needsRehash($user->password)
-                    ? Hash::make($user->password)
-                    : $user->password;
-            }
-        });
-
-            // Note: Removed global scope for active users to allow authentication
+        // Note: Removed global scope for active users to allow authentication
         // of inactive users (they will be checked after authentication)
     }
 

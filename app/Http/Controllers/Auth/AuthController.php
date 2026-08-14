@@ -310,25 +310,25 @@ class AuthController extends Controller
                 if ($user->is_admin) {
                     return redirect()->intended(route('admin.qr-scanner'))->with('session_sync', [
                         'type' => 'login',
-                        'user' => $user->toArray(),
+                        'user' => $user->only(['id', 'name', 'email', 'roles']),
                         'redirectUrl' => route('admin.qr-scanner')
                     ]);
                 } elseif ($user->is_technician) {
                     return redirect()->intended(route('technician.qr-scanner'))->with('session_sync', [
                         'type' => 'login',
-                        'user' => $user->toArray(),
+                        'user' => $user->only(['id', 'name', 'email', 'roles']),
                         'redirectUrl' => route('technician.qr-scanner')
                     ]);
                 } elseif ($user->is_staff) {
                     return redirect()->intended(route('staff.equipment.index'))->with('session_sync', [
                         'type' => 'login',
-                        'user' => $user->toArray(),
+                        'user' => $user->only(['id', 'name', 'email', 'roles']),
                         'redirectUrl' => route('staff.equipment.index')
                     ]);
                 } else {
                     return redirect()->intended(route('welcome'))->with('session_sync', [
                         'type' => 'login',
-                        'user' => $user->toArray(),
+                        'user' => $user->only(['id', 'name', 'email', 'roles']),
                         'redirectUrl' => route('welcome')
                     ]);
                 }
@@ -457,14 +457,7 @@ class AuthController extends Controller
             return response()->json(['success' => true]);
         }
 
-        // Fallback for plain text passwords (if not hashed)
-        if ($request->password === $user->password) {
-            \Log::info('Plain text password matched for user ID: ' . $user->id . ', hashing it now');
-            $user->password = $request->password; // This will be hashed by the model cast
-            $user->save();
-            session(['last_activity' => now()]);
-            return response()->json(['success' => true]);
-        }
+
 
         \Log::info('Password check failed for user ID: ' . $user->id . ', Provided password length: ' . strlen($request->password));
         return response()->json(['success' => false, 'message' => 'Invalid password.'], 401);
@@ -497,14 +490,7 @@ class AuthController extends Controller
             return response()->json(['success' => true]);
         }
 
-        // Fallback for plain text passwords (if not hashed)
-        if ($request->password === $user->password) {
-            \Log::info('Plain text password matched for staff user ID: ' . $user->id . ', hashing it now');
-            $user->password = $request->password; // This will be hashed by the model cast
-            $user->save();
-            session(['last_activity' => now()]);
-            return response()->json(['success' => true]);
-        }
+
 
         \Log::info('Password check failed for staff user ID: ' . $user->id . ', Provided password length: ' . strlen($request->password));
         return response()->json(['success' => false, 'message' => 'Invalid password.'], 401);
@@ -537,14 +523,7 @@ class AuthController extends Controller
             return response()->json(['success' => true]);
         }
 
-        // Fallback for plain text passwords (if not hashed)
-        if ($request->password === $user->password) {
-            \Log::info('Plain text password matched for technician user ID: ' . $user->id . ', hashing it now');
-            $user->password = $request->password; // This will be hashed by the model cast
-            $user->save();
-            session(['last_activity' => now()]);
-            return response()->json(['success' => true]);
-        }
+
 
         \Log::info('Password check failed for technician user ID: ' . $user->id . ', Provided password length: ' . strlen($request->password));
         return response()->json(['success' => false, 'message' => 'Invalid password.'], 401);

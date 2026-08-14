@@ -52,30 +52,6 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::get('/verify/{token}', [EmailVerificationController::class, 'verify'])->name('verify');
     Route::post('/verification/resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
     Route::get('/verification/notice', [EmailVerificationController::class, 'showVerificationNotice'])->name('verification.notice');
-    
-    // Temporary debug route
-    Route::get('/debug', function() {
-        return response()->json([
-            'env' => [
-                'MAIL_MAILER' => env('MAIL_MAILER'),
-                'MAIL_HOST' => env('MAIL_HOST'),
-                'MAIL_PORT' => env('MAIL_PORT'),
-                'MAIL_USERNAME' => env('MAIL_USERNAME') ? 'SET' : 'NOT SET',
-                'MAIL_PASSWORD' => env('MAIL_PASSWORD') ? 'SET' : 'NOT SET',
-                'MAIL_FROM_ADDRESS' => env('MAIL_FROM_ADDRESS'),
-                'MAIL_FROM_NAME' => env('MAIL_FROM_NAME'),
-            ],
-            'config' => [
-                'default' => config('mail.default'),
-                'host' => config('mail.mailers.smtp.host'),
-                'port' => config('mail.mailers.smtp.port'),
-                'username' => config('mail.mailers.smtp.username') ? 'SET' : 'NOT SET',
-                'password' => config('mail.mailers.smtp.password') ? 'SET' : 'NOT SET',
-                'from_address' => config('mail.from.address'),
-                'from_name' => config('mail.from.name'),
-            ]
-        ]);
-    })->name('debug');
 });
 
 /*
@@ -205,7 +181,7 @@ Route::middleware('aggressive.back.prevent')->group(function () {
 |--------------------------------------------------------------------------
 */
 // Automatic backup endpoint (no auth required for AJAX calls)
-Route::post('/backup/auto', [BackupController::class, 'autoBackup'])->name('backup.auto');
+Route::post('/backup/auto', [BackupController::class, 'autoBackup'])->name('backup.auto')->middleware('auth');
 
 /*
 |--------------------------------------------------------------------------

@@ -25,8 +25,9 @@ class CheckPasswordChange
             // Check if user needs to change password (for all user models)
             if ($user && isset($user->must_change_password) && $user->must_change_password) {
                 // Store session flag for SweetAlert (only if not already shown in this session)
-                if (!session('must_change_password')) {
-                    session(['must_change_password' => true]);
+                if (!session('password_alert_shown')) {
+                    session(['password_alert_shown' => true]);
+                    session()->flash('must_change_password_alert', true);
                 }
             }
         }

@@ -245,7 +245,7 @@ class AdminController extends Controller
             if ($request->hasFile('profile_photo')) {
                 try {
                     $file = $request->file('profile_photo');
-                    $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                    $filename = time() . '_' . $user->id . '.' . $file->extension();
                     
                     // Save directly to public/storage/profile-photos to bypass symlink issues
                     $destination = public_path('storage/profile-photos');

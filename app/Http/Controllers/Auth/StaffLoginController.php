@@ -110,6 +110,14 @@ public function login(Request $request)
             ])->withInput($request->only('email'));
         }
 
+        // Check if staff has an office assigned
+        if (!$staff->office_id) {
+            Auth::guard('staff')->logout();
+            return back()->withErrors([
+                'email' => 'You have not been assigned to an office. Please contact the administrator.',
+            ])->withInput($request->only('email'));
+        }
+
         // Log the successful login
         Log::info('Staff logged in', [
             'email' => $staff->email,

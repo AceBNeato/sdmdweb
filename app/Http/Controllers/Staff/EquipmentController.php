@@ -44,7 +44,7 @@ class EquipmentController extends Controller
 
         // Debug: Check if user has office assigned
         if (!$user->office_id) {
-            return back()->withErrors(['error' => 'You have not been assigned to an office. Please contact your administrator.']);
+            abort(403, 'You have not been assigned to an office. Please contact your administrator.');
         }
 
         // Start with equipment from the staff's office
@@ -85,6 +85,12 @@ class EquipmentController extends Controller
 
         // Get categories for filter
         $categories = \App\Models\Category::orderBy('name')->pluck('name', 'id');
+
+        if ($request->header('HX-Request')) {
+            $prefix = 'staff';
+            $currentUser = $user;
+            return view('equipment.partials.table', compact('equipment', 'prefix', 'currentUser'));
+        }
 
         return view('equipment.index', compact('equipment', 'equipmentTypes', 'campuses', 'categories'));
     }

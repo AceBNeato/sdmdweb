@@ -18,7 +18,7 @@ class Authenticate extends Middleware
             return null;
         }
 
-        // Redirect to the welcome page for unauthenticated users
-        return route('welcome');
+        // Redirect to the login page for unauthenticated users
+        return route('login');
     }
 }

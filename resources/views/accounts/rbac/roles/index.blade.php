@@ -473,42 +473,10 @@ document.getElementById('permissionsForm').addEventListener('submit', function(e
         if (data.success) {
             // Clear unsaved changes flag to prevent browser warning on reload
             hasChanges = false;
-            
-            // Show a single success message with auto-close timer
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message,
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false,
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            }).then(() => {
-                // Reload without flash session to avoid a second SweetAlert
-                window.location.href = window.location.pathname;
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: data.message || 'Something went wrong',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false
-            });
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error!',
-            text: 'Something went wrong while updating permissions',
-            timer: 3000,
-            timerProgressBar: true,
-            showConfirmButton: false
-        });
     });
 });
 

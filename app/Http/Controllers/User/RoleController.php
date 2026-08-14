@@ -161,7 +161,8 @@ class RoleController extends Controller
                     : 'No permission changes detected';
                 return response()->json([
                     'success' => true,
-                    'message' => $msg
+                    'message' => $msg,
+                    'reload' => true
                 ]);
             }
             

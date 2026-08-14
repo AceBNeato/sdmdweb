@@ -218,7 +218,7 @@ class StaffController extends Controller
 
                 // Store new profile image directly to public/storage/profile-photos
                 $file = $request->file('profile_photo');
-                $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                $filename = time() . '_' . $user->id . '.' . $file->extension();
                 
                 $destination = public_path('storage/profile-photos');
                 if (!file_exists($destination)) {

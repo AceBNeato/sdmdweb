@@ -42,13 +42,6 @@ class EnforceSessionLock
             $lockoutMinutes = Setting::getSessionLockoutMinutes();
             $inactiveMinutes = now()->diffInMinutes($lastActivity);
             
-            \Log::info('EnforceSessionLock check', [
-                'url' => $request->url(),
-                'lastActivity' => $lastActivity,
-                'inactiveMinutes' => $inactiveMinutes,
-                'lockoutMinutes' => $lockoutMinutes,
-                'isAjax' => $request->ajax()
-            ]);
 
             if ($inactiveMinutes >= $lockoutMinutes) {
                 if ($request->ajax() || $request->wantsJson() || $request->is('*session/check-status*') || $request->is('*system/check-updates*')) {
@@ -67,7 +60,6 @@ class EnforceSessionLock
             if (!$request->ajax() && !$request->wantsJson()) {
                 // Also explicitly ignore background polling routes that might not send ajax headers
                 if (!$request->is('*session/check-status*') && !$request->is('*system/check-updates*')) {
-                    \Log::info('Updating last_activity', ['url' => $request->url()]);
                     session(['last_activity' => now()]);
                 }
             }

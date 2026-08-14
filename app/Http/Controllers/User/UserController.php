@@ -266,7 +266,7 @@ class UserController extends Controller
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
             'phone' => $request->phone ?? null,
             'position' => $validated['position'],
             'office_id' => $validated['office_id'],
@@ -344,7 +344,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
@@ -389,7 +389,7 @@ class UserController extends Controller
         // Force logout if this user is currently logged in
         $this->forceUserLogout($user);
 
-        return redirect()->route('admin.accounts.index')
+        return redirect()->route('accounts.index')
             ->with('success', 'User roles and permissions updated successfully. User has been automatically logged out for security.');
     }
 
@@ -427,13 +427,13 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
         // Prevent staff users from editing users outside their office
         if (auth()->user()->hasRole('staff') && auth()->user()->office_id && $user->office_id !== auth()->user()->office_id) {
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You can only edit users within your office.');
         }
 
@@ -480,13 +480,13 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
         // Prevent staff users from updating users outside their office
         if (auth()->user()->hasRole('staff') && auth()->user()->office_id && $user->office_id !== auth()->user()->office_id) {
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You can only update users within your office.');
         }
 
@@ -605,11 +605,11 @@ class UserController extends Controller
                 'user_agent' => request()->userAgent()
             ]);
 
+            $user->role_id = $validated['roles'];
+            $user->save();
+
             // Log to activities table
             Activity::logUserRoleChange($user, $oldRole, $newRole);
-
-            $user->role_id = $validated['roles'];
-        $user->save();
 
             // Force logout and redirect if this user is currently logged in and role changed
             if ($roleChanged) {
@@ -675,7 +675,7 @@ class UserController extends Controller
             $message .= ' User has been automatically logged out due to role change for security.';
         }
 
-        return redirect()->route('admin.accounts.index')
+        return redirect()->route('accounts.index')
             ->with('success', $message);
     }
 
@@ -695,11 +695,9 @@ class UserController extends Controller
         }
 
         // Always clear all sessions for this user to ensure complete logout
-        if ($loggedOut || true) { // Always clear sessions when role changes for safety
-            DB::table('sessions')
-                ->where('user_id', $user->id)
-                ->delete();
-        }
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->delete();
     }
 
     /**
@@ -712,7 +710,7 @@ class UserController extends Controller
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'You do not have permission to edit admin users.'], 403);
             }
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 
@@ -749,7 +747,7 @@ class UserController extends Controller
     {
         // Prevent non-admins from editing admin users
         if ($user->hasRole('admin') && !auth()->user()->is_admin) {
-            return redirect()->route('admin.accounts.index')
+            return redirect()->route('accounts.index')
                 ->with('error', 'You do not have permission to edit admin users.');
         }
 

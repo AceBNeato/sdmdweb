@@ -314,7 +314,7 @@ class SweetAlertSystem {
         const config = {
             ...this.getConfig('success', message),
             showConfirmButton: true,
-            confirmButtonText: 'Reload Page',
+            confirmButtonText: 'Great!',
             allowOutsideClick: false,
             allowEscapeKey: false,
             timer: delay || undefined,

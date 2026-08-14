@@ -161,6 +161,12 @@ class EquipmentController extends BaseController
         // Paginate results
         $equipment = $query->paginate(12)->appends($request->query());
 
+        if ($request->header('HX-Request')) {
+            $prefix = 'technician';
+            $currentUser = $user;
+            return view('equipment.partials.table', compact('equipment', 'prefix', 'currentUser'));
+        }
+
         return view('equipment.index', compact('equipment', 'equipmentTypes', 'campuses', 'categories'));
     }
 
